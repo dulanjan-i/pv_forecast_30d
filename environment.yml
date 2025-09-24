@@ -1,0 +1,31 @@
+name: pvforecast
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - plotly
+  - pytorch
+  - torchvision
+  - torchaudio
+  - xgboost
+  - lightgbm
+  - optuna
+  - pvlib
+  - xarray
+  - netCDF4
+  - shap
+  - streamlit
+  - altair
+  - pydeck
+  - tqdm
+  - joblib
+  - requests
+  - pyarrow
+  - python-dotenv
