@@ -1,0 +1,47 @@
++-------------------+
+| Historical Data   |
+|-------------------|
+| PV Output         |
+| Weather Data      |
+| Cloud Cover Data  |
+| PVLib Output      |
++-------------------+
+          |
+          v
++---------------------------+
+| Data Preprocessing       |
+|---------------------------|
+| Missing data handling    |
+| Resampling/interpolation |
+| Rolling window creation  |
+| Feature normalization    |
++---------------------------+
+          |
+          v
++---------------------------+
+| Training Dataset         |
+|---------------------------|
+| LSTM / Hybrid Model     |
+| Inputs: Historical PV,  |
+| Weather, Cloud Cover,   |
+| PVLib output             |
+| Output: PV forecast     |
++---------------------------+
+          |
+          v
++---------------------------+
+| Model Training           |
+|---------------------------|
+| Cross-validation         |
+| Hyperparameter tuning   |
+| Ensemble methods         |
++---------------------------+
+          |
+          v
++---------------------------+
+| Real-Time Prediction     |
+|---------------------------|
+| Real-time Weather API   |
+| Rolling window features |
+| PV Forecast Output      |
++---------------------------+
