@@ -34,3 +34,8 @@ dependencies:
   - opencv
   - scikit-image
   - jupyterlab
+  - pytorch-lightning
+  - pytorch-forecasting
+  - gymnasium
+  - stable-baselines3
+  - torchrl
