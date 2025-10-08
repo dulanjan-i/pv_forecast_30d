@@ -1,6 +1,6 @@
--- High-Level Architecture for Hybrid PV Forecasting with RL Meta-Controller
+// High-Level Architecture for Hybrid PV Forecasting with RL Meta-Controller
 digraph HybridPVForecasting {
-    rankdir=LR;  -- Left to right layout
+    rankdir=LR;  // Left to right layout
     node [shape=box, style=filled, fillcolor=lightgray];
 
     // Data Sources
