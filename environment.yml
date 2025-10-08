@@ -39,3 +39,4 @@ dependencies:
   - gymnasium
   - stable-baselines3
   - torchrl
+  - pytorch-optimizer
