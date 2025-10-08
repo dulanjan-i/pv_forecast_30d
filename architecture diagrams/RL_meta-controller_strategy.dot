@@ -1,0 +1,22 @@
+digraph RLMetaController {
+    rankdir=LR;
+
+    "Historical Weather Data" -> "LSTM Encoder" [label="Preprocessed Weather Inputs"];
+    "Historical PV Data" -> "LSTM Encoder";
+    "LSTM Encoder" -> "Encoded Signals";
+
+    "Encoded Signals" -> "TFT Model" [label="Encoded Inputs"];
+    "PVLib Outputs" -> "TFT Model";
+
+    "TFT Model" -> "PV Power Forecast";
+
+    "Real-time Weather API Data" -> "RL Meta Controller" [label="State Inputs"];
+    "PV Power Forecast" -> "RL Meta Controller";
+    "Prediction Confidence" -> "RL Meta Controller";
+    "Weather Forecast Quality" -> "RL Meta Controller";
+
+    "RL Meta Controller" -> "Actions" [label="Policy Decisions"];
+    "Actions" -> "TFT Model" [label="Retrain / Re-run / Adjust Inputs", style=dashed];
+    "Actions" -> "LSTM Encoder" [label="Retrain LSTM", style=dashed];
+    "Actions" -> "PVLib" [label="Adjust PVLib Inputs", style=dashed];
+}
