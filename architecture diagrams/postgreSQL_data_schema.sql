@@ -1,5 +1,3 @@
--- DATABASE: pv_forecast_meta_architecture
-
 -- Table 1: Historical weather data
 CREATE TABLE historical_weather (
     id SERIAL PRIMARY KEY,
@@ -10,16 +8,17 @@ CREATE TABLE historical_weather (
     wind_speed FLOAT,
     cloud_cover FLOAT,
     solar_radiation FLOAT,
-    raw_api_source VARCHAR(50),
+    additional_vars JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table 2: Historical PV output data
+-- Table 2: Historical PV output
 CREATE TABLE historical_pv_output (
     id SERIAL PRIMARY KEY,
     location_id INT NOT NULL,
     datetime TIMESTAMP NOT NULL,
-    pv_output_kw FLOAT,
+    pv_output FLOAT,
+    additional_vars JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -31,38 +30,37 @@ CREATE TABLE feature_store (
     lstm_encoded_signal JSONB,       -- encoded learner signal
     pvlib_baseline_output FLOAT,     -- baseline/moderator
     forecast_api_covariates JSONB,   -- future covariates
-    additional_features JSONB,       -- any extra features (e.g. calendar, lag variables)
-    preprocessing_metadata JSONB,
+    additional_features JSONB,       -- extra features like calendar, lag variables
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table 4: Model store (weights, params)
+-- Table 4: Model store (saved weights & parameters for reproducibility)
 CREATE TABLE model_store (
     id SERIAL PRIMARY KEY,
-    model_name VARCHAR(50),
-    model_version VARCHAR(20),
+    model_name TEXT NOT NULL,
+    version TEXT NOT NULL,
+    weights BYTEA,
     parameters JSONB,
-    metrics JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table 5: TFT forecast output
+-- Table 5: TFT output (final forecast + confidence intervals)
 CREATE TABLE tft_output (
     id SERIAL PRIMARY KEY,
     location_id INT NOT NULL,
-    forecast_horizon_days INT NOT NULL,
-    forecast_datetime TIMESTAMP NOT NULL,
-    forecast_values JSONB,             -- array of forecasts
+    forecast_horizon INTERVAL NOT NULL,
+    datetime TIMESTAMP NOT NULL,
+    forecast_values JSONB,
     confidence_intervals JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table 6: Error metrics (tracking model performance)
+-- Table 6: Error metrics (for all models + RL feedback loop)
 CREATE TABLE error_metrics (
     id SERIAL PRIMARY KEY,
-    model_name VARCHAR(50),
     location_id INT NOT NULL,
     datetime TIMESTAMP NOT NULL,
+    model_name TEXT NOT NULL,
     rmse FLOAT,
     mae FLOAT,
     r2 FLOAT,
@@ -70,41 +68,42 @@ CREATE TABLE error_metrics (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table 7: Pipeline log (execution logs & retraining events)
+-- Table 7: Pipeline log (execution, retraining, API calls, errors)
 CREATE TABLE pipeline_log (
     id SERIAL PRIMARY KEY,
-    pipeline_step VARCHAR(50),
-    status VARCHAR(20),
-    details JSONB,
-    executed_at TIMESTAMP DEFAULT NOW()
+    run_id UUID NOT NULL,
+    step TEXT NOT NULL,
+    status TEXT NOT NULL,
+    message TEXT,
+    timestamp TIMESTAMP DEFAULT NOW()
 );
 
--- Table 8: RL state-actions (meta controller history)
+-- Table 8: RL state actions (for meta controller decisions)
 CREATE TABLE rl_state_actions (
     id SERIAL PRIMARY KEY,
-    datetime TIMESTAMP NOT NULL,
-    state JSONB,        -- encapsulates all RL state variables
-    action JSONB,       -- chosen action
+    state JSONB NOT NULL,
+    action TEXT NOT NULL,
     reward FLOAT,
-    created_at TIMESTAMP DEFAULT NOW()
+    timestamp TIMESTAMP DEFAULT NOW()
 );
 
--- Table 9: API metrics (optional — for meta controller decisions)
+-- Table 9: API metrics (optional — for RL & debugging)
 CREATE TABLE api_metrics (
     id SERIAL PRIMARY KEY,
-    api_name VARCHAR(50),
-    request_datetime TIMESTAMP NOT NULL,
-    response_time_ms FLOAT,
-    success BOOLEAN,
-    forecast_accuracy FLOAT,
-    details JSONB,
+    api_name TEXT NOT NULL,
+    location_id INT,
+    datetime TIMESTAMP NOT NULL,
+    response_time FLOAT,
+    success_rate FLOAT,
+    data_quality JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Table 10: Metadata store (pipeline & model state tracking)
-CREATE TABLE metadata_store (
+-- Table 10: Metadata table (pipeline + preprocessing metadata)
+CREATE TABLE metadata (
     id SERIAL PRIMARY KEY,
-    meta_key VARCHAR(50),
-    meta_value JSONB,
+    key TEXT NOT NULL,
+    value JSONB,
+    description TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
