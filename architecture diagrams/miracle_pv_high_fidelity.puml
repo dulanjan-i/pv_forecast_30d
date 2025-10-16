@@ -1,40 +1,38 @@
 @startuml
-' High-fidelity PlantUML — local / VS Code rendering
-' Hybrid Ensemble PV Forecasting Architecture (Final)
-
 ' -----------------------------
 ' Styling
 ' -----------------------------
-skinparam backgroundColor #FFFFFF
+skinparam backgroundColor white
 skinparam componentStyle rectangle
 skinparam databaseBackgroundColor #F5F5F5
+skinparam databaseBorderColor #555
 skinparam rectangleBorderColor #0066cc
-skinparam linetype ortho
+skinparam rectangleFontColor black
 skinparam shadowing false
-skinparam defaultTextAlignment center
+skinparam linetype ortho
 
-title Hybrid Ensemble PV Forecasting Architecture (Final) - High fidelity
+title MiRACLE V1.0 Architecture
 
 ' -----------------------------
-' Colors (explicit)
+' Color Legend
 ' -----------------------------
-' inputs:    #d6f5d6
-' models:    #cce0ff
-' stores:    #f2f2f2
-' error:     #ffe0b3
-' output:    #fff5b3
-' dashboard: #ccf5f5
+' Inputs / Data Sources: #D9EDF7 (light blue)
+' Models: #E6E6FA (lavender)
+' Intermediate outputs / pipeline: #FCF8E3 (light yellow)
+' Final outputs: #DFF0D8 (light green)
+' Error / Metrics: #F2DEDE (light red)
+' Storage / DB: #F5F5F5 (light gray)
 
 ' -----------------------------
 ' Data Sources (top)
 ' -----------------------------
-package "Data Source 1: PV Plant" as DS1 #d6f5d6 {
+package "Data Source 1: PV Plant" as DS1 #D9EDF7 {
     [Historical PV Output] as HIST_PV
     [Historical Weather Data] as HIST_W
     [PV Plant Metadata] as PVM
 }
 
-package "Data Source 2: OpenMeteo (Forecasts)" as DS2 #d6f5d6 {
+package "Data Source 2: OpenMeteo (Forecasts)" as DS2 #D9EDF7 {
     [Forecast API] as FORECAST_API
     package "Ensemble API" as ENS {
         [GFS Ensemble] as GFS
@@ -48,127 +46,137 @@ package "Data Source 2: OpenMeteo (Forecasts)" as DS2 #d6f5d6 {
 }
 
 ' -----------------------------
-' RL Meta-Controller (center)
+' RL Meta-controller (center top)
 ' -----------------------------
-node "RL Meta-Controller\n(Adaptive Control Loop)" as RL #cce0ff
+node "RL Meta-Controller\n(Adaptive Control Loop)" as RL #E6E6FA
 
 ' -----------------------------
 ' Historical Store + Preprocessors
 ' -----------------------------
-database "Historical Store" as HDB #f2f2f2
-rectangle "Preprocessor A\n(Data Normalization)" as PA #cce0ff
-rectangle "Preprocessor B\n(Real-time Preprocessing)" as PB #cce0ff
+database "Historical Store" as HDB #F5F5F5
+rectangle "Preprocessor A\n(Data Normalization)" as PA #FCF8E3
+rectangle "Preprocessor B\n(Real-time Preprocessing)" as PB #FCF8E3
 
 ' -----------------------------
-' Stores & Outputs
+' Feature / Model / Metadata / Error / Output stores (DB icons)
 ' -----------------------------
-database "Feature Store" as FS #f2f2f2
-database "Model Store" as MS #f2f2f2
-database "Metadata Table\n(Pipeline & Model Metadata)" as MT #f2f2f2
-database "Error Metrics Table" as EM #ffe0b3
-database "TFT Output Table" as OT #f2f2f2
+database "Feature Store" as FS #F5F5F5
+database "Model Store" as MS #F5F5F5
+database "Metadata Table\n(Pipeline & Model Metadata)" as MT #F5F5F5
+database "Error Metrics Table" as EM #F2DEDE
+database "TFT Output Table" as OT #FCF8E3
 
 ' -----------------------------
-' Models
+' Models & Pipeline Blocks (middle)
 ' -----------------------------
-rectangle "LSTM Encoder\n(Temporal Encodings)" as LSTM #cce0ff
-rectangle "PVLib Physical Model\n(Baseline physics simulation)" as PVLIB #cce0ff
-rectangle "Temporal Fusion Transformer\n(Main Forecasting Model)" as TFT #cce0ff
+rectangle "LSTM Encoder\n(Temporal Encodings)" as LSTM #E6E6FA
+rectangle "PVLib Physical Model\n(Baseline physics simulation)" as PVLIB #E6E6FA
+rectangle "Temporal Fusion Transformer\n(Main Forecasting Model)" as TFT #E6E6FA
 
 ' -----------------------------
-' Dashboard & Final Output
+' Dashboard & Final Output (bottom)
 ' -----------------------------
-rectangle "Streamlit Dashboard\n(Explainability & Decision Support)" as DASH #ccf5f5
-rectangle "Predicted PV Power Output" as OUT #fff5b3
-
-' =====================================================
-' Arrow thickness rules
-'  - main: thickness 3
-'  - DS2 -> RL inputs: thickness 2
-'  - feedback/dotted: thickness 2
-' =====================================================
+rectangle "Streamlit Dashboard\n(Explainability & Decision Support)" as DASH #FCF8E3
+rectangle "Predicted PV Power Output" as OUT #DFF0D8
 
 ' -----------------------------
-' Main arrows thickness
+' Main arrow thickness
 ' -----------------------------
 skinparam ArrowThickness 3
 
-' Historical flow -> preprocess -> LSTM -> FS
-HIST_PV -[#000000,thickness=3]-> HDB
-HIST_W  -[#000000,thickness=3]-> HDB
-HDB     -[#000000,thickness=3]-> PA
-PA      -[#000000,thickness=3]-> LSTM
-LSTM    -[#000000,thickness=3]-> FS
-
-' PV metadata -> PVLib -> FS
-PVM     -[#000000,thickness=3]-> PVLIB
-PVLIB   -[#000000,thickness=3]-> FS
+' -----------------------------
+' Connections: Historical data -> HDB -> PA -> LSTM -> Feature Store
+' -----------------------------
+HIST_PV --> HDB
+HIST_W  --> HDB
+HDB --> PA
+PA --> LSTM
+LSTM --> FS
 
 ' -----------------------------
-' DS2 inputs -> RL (slightly thinner) connecting to top of RL
+' PV plant metadata -> PVLib
 ' -----------------------------
-skinparam ArrowThickness 2
-FORECAST_API -top-> RL
-GFS          -top-> RL
-ICON_EPS     -top-> RL
-ICON_EU      -top-> RL
-ICON_D2      -top-> RL
-ECMWF_IFS    -top-> RL
-ECMWF_AIFS   -top-> RL
-GEM          -top-> RL
+PVM --> PVLIB
 
-' restore main thickness for downstream
+' -----------------------------
+' Forecasts/Ensembles -> RL (thin top-aligned arrows)
+' -----------------------------
+skinparam ArrowThickness 1
+FORECAST_API -down-> RL
+GFS          -down-> RL
+ICON_EPS     -down-> RL
+ICON_EU      -down-> RL
+ICON_D2      -down-> RL
+ECMWF_IFS    -down-> RL
+ECMWF_AIFS   -down-> RL
+GEM          -down-> RL
+
+' -----------------------------
+' RL outputs: Preprocessor B -> Feature Store
+' -----------------------------
 skinparam ArrowThickness 3
+RL --> PB
+PB --> FS
 
 ' -----------------------------
-' RL -> Preprocessor B (center-bottom to center-top) — main thickness
+' PVLib outputs -> Feature Store
 ' -----------------------------
-RL -bottom-> PB
-PB -[#000000,thickness=3]-> FS
+PVLIB --> FS
 
 ' -----------------------------
-' TFT input aggregation and outputs
+' TFT inputs (parallel): FS + PB + PVLib
 ' -----------------------------
-FS -[#000000,thickness=3]-> TFT
-PVLIB -[#000000,thickness=3]-> TFT
-PB -[#000000,thickness=3]-> TFT
-
-TFT -[#000000,thickness=3]-> OT
-OT  -[#000000,thickness=3]-> DASH
-OT  -[#000000,thickness=3]-> EM
-OT  -[#000000,thickness=3]-> OUT
+FS --> TFT
+PB --> TFT
+PVLIB --> TFT
 
 ' -----------------------------
-' Feedback (thin) and dotted storage link from bottom of RL
+' TFT -> Output table -> Dashboard & Error Metrics -> RL feedback
 ' -----------------------------
-skinparam ArrowThickness 2
-EM -[#000000,thickness=2]-> RL
-RL -bottom..> MS : store policies
+TFT --> OT
+OT --> DASH
+OT --> EM
+EM --> RL
 
 ' -----------------------------
-' Model store secondary dotted links
+' Dashboard reads from OT, EM, MS, MT
 ' -----------------------------
-LSTM ..[#808080]> MS
-PVLIB ..[#808080]> MS
-TFT ..[#808080]> MS
-RL   ..[#808080]> MS
+MS --> DASH
+MT --> DASH
+EM --> DASH
+OT --> DASH
 
 ' -----------------------------
-' Dashboard reads (informational)
+' Output saved from TFT Output Table
 ' -----------------------------
-MS -[#000000,thickness=2]-> DASH
-MT -[#000000,thickness=2]-> DASH
-EM -[#000000,thickness=2]-> DASH
-OT -[#000000,thickness=2]-> DASH
+OT --> OUT
 
 ' -----------------------------
-' Hidden layout hints (local-friendly)
+' Model store dotted links from all models and RL with annotations
+' RL → MS dotted line now comes from bottom of RL
+' -----------------------------
+LSTM ..> MS : store weights/encodings
+PVLIB ..> MS : store configs
+TFT ..> MS : store weights/confidence
+RL ..down..> MS : store policies
+
+' -----------------------------
+' Model Store contains pipeline metadata
+' -----------------------------
+MS --> MT : contains pipeline & model metadata
+
+' -----------------------------
+' Hidden positioning hints to keep top-to-bottom layout
 ' -----------------------------
 HIST_PV -[hidden]-> HIST_W
 HIST_W -[hidden]-> FORECAST_API
-FORECAST_API -[hidden]-> RL
 RL -[hidden]-> PB
 MS -[hidden]-> MT
+RL -[hidden]-> EM
+
+' -----------------------------
+' Optional: ensure LSTM / PVLIB / TFT appear visually grouped
+' -----------------------------
 LSTM -[hidden]-> PVLIB
 PVLIB -[hidden]-> TFT
 LSTM -[hidden]-> TFT
