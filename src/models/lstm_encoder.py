@@ -1,9 +1,10 @@
 # src/models/lstm_encoder.py
 """
-Primary LSTM Paper: Hochreiter, S., & Schmidhuber, J. (1997). Long Short-Term Memory. Neural Computation, 9(8), 1735–1780. 
-                    https://doi.org/10.1162/neco.1997.9.8.1735
-Official library docs: PyTorch nn.LSTM - Sequence models/ https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
-                       PyTorch Lightning — LightningModule API. https://lightning.ai/docs/pytorch/stable/common/lightning_module.html
+References:
+- Hochreiter & Schmidhuber (1997) Long Short-Term Memory. Neural Computation.
+  https://doi.org/10.1162/neco.1997.9.8.1735
+- PyTorch nn.LSTM docs: https://pytorch.org/docs/stable/generated/torch.nn.LSTM.html
+- PyTorch Lightning LightningModule: https://lightning.ai/docs/pytorch/stable/common/lightning_module.html
 """
 
 from __future__ import annotations              # postpone type-hint evaluation (cleaner imports)
