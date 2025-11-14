@@ -1,0 +1,39 @@
+# experiments/lstm/pretrain_pvdaq.yaml
+data:
+  train_path: "data/processed/pretraining/farm2107_pretrain_train.parquet"
+  val_path: "data/processed/pretraining/farm2107_pretrain_val.parquet"
+  time_col: "measured_on"
+  id_col: null                # Single farm, no grouping needed
+  feature_cols:
+    - pv_power_norm           # autoregressive input
+    - poa_irradiance
+    - temperature_2m
+    - relative_humidity_2m
+    - precipitation
+    - weather_code
+    - cloud_cover
+    - wind_speed_10m
+    - wind_direction_10m
+    - shortwave_radiation_instant
+    - direct_radiation_instant
+    - diffuse_radiation_instant
+    - direct_normal_irradiance_instant
+    - global_tilted_irradiance_instant
+    - surface_pressure
+  target_col: "pv_power_norm"
+  window_size: 96          # encoder length (24h @ 15-min)
+  horizon: 1               # next-step prediction for pretraining
+
+model:
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.1
+
+training:
+  batch_size: 256
+  max_epochs: 30
+  learning_rate: 1e-3
+  weight_decay: 1e-4
+  gradient_clip_val: 1.0
+  gpus: "auto"
+  
