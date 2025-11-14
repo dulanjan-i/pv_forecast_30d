@@ -1,5 +1,5 @@
 """
-farm2107_weather_to_15min.py
+openmeteo_preprocessing.py
 
 Convert interim Open-Meteo weather data for PVDAQ System 2107 (Farm Solar Array)
 from hourly resolution to 15-minute resolution, and export processed weather
@@ -12,9 +12,12 @@ Inputs (INTERIM):
 Outputs (PROCESSED):
     data/processed/pretraining/farm2107_weather_15min.parquet   (time-varying features)
     data/processed/pretraining/farm2107_weather_daily.parquet   (daily aggregates, unchanged)
-
+    
+Important: This does not clip the output to the PVDAQ data range; that is done
+later during dataset assembly.
+    
 Run from repo root:
-    python src/preprocessing/farm2107_weather_to_15min.py
+    python src/preprocessing/openmeteo_preprocessing.py
 """
 
 from pathlib import Path
