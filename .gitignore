@@ -206,7 +206,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-***REMOVED***datasets 
+***REMOVED***datasets and data files
 *.csv
 *.xlsx
 *.xls
