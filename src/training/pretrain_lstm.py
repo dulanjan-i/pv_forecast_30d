@@ -52,8 +52,14 @@ This trains LSTMEncoder to do next-step prediction on sliding windows.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+# Add project root to Python path
+project_root = Path(__file__).resolve().parents[2]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 import pandas as pd
 import pytorch_lightning as pl
