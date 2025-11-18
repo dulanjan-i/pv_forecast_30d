@@ -1,18 +1,35 @@
 # src/training/pretrain_lstm.py
 """
-Pretraining script for LSTMEncoder on global PVDAQ/NSRDB-style data.
+Pretraining script for LSTMEncoder on global PVDAQ/NSRDB data.
+We use the Farm Solar Array (PVDAQ System 2107) dataset for this pretraining.
+Data is from: https://data.openei.org/s3_viewer?bucket=oedi-data-lake&prefix=pvdaq%2F2023-solar-data-prize%2F2107_OEDI%2F
 
 Uses:
-- experiments/lstm/pretrain_pvdaq.yaml
+- experiments/lstm/pretrain_farm2107.yaml
+
 
 YAML structure expected:
 
 data:
-  train_path: "data/raw/pvdaq_nsrd_train.csv"
-  val_path: "data/raw/pvdaq_nsrd_val.csv"
-  time_col: "time_idx"
-  id_col: "site_id"
-  feature_cols: [...]
+  train_path: "data/processed/pretraining/farm2107_pretrain_train.parquet"
+  val_path: "data/processed/pretraining/farm2107_pretrain_val.parquet"
+  time_col: "measured_on"
+  id_col: null
+  feature_cols:
+    - pv_power_norm
+    - poa_irradiance
+    - temperature_2m
+    - relative_humidity_2m
+    - precipitation
+    - cloud_cover
+    - wind_speed_10m
+    - wind_direction_10m
+    - shortwave_radiation_instant
+    - direct_radiation_instant
+    - diffuse_radiation_instant
+    - direct_normal_irradiance_instant
+    - global_tilted_irradiance_instant
+    - surface_pressure
   target_col: "pv_power_norm"
   window_size: 96
   horizon: 1
@@ -27,7 +44,8 @@ training:
   max_epochs: 30
   learning_rate: 1e-3
   weight_decay: 1e-4
-  gpus: 0
+  gpus: auto         #depends on runtime environment and availability,
+                     [M2 Mac: 0, Mira's RTX: 1, DBFZ Calc: 4, HPC: auto] 
 
 This trains LSTMEncoder to do next-step prediction on sliding windows.
 """
@@ -62,16 +80,17 @@ def build_dataloader(
     horizon: int,
     batch_size: int,
     num_workers: int = 0,
-    shuffle: bool = True,
+    shuffle: bool = True, 
 ) -> DataLoader:
-    assert csv_path.exists(), f"CSV not found at {csv_path}"
+    assert csv_path.exists(), f"File not found at {csv_path}"
 
-    df = pd.read_csv(csv_path)
-
-    # If you ever swap time_col to a datetime, you can parse here;
-    # currently time_idx is an integer index, so no need.
-    # if not pd.api.types.is_datetime64_any_dtype(df[time_col]):
-    #     df[time_col] = pd.to_datetime(df[time_col])
+    ext = csv_path.suffix.lower()
+    if ext == ".csv":
+        df = pd.read_csv(csv_path)
+    elif ext == ".parquet":
+        df = pd.read_parquet(csv_path)
+    else:
+        raise ValueError(f"Unsupported file extension for {csv_path}")
 
     if id_col in ("", "none", "null", None):
         group_col = None
@@ -98,7 +117,7 @@ def build_dataloader(
     return loader
 
 
-def main(config_path: str = "experiments/lstm/pretrain_pvdaq.yaml") -> None:
+def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     # 1) Load config
     cfg = load_config(config_path)
 
@@ -120,7 +139,7 @@ def main(config_path: str = "experiments/lstm/pretrain_pvdaq.yaml") -> None:
     max_epochs = int(train_cfg["max_epochs"])
     lr = float(train_cfg["learning_rate"])
     weight_decay = float(train_cfg["weight_decay"])
-    gpus = train_cfg.get("gpus", 0)
+    gpus = train_cfg.get("gpus", "auto")
 
     hidden_size = int(model_cfg["hidden_size"])
     num_layers = int(model_cfg["num_layers"])
@@ -162,6 +181,7 @@ def main(config_path: str = "experiments/lstm/pretrain_pvdaq.yaml") -> None:
         num_layers=num_layers,
         dropout=dropout,
         lr=lr,
+        weight_decay=weight_decay,  # Pass weight_decay from config
         aux_predict=True,  # we want next-step prediction head during pretraining
     )
 
@@ -194,8 +214,8 @@ def main(config_path: str = "experiments/lstm/pretrain_pvdaq.yaml") -> None:
     ckpt_dir = Path("experiments/lstm/encoders")
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    last_ckpt = ckpt_dir / "lstm_encoder_pvdaq_last.ckpt"
-    state_dict_path = ckpt_dir / "lstm_encoder_pvdaq_weights.pt"
+    last_ckpt = ckpt_dir / "lstm_encoder_farm2107_last.ckpt"
+    state_dict_path = ckpt_dir / "lstm_encoder_farm2107_weights.pt"
 
     trainer.save_checkpoint(str(last_ckpt))
     torch.save(model.state_dict(), state_dict_path)
@@ -207,13 +227,13 @@ def main(config_path: str = "experiments/lstm/pretrain_pvdaq.yaml") -> None:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Pretrain LSTMEncoder on PVDAQ/NSRDB-style data.")
+    parser = argparse.ArgumentParser(description="Pretrain LSTM Encoder on Farm Solar Array [PVDAQ System 2107].")
     parser.add_argument(
         "--config",
         type=str,
-        default="experiments/lstm/pretrain_pvdaq.yaml",
+        default="experiments/lstm/pretrain_farm2107.yaml",
         help="Path to YAML config for pretraining.",
     )
     args = parser.parse_args()
 
-    main(config_path=args.config)
+    main(config_path=args.config) 
