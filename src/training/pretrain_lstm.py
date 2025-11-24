@@ -146,6 +146,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     lr = float(train_cfg["learning_rate"])
     weight_decay = float(train_cfg["weight_decay"])
     gpus = train_cfg.get("gpus", "auto")
+    num_workers = int(train_cfg.get("num_workers", 0))
 
     hidden_size = int(model_cfg["hidden_size"])
     num_layers = int(model_cfg["num_layers"])
@@ -161,7 +162,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         window_size=window_size,
         horizon=horizon,
         batch_size=batch_size,
-        num_workers=0,
+        num_workers=num_workers,
         shuffle=True,
     )
 
@@ -174,7 +175,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         window_size=window_size,
         horizon=horizon,
         batch_size=batch_size,
-        num_workers=0,
+        num_workers=num_workers,
         shuffle=False,
     )
 
