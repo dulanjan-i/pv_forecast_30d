@@ -127,6 +127,14 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     # 1) Load config
     cfg = load_config(config_path)
 
+    # Extract experiment tracking info
+    exp_cfg = cfg.get("experiment", {})
+    paths_cfg = cfg.get("paths", {})
+    
+    exp_name = exp_cfg.get("name", "pretrain")
+    exp_tag = exp_cfg.get("tag", "default")
+    output_dir = paths_cfg.get("output_dir", f"experiments/lstm/runs/{exp_tag}")
+    
     data_cfg = cfg["data"]
     model_cfg = cfg["model"]
     train_cfg = cfg["training"]
@@ -194,7 +202,13 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
 
     model = LSTMEncoder(enc_cfg)
 
-    # 4) Set up Trainer (Lightning 1.x)
+    # 4) Set up Logger
+    logger = pl.loggers.CSVLogger(
+        save_dir=output_dir,
+        name=exp_name,
+    )
+
+    # 5) Set up Trainer (Lightning 2.x)
     if isinstance(gpus, str) and gpus == "auto":
         accelerator = "auto"
         devices = "auto"
@@ -209,20 +223,24 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         max_epochs=max_epochs,
         accelerator=accelerator,
         devices=devices,
+        default_root_dir=output_dir,
+        logger=logger,
         gradient_clip_val=train_cfg.get("gradient_clip_val", 0.0),
         log_every_n_steps=50,
     )
 
-    # 5) Train
+    # 6) Train
+    print(f"[Pretrain] Experiment: {exp_name} | Tag: {exp_tag}")
+    print(f"[Pretrain] Output dir: {output_dir}")
     print(f"[Pretrain] Training LSTMEncoder for {max_epochs} epochs on {train_path.name}")
     trainer.fit(model, train_loader, val_loader)
 
-    # 6) Save checkpoints / encoder weights
-    ckpt_dir = Path("experiments/lstm/encoders")
+    # 7) Save checkpoints / encoder weights with tag in filename
+    ckpt_dir = Path(output_dir) / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    last_ckpt = ckpt_dir / "lstm_encoder_farm2107_last.ckpt"
-    state_dict_path = ckpt_dir / "lstm_encoder_farm2107_weights.pt"
+    last_ckpt = ckpt_dir / f"lstm_encoder_farm2107_{exp_tag}_last.ckpt"
+    state_dict_path = ckpt_dir / f"lstm_encoder_farm2107_{exp_tag}_weights.pt"
 
     trainer.save_checkpoint(str(last_ckpt))
     torch.save(model.state_dict(), state_dict_path)

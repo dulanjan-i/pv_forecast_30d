@@ -210,4 +210,8 @@ __marimo__/
 *.csv
 *.xlsx
 *.xls
-*.parquet
+*.parquet# Training artifacts
+experiments/lstm/runs/
+experiments/lstm/encoders/*.pt
+experiments/lstm/encoders/*.ckpt
+lightning_logs/
