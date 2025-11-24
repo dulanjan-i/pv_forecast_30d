@@ -215,3 +215,7 @@ experiments/lstm/runs/
 experiments/lstm/encoders/*.pt
 experiments/lstm/encoders/*.ckpt
 lightning_logs/
+
+# Data files (large, not version-controlled)
+data/interim/
+data/processed/**/*.parquet
