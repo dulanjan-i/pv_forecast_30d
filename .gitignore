@@ -210,7 +210,8 @@ __marimo__/
 *.csv
 *.xlsx
 *.xls
-*.parquet# Training artifacts
+*.zip
+*.parquet # Training artifacts
 experiments/lstm/runs/
 experiments/lstm/encoders/*.pt
 experiments/lstm/encoders/*.ckpt
