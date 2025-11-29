@@ -220,3 +220,7 @@ lightning_logs/
 # Data files (large, not version-controlled)
 data/interim/
 data/processed/**/*.parquet
+
+# Thesis presentations
+*.pptx
+*.pptm  
