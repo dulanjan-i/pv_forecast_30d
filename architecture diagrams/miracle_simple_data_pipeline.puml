@@ -1,0 +1,58 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title MiRACLE Data Pipeline – Simple View
+
+' Colors
+' Data sources:  ***REMOVED***D9EDF7
+' Processing:    ***REMOVED***FCF8E3
+' Models:        ***REMOVED***E6E6FA
+' Outputs:       ***REMOVED***DFF0D8
+
+rectangle "Historical PV\n+ Weather" as HIST ***REMOVED***D9EDF7
+rectangle "Weather\nForecast API" as WAPI ***REMOVED***D9EDF7
+
+rectangle "Preprocessor A\n(historic)" as PA ***REMOVED***FCF8E3
+rectangle "Preprocessor B\n(real time)" as PB ***REMOVED***FCF8E3
+
+rectangle "LSTM Encoder\n(learn past patterns)" as LSTM ***REMOVED***E6E6FA
+rectangle "PVLib Physics\n(irradiance, POA, temp)" as PVLIB ***REMOVED***E6E6FA
+
+rectangle "Feature Store\n(combined inputs)" as FS ***REMOVED***FCF8E3
+
+rectangle "Temporal Fusion\nTransformer\n(final forecaster)" as TFT ***REMOVED***E6E6FA
+
+rectangle "PV Power Forecasts" as OUT ***REMOVED***DFF0D8
+rectangle "RL Meta Controller\n(adaptive decisions)" as RL ***REMOVED***E6E6FA
+
+' Main horizontal flow
+HIST --> PA
+PA   --> LSTM
+LSTM --> FS
+FS   --> TFT
+TFT  --> OUT
+
+PB   --> FS
+
+HIST --> PVLIB
+PVLIB --> FS
+
+' RL interactions (no labels on arrows, use note instead)
+OUT  --> RL
+WAPI --> RL
+RL   --> PB
+RL   --> TFT
+
+note left of RL
+  Monitors forecast errors and API quality.
+  Decides when to:
+   • adjust API use / cadence
+   • fine tune models
+   • trigger reforecast
+end note
+
+@enduml
