@@ -1,0 +1,45 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title Real Time Processing Pipeline
+
+' Inputs
+rectangle "Weather API\nforecasts" as WAPI #D9EDF7
+rectangle "Recent PV history\n(last 24 h)" as HIST #D9EDF7
+rectangle "PV plant metadata" as META #D9EDF7
+
+' Processing blocks
+rectangle "Preprocessor B\n(align and scale\nforecast covariates)" as PB #FCF8E3
+rectangle "Pretrained LSTM\nencoder" as LSTM #E6E6FA
+rectangle "PVLib physical model\n(forward physics features)" as PVLIB #E6E6FA
+
+' Features and model
+rectangle "Forecast covariates" as COV #F5F5F5
+rectangle "Latent temporal state" as STATE #F5F5F5
+rectangle "Physical features" as PHYS #F5F5F5
+
+rectangle "Temporal Fusion\nTransformer\n(final forecaster)" as TFT #E6E6FA
+rectangle "30 day PV power\nforecasts" as OUT #DFF0D8
+
+' Flows
+WAPI --> PB
+PB   --> COV
+
+HIST --> LSTM
+LSTM --> STATE
+
+META --> PVLIB
+PB   --> PVLIB
+PVLIB --> PHYS
+
+STATE --> TFT
+COV   --> TFT
+PHYS  --> TFT
+
+TFT --> OUT
+
+@enduml
