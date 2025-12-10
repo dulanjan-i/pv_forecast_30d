@@ -1,26 +1,34 @@
 {
-  "plant_id": "plant_01",
-  "provider_internal_id": "1_AMS",
-  "country": "DE",
-  "timezone": "Europe/Berlin",
-  "installed_capacity_kw": 746.1,
-  "latitude": 50.745526,
-  "longitude": 11.320446,
-  "tilt_deg": 20.0,
-  "azimuth_deg_sy": 17.0,
-  "azimuth_deg": 197.0,
-  "mount_type": "ground",
-  "tracker": false,
-  "raw": {
-    "technologie": "PV-Anlage",
-    "freiflaeche_aufdach": "Freifläche",
-    "solartracker_text": "nein",
-    "anzahl_module": "2.618",
-    "modultyp": "Astroenergy CHSM6610P",
-    "anzahl_wechselrichter": "16",
-    "wechselrichtertyp": "Huawei Sun2000 36-KTL",
-    "wechselrichter_leistung": "576 kWp",
-    "netzbetreiber": "50 Hertz"
-  },
-  "source": "syneco_base_data_v1"
-}
+    "plant_id": "plant_01",
+    "provider_internal_id": "1_AMS",
+  
+    "country": "DE",
+    "timezone": "Europe/Berlin",
+  
+    "installed_capacity_kw": 746.1,
+  
+    "latitude": 50.745526,
+    "longitude": 11.320446,
+  
+    "tilt_deg": 20.0,
+    "azimuth_deg_sy": 17.0,
+    "azimuth_deg": 197.0,
+  
+    "mount_type": "ground", 
+    "tracker": false,
+  
+    "raw": {
+      "technologie": "PV-Anlage",
+      "freiflaeche_aufdach": "Freifläche",
+      "solartracker_text": "nein",
+      "anzahl_module": "2618",
+      "modultyp": "Astroenergy CHSM6610P",
+      "anzahl_wechselrichter": 16,
+      "wechselrichtertyp": "Huawei Sun2000 36-KTL",
+      "wechselrichter_leistung": "576 kWp",
+      "netzbetreiber": "50 Hertz"
+    },
+  
+    "source": "syneco_base_data_v1"
+  }
+  
