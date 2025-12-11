@@ -1,6 +1,3 @@
-cd ~/pv_forecast_30d
-
-cat > backup_repo.sh << 'EOF'
 #!/usr/bin/env bash
 set -e
 
@@ -32,4 +29,3 @@ tar czf "${ARCHIVE_PATH}" \
 echo
 echo "Backup created successfully:"
 ls -lh "${ARCHIVE_PATH}"
-EOF
