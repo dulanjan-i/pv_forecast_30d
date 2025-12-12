@@ -5,7 +5,7 @@ Preprocess Open-Meteo ERA5 weather for German plants to a 15 minute UTC grid.
 
 INPUT
 - For each plant_01 .. plant_06, this script expects hourly weather from:
-    data/interim/germany/{plant_id}/historical_weather_hourly.parquet
+    Input:  data/raw/germany/{plant_id}/historical_weather_hourly.csv
 
   Each hourly parquet must contain columns at least:
     - date  (naive datetime, Europe/Berlin local time)
@@ -81,7 +81,9 @@ import pandas as pd
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-BASE_INTERIM = REPO_ROOT / "data" / "interim" / "germany"
+RAW_GER = REPO_ROOT / "data" / "raw" / "germany"
+INTERIM_GER = REPO_ROOT / "data" / "interim" / "germany"
+
 
 PLANT_IDS: List[str] = [
     "plant_01",
@@ -105,11 +107,11 @@ def preprocess_plant_weather(plant_id: str) -> Path:
     Input:  data/interim/germany/{plant_id}/historical_weather_hourly.parquet
     Output: data/interim/germany/{plant_id}_weather_15min.parquet
     """
-    hourly_path = BASE_INTERIM / plant_id / "historical_weather_hourly.parquet"
+    hourly_path = RAW_GER / plant_id / "historical_weather_hourly.csv"
     if not hourly_path.exists():
         raise FileNotFoundError(f"Hourly weather file not found for {plant_id}: {hourly_path}")
 
-    df = pd.read_parquet(hourly_path)
+    df = pd.read_csv(hourly_path)
 
     if "date" not in df.columns:
         raise ValueError(f"{plant_id}: expected 'date' column in hourly weather parquet")
@@ -124,12 +126,18 @@ def preprocess_plant_weather(plant_id: str) -> Path:
 
     df["timestamp_utc"] = (
         df["date"]
-        .dt.tz_localize(TIMEZONE_LOCAL, ambiguous="infer", nonexistent="shift_forward")
+        .dt.tz_localize(TIMEZONE_LOCAL, ambiguous="NaT", nonexistent="shift_forward")
         .dt.tz_convert(TIMEZONE_UTC)
     )
 
+    # Drop any NaT timestamps from DST ambiguity before setting index
+    df = df.dropna(subset=["timestamp_utc"])
+
     # 2. Enforce a regular 1 hour index before resampling
     df = df.set_index("timestamp_utc").sort_index()
+    
+    # Remove duplicate timestamps (e.g., from DST transitions)
+    df = df[~df.index.duplicated(keep='first')]
 
     # For safety, coerce all numeric columns to numeric
     for col in df.columns:
@@ -187,7 +195,7 @@ def preprocess_plant_weather(plant_id: str) -> Path:
     # Ensure timestamp_utc is timezone aware UTC
     df_15["timestamp_utc"] = pd.to_datetime(df_15["timestamp_utc"]).dt.tz_convert(TIMEZONE_UTC)
 
-    out_path = BASE_INTERIM / f"{plant_id}_weather_15min.parquet"
+    out_path = INTERIM_GER / f"{plant_id}_weather_15min.parquet"
     df_15.to_parquet(out_path, index=False)
     print(f"[INFO] {plant_id}: wrote {out_path} with {len(df_15)} rows")
 
