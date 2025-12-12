@@ -209,16 +209,9 @@ def save_plant_weather(plant_id: str, dfs: Dict[str, pd.DataFrame]) -> None:
     hourly.to_csv(hourly_csv, index=False)
     daily.to_csv(daily_csv, index=False)
 
-    # Parquet (interim)
-    hourly_parquet = interim_dir / "historical_weather_hourly.parquet"
-    daily_parquet = interim_dir / "historical_weather_daily.parquet"
-    hourly.to_parquet(hourly_parquet, index=False, engine="pyarrow", compression="snappy")
-    daily.to_parquet(daily_parquet, index=False, engine="pyarrow", compression="snappy")
-
     print(
         f"[OK] {plant_id}: "
         f"hourly rows={len(hourly):,}, daily rows={len(daily):,} → "
-        f"{hourly_parquet}, {daily_parquet}"
     )
 
 
