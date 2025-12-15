@@ -1,0 +1,84 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title MiRACLE v1.0 - High Level Architecture
+
+' Color scheme
+' Data sources:      #D9EDF7
+' Models / RL:       #E6E6FA
+' Processing blocks: #FCF8E3
+' Storage / outputs: #F5F5F5
+
+' -----------------------------
+' Data sources
+' -----------------------------
+package "PV Plant Data" #D9EDF7 {
+  [Historical PV Output] as HIST_PV
+  [Historical Weather] as HIST_W
+  [PV Metadata] as PVM
+}
+
+package "Weather Forecast API" #D9EDF7 {
+  [Ensemble Weather Forecasts] as W_API
+}
+
+' -----------------------------
+' Core processing blocks
+' -----------------------------
+rectangle "Preprocessor A\n(Historic preprocessing)" as PA #FCF8E3
+rectangle "Preprocessor B\n(Real time preprocessing)" as PB #FCF8E3
+
+rectangle "LSTM Encoder\n(Temporal encodings)" as LSTM #E6E6FA
+rectangle "PVLib Physical Model\n(Physics features)" as PVLIB #E6E6FA
+rectangle "Temporal Fusion Transformer\n(Final forecaster)" as TFT #E6E6FA
+
+node "RL Meta Controller\n(Double DQN)" as RL #E6E6FA
+
+' -----------------------------
+' Storage and outputs
+' -----------------------------
+database "Feature Store" as FS #F5F5F5
+database "Model and Config Store" as MS #F5F5F5
+rectangle "Predicted PV\nPower Output" as OUT #F5F5F5
+rectangle "Dashboard\n(Explainability & Ops)" as DASH #F5F5F5
+
+' -----------------------------
+' Main data flow
+' -----------------------------
+HIST_PV --> PA
+HIST_W  --> PA
+PA --> LSTM
+PA --> PVLIB
+
+LSTM --> FS
+PVLIB --> FS
+
+W_API --> PB
+PB --> FS
+
+FS --> TFT
+TFT --> OUT
+TFT --> DASH
+
+' -----------------------------
+' RL interaction (high level)
+' -----------------------------
+OUT --> RL : errors, drift
+W_API --> RL : API quality
+RL --> PB : route / cadence decisions
+RL ..> MS : store policies
+
+' -----------------------------
+' Model storage links (light)
+' -----------------------------
+LSTM ..> MS : encoder weights
+PVLIB ..> MS : physics config
+TFT  ..> MS : forecaster weights
+
+MS --> DASH
+
+@enduml

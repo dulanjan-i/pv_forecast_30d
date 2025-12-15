@@ -1,0 +1,41 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title PVLib Physical Model, Role in MiRACLE
+
+' Colors
+' Inputs:  #D9EDF7
+' Model:   #E6E6FA
+' Output:  #DFF0D8
+
+rectangle "PV plant metadata\n(location, tilt, azimuth,\nmodule parameters)" as META #D9EDF7
+rectangle "Weather time series\nor forecasts\n(GHI, DNI, temp, wind)" as WEA #D9EDF7
+
+rectangle "PVLib physical model\n(irradiance and temperature\nsimulation)" as PVLIB #E6E6FA
+
+rectangle "Physical feature vector\n(clearsky, POA,\ncell temperature etc.)" as PHYS #DFF0D8
+
+META --> PVLIB
+WEA  --> PVLIB
+PVLIB --> PHYS
+
+note bottom of PVLIB
+  Encodes domain physics 
+  for the plant.
+  Produces consistent 
+  irradiance and
+  temperature signals 
+  across time.
+end note
+
+note bottom of PHYS
+  Used together with LSTM encodings
+  and covariates as input features
+  to the TFT forecaster.
+end note
+
+@enduml
