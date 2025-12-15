@@ -1,0 +1,77 @@
+{
+  "scaled_features": [
+    "poa_irradiance",
+    "temperature_2m",
+    "relative_humidity_2m",
+    "cloud_cover",
+    "wind_speed_10m",
+    "wind_direction_10m",
+    "surface_pressure",
+    "precipitation",
+    "weather_code",
+    "shortwave_radiation_instant",
+    "direct_radiation_instant",
+    "diffuse_radiation_instant",
+    "direct_normal_irradiance_instant",
+    "global_tilted_irradiance_instant"
+  ],
+  "target": "power_norm",
+  "stats": {
+    "poa_irradiance": {
+      "mean": 116.08402914441427,
+      "std": 167.53535691335645
+    },
+    "temperature_2m": {
+      "mean": 12.652338812037257,
+      "std": 7.96018709632481
+    },
+    "relative_humidity_2m": {
+      "mean": 72.11641838573523,
+      "std": 16.043585511803656
+    },
+    "cloud_cover": {
+      "mean": 64.08858492102263,
+      "std": 37.49641161749649
+    },
+    "wind_speed_10m": {
+      "mean": 9.579853401072791,
+      "std": 5.438010678290624
+    },
+    "wind_direction_10m": {
+      "mean": 191.49696325972968,
+      "std": 99.4610788308731
+    },
+    "surface_pressure": {
+      "mean": 975.5890526751344,
+      "std": 8.194348119815055
+    },
+    "precipitation": {
+      "mean": 0.08219508223416382,
+      "std": 0.2833808528284749
+    },
+    "weather_code": {
+      "mean": 12.084383650871194,
+      "std": 20.695497349683187
+    },
+    "shortwave_radiation_instant": {
+      "mean": 155.6619850248624,
+      "std": 222.36798652931023
+    },
+    "direct_radiation_instant": {
+      "mean": 94.92661696875973,
+      "std": 164.5969380671404
+    },
+    "diffuse_radiation_instant": {
+      "mean": 60.73536801676079,
+      "std": 78.5935237126485
+    },
+    "direct_normal_irradiance_instant": {
+      "mean": 172.07266099812148,
+      "std": 254.0681133438044
+    },
+    "global_tilted_irradiance_instant": {
+      "mean": 116.08402914441427,
+      "std": 167.53535691335645
+    }
+  }
+}
