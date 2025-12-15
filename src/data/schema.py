@@ -138,13 +138,13 @@ FARM2107_TO_CANONICAL: Dict[str, str] = {
     "poa_irradiance": "poa_irradiance",
 }
 
-# Germany: fill this later once you confirm exact column names.
+# Germany: 
 GERMANY_TO_CANONICAL: Dict[str, str] = {
-    # Example placeholders:
-    # "timestamp_utc": TIME_COL,
-    # "power_norm": POWER_NORM_COL,
-    # "power_kw": POWER_KW_COL,
+    "timestamp_utc": TIME_COL,
+    "power_kw": POWER_KW_COL,
+    "power_norm": POWER_NORM_COL,
 }
+
 
 
 # -----------------------------
