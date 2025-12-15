@@ -1,0 +1,70 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title MiRACLE Data Pipeline - Under the Hood
+
+' Color scheme
+' Data tables / storage: #F5F5F5
+' Processing:            #FCF8E3
+' Models / RL:           #E6E6FA
+' Outputs:               #DFF0D8
+
+' -----------------------------
+' Historical data and early pipeline
+' -----------------------------
+database "Historical Data Tables\n- PV Output\n- Weather Variables" as HIST #F5F5F5
+
+rectangle "Preprocessor A\n(Clean and format)" as PA #FCF8E3
+rectangle "LSTM Encoder\n(Temporal features)" as LSTM #E6E6FA
+database "Feature Store" as FS #F5F5F5
+
+HIST --> PA
+PA   --> LSTM
+LSTM --> FS
+
+' -----------------------------
+' Core models and RL roles
+' -----------------------------
+rectangle "PVLib Model\n(Physics)" as PVLIB #E6E6FA
+rectangle "TFT Forecast Model" as TFT #E6E6FA
+rectangle "Role 4: Input Selection" as ROLE4IN #E6E6FA
+rectangle "RL Roles 1-3\n(Adaptive advisors)" as RL123 #E6E6FA
+
+FS --> PVLIB
+FS --> TFT
+FS --> ROLE4IN
+FS --> RL123
+
+' -----------------------------
+' Preprocessor B and TFT inputs
+' -----------------------------
+rectangle "Preprocessor B\n(Optional real time step)" as PB #FCF8E3
+database "TFT Input Features" as TFTIN #F5F5F5
+
+PVLIB --> PB
+PB    --> TFTIN
+TFT   --> TFTIN
+ROLE4IN --> TFTIN
+
+' -----------------------------
+' TFT outputs, metrics, RL meta controller
+' -----------------------------
+database "TFT Output Table\n(Forecasts + confidence)" as TFTOUT #F5F5F5
+database "Error Metrics Table" as ERR #F5F5F5
+node "RL Meta Controller\n(Roles 1-4 SAR decisions)" as RL #E6E6FA
+rectangle "Updated System / Forecast" as UPDATED #DFF0D8
+
+TFTIN  --> TFTOUT
+TFTOUT --> ERR
+ERR    --> RL
+RL123  --> RL
+
+RL --> TFTOUT : update forecast table
+RL --> PVLIB  : adjust physics params
+RL --> UPDATED
+
+@enduml

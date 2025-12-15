@@ -1,0 +1,44 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title Temporal Fusion Transformer, Role in MiRACLE
+
+' Colors
+' Inputs:  #D9EDF7
+' Model:   #E6E6FA
+' Output:  #DFF0D8
+
+
+rectangle "Physical features\nfrom PVLib" as PHYS #D9EDF7
+rectangle "Past covariates\n(historic PV + weather)\n as LSTM Encoding" as PAST #D9EDF7
+rectangle "Future covariates\n(weather forecast,\ncalendar features)\nfrom API polling" as FUT #D9EDF7
+
+rectangle "Temporal Fusion Transformer\n(variable selection + attention\nmulti horizon decoder)" as TFT #E6E6FA
+
+rectangle "30 day PV power forecast\n(multi horizon sequence)" as OUT #DFF0D8
+
+
+PHYS --> TFT
+PAST --> TFT
+FUT  --> TFT
+
+TFT --> OUT
+
+note bottom of TFT
+  Learns which variables and time steps
+  matter most and fuses latent temporal
+  patterns, physics features, and
+  forecast covariates.
+end note
+
+note bottom of OUT
+  Forecast sequence that feeds the
+  evaluation tables, RL controller,
+  and dashboard in the MiRACLE pipeline.
+end note
+
+@enduml

@@ -1,0 +1,184 @@
+@startuml
+' -----------------------------
+' Styling
+' -----------------------------
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam databaseBackgroundColor #F5F5F5
+skinparam databaseBorderColor #555
+skinparam rectangleBorderColor #0066cc
+skinparam rectangleFontColor black
+skinparam shadowing false
+skinparam linetype ortho
+
+title MiRACLE V1.0 Architecture
+
+' -----------------------------
+' Color Legend
+' -----------------------------
+' Inputs / Data Sources: #D9EDF7 (light blue)
+' Models: #E6E6FA (lavender)
+' Intermediate outputs / pipeline: #FCF8E3 (light yellow)
+' Final outputs: #DFF0D8 (light green)
+' Error / Metrics: #F2DEDE (light red)
+' Storage / DB: #F5F5F5 (light gray)
+
+' -----------------------------
+' Data Sources (top)
+' -----------------------------
+package "Data Source 1: PV Plant" as DS1 #D9EDF7 {
+    [Historical PV Output] as HIST_PV
+    [Historical Weather Data] as HIST_W
+    [PV Plant Metadata] as PVM
+}
+
+package "Data Source 2: OpenMeteo (Forecasts)" as DS2 #D9EDF7 {
+    [Forecast API] as FORECAST_API
+    package "Ensemble API" as ENS {
+        [GFS Ensemble] as GFS
+        [ICON EPS] as ICON_EPS
+        [ICON EU] as ICON_EU
+        [ICON D2] as ICON_D2
+        [ECMWF IFS] as ECMWF_IFS
+        [ECMWF AIFS] as ECMWF_AIFS
+        [GEM Global] as GEM
+    }
+}
+
+' -----------------------------
+' RL Meta-controller (center top)
+' -----------------------------
+node "RL Meta-Controller\n(Adaptive Control Loop)" as RL #E6E6FA
+
+' -----------------------------
+' Historical Store + Preprocessors
+' -----------------------------
+database "Historical Store" as HDB #F5F5F5
+rectangle "Preprocessor A\n(Data Normalization)" as PA #FCF8E3
+rectangle "Preprocessor B\n(Real-time Preprocessing)" as PB #FCF8E3
+
+' -----------------------------
+' Feature / Model / Metadata / Error / Output stores (DB icons)
+' -----------------------------
+database "Feature Store" as FS #F5F5F5
+database "Model Store" as MS #F5F5F5
+database "Metadata Table\n(Pipeline & Model Metadata)" as MT #F5F5F5
+database "Error Metrics Table" as EM #F2DEDE
+database "TFT Output Table" as OT #FCF8E3
+
+' -----------------------------
+' Models & Pipeline Blocks (middle)
+' -----------------------------
+rectangle "LSTM Encoder\n(Temporal Encodings)" as LSTM #E6E6FA
+rectangle "PVLib Physical Model\n(Baseline physics simulation)" as PVLIB #E6E6FA
+rectangle "Temporal Fusion Transformer\n(Main Forecasting Model)" as TFT #E6E6FA
+
+' -----------------------------
+' Dashboard & Final Output (bottom)
+' -----------------------------
+rectangle "Streamlit Dashboard\n(Explainability & Decision Support)" as DASH #FCF8E3
+rectangle "Predicted PV Power Output" as OUT #DFF0D8
+
+' -----------------------------
+' Main arrow thickness
+' -----------------------------
+skinparam ArrowThickness 3
+
+' -----------------------------
+' Connections: Historical data -> HDB -> PA -> LSTM -> Feature Store
+' -----------------------------
+HIST_PV --> HDB
+HIST_W  --> HDB
+HDB --> PA
+PA --> LSTM
+LSTM --> FS
+
+' -----------------------------
+' PV plant metadata -> PVLib
+' -----------------------------
+PVM --> PVLIB
+
+' -----------------------------
+' Forecasts/Ensembles -> RL (thin top-aligned arrows)
+' -----------------------------
+skinparam ArrowThickness 1
+FORECAST_API -down-> RL
+GFS          -down-> RL
+ICON_EPS     -down-> RL
+ICON_EU      -down-> RL
+ICON_D2      -down-> RL
+ECMWF_IFS    -down-> RL
+ECMWF_AIFS   -down-> RL
+GEM          -down-> RL
+
+' -----------------------------
+' RL outputs: Preprocessor B -> Feature Store
+' -----------------------------
+skinparam ArrowThickness 3
+RL --> PB
+PB --> FS
+
+' -----------------------------
+' PVLib outputs -> Feature Store
+' -----------------------------
+PVLIB --> FS
+
+' -----------------------------
+' TFT inputs (parallel): FS + PB + PVLib
+' -----------------------------
+FS --> TFT
+PB --> TFT
+PVLIB --> TFT
+
+' -----------------------------
+' TFT -> Output table -> Dashboard & Error Metrics -> RL feedback
+' -----------------------------
+TFT --> OT
+OT --> DASH
+OT --> EM
+EM --> RL
+
+' -----------------------------
+' Dashboard reads from OT, EM, MS, MT
+' -----------------------------
+MS --> DASH
+MT --> DASH
+EM --> DASH
+OT --> DASH
+
+' -----------------------------
+' Output saved from TFT Output Table
+' -----------------------------
+OT --> OUT
+
+' -----------------------------
+' Model store dotted links from all models and RL with annotations
+' RL → MS dotted line now comes from bottom of RL
+' -----------------------------
+LSTM ..> MS : store weights/encodings
+PVLIB ..> MS : store configs
+TFT ..> MS : store weights/confidence
+RL ..down..> MS : store policies
+
+' -----------------------------
+' Model Store contains pipeline metadata
+' -----------------------------
+MS --> MT : contains pipeline & model metadata
+
+' -----------------------------
+' Hidden positioning hints to keep top-to-bottom layout
+' -----------------------------
+HIST_PV -[hidden]-> HIST_W
+HIST_W -[hidden]-> FORECAST_API
+RL -[hidden]-> PB
+MS -[hidden]-> MT
+RL -[hidden]-> EM
+
+' -----------------------------
+' Optional: ensure LSTM / PVLIB / TFT appear visually grouped
+' -----------------------------
+LSTM -[hidden]-> PVLIB
+PVLIB -[hidden]-> TFT
+LSTM -[hidden]-> TFT
+
+@enduml
