@@ -1,0 +1,57 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title Training vs Inference Strategy
+
+' Colors
+' Data:    #D9EDF7
+' Models:  #E6E6FA
+' Outputs: #DFF0D8
+
+package "Training phase (offline)" #FFFFFF {
+  rectangle "Full historical data\n(PV + weather)" as HIST_T #D9EDF7
+  rectangle "Windowing\nmany 96 step\nhistory windows" as WIN_T #D9EDF7
+  rectangle "LSTM encoder\n(pretrained + adapted)" as LSTM_T #E6E6FA
+  rectangle "PVLib physics\non historical weather" as PVLIB_T #E6E6FA
+  rectangle "TFT training\non many samples" as TFT_T #E6E6FA
+  rectangle "Trained model\nparameters" as MODEL_T #DFF0D8
+
+  HIST_T --> WIN_T
+  WIN_T  --> LSTM_T
+  LSTM_T --> TFT_T
+
+  HIST_T --> PVLIB_T
+  PVLIB_T --> TFT_T
+
+  TFT_T --> MODEL_T
+}
+
+package "Inference phase (online)" #FFFFFF {
+  rectangle "Latest 96 step\nhistory window\n(target plant)" as HIST_I #D9EDF7
+  rectangle "Weather API\nforecasts" as WAPI_I #D9EDF7
+  rectangle "Preprocessor B\nalign and scale" as PB_I #D9EDF7
+
+  rectangle "LSTM encoder\n(using trained weights)" as LSTM_I #E6E6FA
+  rectangle "PVLib physics\non forecast weather" as PVLIB_I #E6E6FA
+  rectangle "TFT inference\n(use trained model)" as TFT_I #E6E6FA
+  rectangle "30 day PV power\nforecast" as OUT_I #DFF0D8
+  node "RL meta controller" as RL_I #E6E6FA
+
+  HIST_I --> LSTM_I
+  LSTM_I --> TFT_I
+
+  WAPI_I --> PB_I
+  PB_I --> PVLIB_I
+  PVLIB_I --> TFT_I
+
+  TFT_I --> OUT_I
+
+  OUT_I --> RL_I
+  WAPI_I --> RL_I
+}
+
+@enduml
