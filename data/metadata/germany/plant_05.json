@@ -1,0 +1,26 @@
+{
+  "plant_id": "plant_05",
+  "provider_internal_id": "5_SCW",
+  "country": "DE",
+  "timezone": "Europe/Berlin",
+  "installed_capacity_kw": 739.2,
+  "latitude": 51.823218,
+  "longitude": 13.229775,
+  "tilt_deg": 20.0,
+  "azimuth_deg_sy": -1.0,
+  "azimuth_deg": 179.0,
+  "mount_type": "ground",
+  "tracker": false,
+  "raw": {
+    "technologie": "PV-Anlage",
+    "freiflaeche_aufdach": "Freifläche",
+    "solartracker_text": "nein",
+    "anzahl_module": null,
+    "modultyp": "Huawei Sun2000-36-KTL",
+    "anzahl_wechselrichter": null,
+    "wechselrichtertyp": null,
+    "wechselrichter_leistung": null,
+    "netzbetreiber": "50 Hertz"
+  },
+  "source": "syneco_base_data_v1"
+}
