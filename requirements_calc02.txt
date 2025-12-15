@@ -1,0 +1,66 @@
+# Requirements for calc02 VM (NVIDIA L4 GPUs, CUDA 12.6/12.8, Python 3.12)
+# Install with: pip install -r requirements_calc02.txt
+#
+# Already installed in ~/.venvs/pvforecast:
+# - torch==2.5.1+cu124
+# - torchvision==0.20.1+cu124
+# - torchaudio==2.5.1+cu124
+# - numpy==2.3.3
+# - pillow==11.3.0
+
+# Core scientific computing (compatible with numpy 2.3.3)
+pandas>=2.2.0
+scipy>=1.14.0
+scikit-learn>=1.5.0
+
+# Visualization
+matplotlib>=3.9.0
+seaborn>=0.13.0
+plotly>=5.24.0
+
+# PyTorch ecosystem (already have torch 2.5.1+cu124)
+# Note: torchmetrics installed automatically with pytorch-lightning
+pytorch-lightning==2.4.0
+
+# Gradient boosting
+xgboost>=2.1.0
+lightgbm>=4.5.0
+
+# Hyperparameter optimization
+optuna>=4.1.0
+
+# Solar/PV specific
+pvlib>=0.11.0
+
+# Data formats
+xarray>=2024.11.0
+netCDF4>=1.7.0
+pyarrow>=18.0.0
+
+# Model interpretability
+shap>=0.46.0
+
+# Web app (if needed)
+streamlit>=1.40.0
+altair>=5.4.0
+pydeck>=0.9.0
+
+# Utilities
+tqdm>=4.67.0
+joblib>=1.4.0
+requests>=2.32.0
+python-dotenv>=1.0.0
+
+# Image processing
+opencv-python>=4.10.0
+scikit-image>=0.24.0
+
+# Jupyter
+jupyterlab>=4.3.0
+ipywidgets>=8.1.0
+notebook>=7.3.0
+
+# Development tools
+black>=24.0.0
+flake8>=7.0.0
+pytest>=8.3.0
