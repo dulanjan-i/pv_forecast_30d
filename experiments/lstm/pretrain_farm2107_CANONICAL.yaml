@@ -1,0 +1,61 @@
+# experiments/lstm/pretrain_farm2107_CANONICAL.yaml
+# 
+# CANONICAL LSTM ENCODER CONFIGURATION FOR FARM 2107
+# Based on hyperparameter sweep results (2024-11-24)
+# Best config: h64_l2_lr1em03 → RMSE = 0.040388
+#
+# This configuration achieved the lowest validation RMSE across a grid of:
+# - hidden_size: [32, 64, 128]
+# - num_layers: [1, 2]
+# - learning_rate: [5e-4, 1e-3]
+#
+# Use this as the baseline LSTM encoder for:
+# - Transfer learning to other farms
+# - Feature extraction for TFT ensemble
+# - Thesis performance comparisons
+
+experiment:
+  name: "farm2107_pretrain_canonical"
+  tag: "h64_l2_lr1em03_CANONICAL"
+
+paths:
+  output_dir: "experiments/lstm/runs/farm2107_CANONICAL"
+
+data:
+  train_path: "data/processed/pretraining/farm2107_pretrain_train.parquet"
+  val_path: "data/processed/pretraining/farm2107_pretrain_val.parquet"
+  time_col: "measured_on"
+  id_col: null                # Single farm, no grouping needed
+  feature_cols:
+    - pv_power_norm           # autoregressive input
+    - poa_irradiance
+    - temperature_2m
+    - relative_humidity_2m
+    - precipitation
+    - weather_code
+    - cloud_cover
+    - wind_speed_10m
+    - wind_direction_10m
+    - shortwave_radiation_instant
+    - direct_radiation_instant
+    - diffuse_radiation_instant
+    - direct_normal_irradiance_instant
+    - global_tilted_irradiance_instant
+    - surface_pressure
+  target_col: "pv_power_norm"
+  window_size: 96          # encoder length (24h @ 15-min)
+  horizon: 1               # next-step prediction for pretraining
+
+model:
+  hidden_size: 64          # ✓ Validated optimal
+  num_layers: 2            # ✓ Validated optimal
+  dropout: 0.1
+
+training:
+  batch_size: 256
+  max_epochs: 20
+  learning_rate: 1e-3      # ✓ Validated optimal (not 5e-4)
+  weight_decay: 1e-4
+  gradient_clip_val: 1.0
+  gpus: 1
+  num_workers: 4           # Restore to 4 for single-run (no parallel contention)
