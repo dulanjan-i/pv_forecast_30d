@@ -205,3 +205,44 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+***REMOVED***datasets and data files
+*.csv
+*.xlsx
+*.xls
+*.zip
+*.parquet ***REMOVED*** Training artifacts
+experiments/lstm/runs/
+experiments/lstm/encoders/*.pt
+experiments/lstm/encoders/*.ckpt
+lightning_logs/
+
+***REMOVED*** Data files (large, not version-controlled)
+data/interim/
+data/processed/**/*.parquet
+
+***REMOVED***backup files
+_backup*/
+*.tar.gz
+*.bak
+*.tmp
+*.swp
+
+***REMOVED***datasets and data files
+*.csv
+*.xlsx
+*.xls
+*.zip
+*.parquet ***REMOVED*** Training artifacts
+experiments/lstm/runs/
+experiments/lstm/encoders/*.pt
+experiments/lstm/encoders/*.ckpt
+lightning_logs/
+
+***REMOVED*** Data files (large, not version-controlled)
+data/interim/
+data/processed/**/*.parquet
+
+***REMOVED*** Thesis presentations
+*.pptx
+*.pptm  
