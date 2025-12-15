@@ -1,0 +1,12 @@
+# Experiment 01: Baseline LSTM
+model:
+  input_size: 10
+  hidden_size: 64
+  num_layers: 2
+  output_size: 1
+training:
+  batch_size: 32
+  epochs: 50
+  learning_rate: 0.001
+data:
+  source: data/processed/sample.csv
