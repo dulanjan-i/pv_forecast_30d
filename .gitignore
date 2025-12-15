@@ -221,6 +221,28 @@ lightning_logs/
 data/interim/
 data/processed/**/*.parquet
 
+#backup files
+_backup*/
+*.tar.gz
+*.bak
+*.tmp
+*.swp
+
+#datasets and data files
+*.csv
+*.xlsx
+*.xls
+*.zip
+*.parquet # Training artifacts
+experiments/lstm/runs/
+experiments/lstm/encoders/*.pt
+experiments/lstm/encoders/*.ckpt
+lightning_logs/
+
+# Data files (large, not version-controlled)
+data/interim/
+data/processed/**/*.parquet
+
 # Thesis presentations
 *.pptx
 *.pptm  
