@@ -1,0 +1,44 @@
+name: pvforecast_hpc
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+
+  # Core scientific stack
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - pyarrow
+  - xarray
+  - netCDF4
+  - tqdm
+  - requests
+  - python-dotenv
+  - joblib
+
+  # PV / ML specific
+  - pvlib
+  - xgboost
+  - lightgbm
+
+  # GPU PyTorch stack
+  - pytorch=2.4.0
+  - torchvision=0.19.0
+  - torchaudio=2.4.0
+  - pytorch-cuda=12.1
+
+  # Lightning ecosystem
+  - pytorch-lightning
+  - torchmetrics
+  - fsspec
+  - lightning-utilities
+
+  # Jupyter only if you really want it here
+  - jupyterlab

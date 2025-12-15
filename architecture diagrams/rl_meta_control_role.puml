@@ -1,0 +1,44 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title RL Meta Controller in MiRACLE
+
+rectangle "MiRACLE pipeline\nLSTM + PVLib + TFT" as PIPE #D9EDF7
+
+rectangle "State signals\nerror metrics\nAPI health\ndata quality\nresource load" as STATE #F5F5F5
+
+rectangle "Role 1\naccuracy and drift" as R1 #E6E6FA
+rectangle "Role 2\ncadence planner" as R2 #E6E6FA
+rectangle "Role 3\ndata gatekeeper" as R3 #E6E6FA
+
+rectangle "Role 4\nglobal executive\nDouble DQN" as R4 #E6E6FA
+
+rectangle "Actions on pipeline\ndo nothing\nswitch API\nfine tune models\nadjust PVLib\nreforecast / retrain" as ACT #DFF0D8
+
+PIPE --> STATE
+
+STATE --> R1
+STATE --> R2
+STATE --> R3
+
+R1 --> R4
+R2 --> R4
+R3 --> R4
+
+R4 --> ACT
+ACT --> PIPE
+
+'note left of ACT
+  'Examples:
+   '• do nothing
+  ' • switch weather API route
+  ' • fine tune TFT or LSTM
+  ' • adjust PVLib parameters
+  ' • trigger reforecast or retrain
+'end note
+
+@enduml

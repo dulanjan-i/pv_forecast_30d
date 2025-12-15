@@ -1,0 +1,37 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title LSTM Encoder – Role in MiRACLE
+
+' Colors
+' Inputs:  #D9EDF7
+' Model:   #E6E6FA
+' Output:  #DFF0D8
+
+rectangle "Sliding window of history\n(past PV + weather,\n≈24 h at 15 min)" as WIN #D9EDF7
+
+rectangle "Stacked LSTM Encoder\n(pretrained global core\n+ site adapted layers)" as LSTM #E6E6FA
+
+rectangle "Latent temporal encoding\n(vector passed to TFT\nas additional feature)" as ENC #DFF0D8
+
+WIN --> LSTM
+LSTM --> ENC
+
+note bottom of LSTM
+  Learns generic temporal
+  response patterns:
+   • diurnal cycles and ramps
+   • lagged relationships PV ↔ weather
+end note
+
+note bottom of ENC
+  Used alongside PVLib and covariates
+  as input features to the TFT in
+  both training and inference.
+end note
+
+@enduml

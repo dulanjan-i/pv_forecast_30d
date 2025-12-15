@@ -1,0 +1,34 @@
+@startuml
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam ArrowThickness 3
+
+title Two Stage Historical Training
+
+' Colors
+' Data sources: #D9EDF7
+' Models:       #E6E6FA
+' Outputs:      #DFF0D8
+
+rectangle "       Global Historical Data\nDataset: PVDAQ System 2107" as GLOBAL #D9EDF7
+rectangle "Site specific Historical Data\n        German PV Plant" as LOCAL #D9EDF7
+
+package "LSTM Encoder" as LSTMPKG #E6E6FA {
+  rectangle "Global core\n(pretrained, frozen)" as CORE
+  rectangle "Site adapter\n(fine tuned)" as ADAPT
+}
+
+rectangle "Temporal Encodings\n     (used by TFT)" as ENC #DFF0D8
+
+' Stage 1: global pretraining
+GLOBAL --> CORE
+
+' Stage 2: site specific adaptation
+LOCAL --> ADAPT
+
+CORE --> ADAPT : transfer weights
+ADAPT --> ENC
+
+@enduml
