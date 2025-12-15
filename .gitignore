@@ -220,3 +220,10 @@ lightning_logs/
 ***REMOVED*** Data files (large, not version-controlled)
 data/interim/
 data/processed/**/*.parquet
+
+***REMOVED***backup files
+_backup*/
+*.tar.gz
+*.bak
+*.tmp
+*.swp
