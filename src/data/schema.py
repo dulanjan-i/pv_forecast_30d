@@ -41,22 +41,23 @@ POWER_NORM_COL: str = "power_norm"
 LSTM_INPUT_FEATURES: List[str] = [
     # autoregressive PV
     POWER_NORM_COL,
-    # irradiance / POA feature (Farm2107 used poa_irradiance)
+    # irradiance / POA feature
     "poa_irradiance",
-    # weather features
+    # weather features (ORDER LOCKED - matches farm2107_CANONICAL pretrained weights)
     "temperature_2m",
     "relative_humidity_2m",
-    "cloud_cover",
-    "wind_speed_10m",
-    "wind_direction_10m",
-    "surface_pressure",
-    "precipitation",
-    "weather_code",
+    "precipitation",              # ← Index 4 (pretrained weight expects this here)
+    "weather_code",               # ← Index 5
+    "cloud_cover",                # ← Index 6
+    "wind_speed_10m",             # ← Index 7
+    "wind_direction_10m",         # ← Index 8
+    # radiation features
     "shortwave_radiation_instant",
     "direct_radiation_instant",
     "diffuse_radiation_instant",
     "direct_normal_irradiance_instant",
     "global_tilted_irradiance_instant",
+    "surface_pressure",           # ← Index 14 (last feature)
 ]
 
 
