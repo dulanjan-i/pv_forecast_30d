@@ -51,7 +51,7 @@ model:
 training:
   batch_size: 512          # ✓ Optimized for L4 GPUs (24GB) - 2x stage 1
   max_epochs: 20           # Stage 2 typically needs fewer epochs (fine-tuning)
-  learning_rate: 7e-4      # Scaled up for larger batch (sqrt rule: 5e-4 * sqrt(2))
+  learning_rate: 1e-4      # Conservative for transfer learning fine-tuning
   weight_decay: 1e-4
   gradient_clip_val: 1.0
   gpus: 1                  # Single GPU per plant (parallel across 4 L4s on calc02)
