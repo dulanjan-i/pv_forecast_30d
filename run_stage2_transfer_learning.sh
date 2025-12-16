@@ -26,7 +26,7 @@ echo -e "${GREEN}========================================${NC}"
 echo ""
 echo "Pretrained weights: experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"
 echo "Target: 6 Germany plants (plant_01 through plant_06)"
-echo "Hardware: 4x NVIDIA L4 GPUs"
+echo "Hardware: 2x NVIDIA L4 GPUs (3 waves)"
 echo ""
 
 # Verify pretrained weights exist
@@ -84,11 +84,11 @@ sleep 2  # Give terminals time to open
 echo ""
 
 echo -e "${YELLOW}========================================${NC}"
-echo -e "${YELLOW}WAVE 1: Plants 01-04 (Parallel on 4 GPUs)${NC}"
+echo -e "${YELLOW}WAVE 1: Plants 01-02 (Parallel on 2 GPUs)${NC}"
 echo -e "${YELLOW}========================================${NC}"
 echo ""
 
-# Wave 1: 4 plants in parallel
+# Wave 1: 2 plants in parallel
 CUDA_VISIBLE_DEVICES=0 python3 src/training/pretrain_lstm.py \
     --config experiments/lstm/germany/pretrain_plant_01.yaml \
     > "$LOG_DIR/plant_01.log" 2>&1 &
@@ -101,21 +101,9 @@ CUDA_VISIBLE_DEVICES=1 python3 src/training/pretrain_lstm.py \
 PID2=$!
 echo "  [GPU 1] Plant 02 started (PID: $PID2)"
 
-CUDA_VISIBLE_DEVICES=2 python3 src/training/pretrain_lstm.py \
-    --config experiments/lstm/germany/pretrain_plant_03.yaml \
-    > "$LOG_DIR/plant_03.log" 2>&1 &
-PID3=$!
-echo "  [GPU 2] Plant 03 started (PID: $PID3)"
-
-CUDA_VISIBLE_DEVICES=3 python3 src/training/pretrain_lstm.py \
-    --config experiments/lstm/germany/pretrain_plant_04.yaml \
-    > "$LOG_DIR/plant_04.log" 2>&1 &
-PID4=$!
-echo "  [GPU 3] Plant 04 started (PID: $PID4)"
-
 echo ""
 echo "Waiting for Wave 1 to complete..."
-echo "  → Logs: $LOG_DIR/plant_0{1,2,3,4}.log"
+echo "  → Logs: $LOG_DIR/plant_0{1,2}.log"
 echo "  → Monitor: tail -f $LOG_DIR/plant_01.log"
 echo ""
 
@@ -124,17 +112,11 @@ wait $PID1
 EXIT1=$?
 wait $PID2
 EXIT2=$?
-wait $PID3
-EXIT3=$?
-wait $PID4
-EXIT4=$?
 
 # Check Wave 1 results
 WAVE1_FAILED=0
 [ $EXIT1 -ne 0 ] && echo -e "${RED}✗ Plant 01 FAILED (exit code: $EXIT1)${NC}" && WAVE1_FAILED=1 || echo -e "${GREEN}✓ Plant 01 completed${NC}"
 [ $EXIT2 -ne 0 ] && echo -e "${RED}✗ Plant 02 FAILED (exit code: $EXIT2)${NC}" && WAVE1_FAILED=1 || echo -e "${GREEN}✓ Plant 02 completed${NC}"
-[ $EXIT3 -ne 0 ] && echo -e "${RED}✗ Plant 03 FAILED (exit code: $EXIT3)${NC}" && WAVE1_FAILED=1 || echo -e "${GREEN}✓ Plant 03 completed${NC}"
-[ $EXIT4 -ne 0 ] && echo -e "${RED}✗ Plant 04 FAILED (exit code: $EXIT4)${NC}" && WAVE1_FAILED=1 || echo -e "${GREEN}✓ Plant 04 completed${NC}"
 
 if [ $WAVE1_FAILED -eq 1 ]; then
     echo ""
@@ -144,11 +126,52 @@ fi
 
 echo ""
 echo -e "${YELLOW}========================================${NC}"
-echo -e "${YELLOW}WAVE 2: Plants 05-06 (Parallel on 2 GPUs)${NC}"
+echo -e "${YELLOW}WAVE 2: Plants 03-04 (Parallel on 2 GPUs)${NC}"
 echo -e "${YELLOW}========================================${NC}"
 echo ""
 
 # Wave 2: 2 plants in parallel
+CUDA_VISIBLE_DEVICES=0 python3 src/training/pretrain_lstm.py \
+    --config experiments/lstm/germany/pretrain_plant_03.yaml \
+    > "$LOG_DIR/plant_03.log" 2>&1 &
+PID3=$!
+echo "  [GPU 0] Plant 03 started (PID: $PID3)"
+
+CUDA_VISIBLE_DEVICES=1 python3 src/training/pretrain_lstm.py \
+    --config experiments/lstm/germany/pretrain_plant_04.yaml \
+    > "$LOG_DIR/plant_04.log" 2>&1 &
+PID4=$!
+echo "  [GPU 1] Plant 04 started (PID: $PID4)"
+
+echo ""
+echo "Waiting for Wave 2 to complete..."
+echo "  → Logs: $LOG_DIR/plant_0{3,4}.log"
+echo ""
+
+# Wait for all Wave 2 jobs
+wait $PID3
+EXIT3=$?
+wait $PID4
+EXIT4=$?
+
+# Check Wave 2 results
+WAVE2_FAILED=0
+[ $EXIT3 -ne 0 ] && echo -e "${RED}✗ Plant 03 FAILED (exit code: $EXIT3)${NC}" && WAVE2_FAILED=1 || echo -e "${GREEN}✓ Plant 03 completed${NC}"
+[ $EXIT4 -ne 0 ] && echo -e "${RED}✗ Plant 04 FAILED (exit code: $EXIT4)${NC}" && WAVE2_FAILED=1 || echo -e "${GREEN}✓ Plant 04 completed${NC}"
+
+if [ $WAVE2_FAILED -eq 1 ]; then
+    echo ""
+    echo -e "${RED}Wave 2 had failures. Check logs in $LOG_DIR${NC}"
+    echo -e "${YELLOW}Continuing with Wave 3 anyway...${NC}"
+fi
+
+echo ""
+echo -e "${YELLOW}=========================== + $WAVE3_FAILED=============${NC}"
+echo -e "${YELLOW}WAVE 3: Plants 05-06 (Parallel on 2 GPUs)${NC}"
+echo -e "${YELLOW}========================================${NC}"
+echo ""
+
+# Wave 3: 2 plants in parallel
 CUDA_VISIBLE_DEVICES=0 python3 src/training/pretrain_lstm.py \
     --config experiments/lstm/germany/pretrain_plant_05.yaml \
     > "$LOG_DIR/plant_05.log" 2>&1 &
@@ -162,20 +185,20 @@ PID6=$!
 echo "  [GPU 1] Plant 06 started (PID: $PID6)"
 
 echo ""
-echo "Waiting for Wave 2 to complete..."
+echo "Waiting for Wave 3 to complete..."
 echo "  → Logs: $LOG_DIR/plant_0{5,6}.log"
 echo ""
 
-# Wait for all Wave 2 jobs
+# Wait for all Wave 3 jobs
 wait $PID5
 EXIT5=$?
 wait $PID6
 EXIT6=$?
 
-# Check Wave 2 results
-WAVE2_FAILED=0
-[ $EXIT5 -ne 0 ] && echo -e "${RED}✗ Plant 05 FAILED (exit code: $EXIT5)${NC}" && WAVE2_FAILED=1 || echo -e "${GREEN}✓ Plant 05 completed${NC}"
-[ $EXIT6 -ne 0 ] && echo -e "${RED}✗ Plant 06 FAILED (exit code: $EXIT6)${NC}" && WAVE2_FAILED=1 || echo -e "${GREEN}✓ Plant 06 completed${NC}"
+# Check Wave 3 results
+WAVE3_FAILED=0
+[ $EXIT5 -ne 0 ] && echo -e "${RED}✗ Plant 05 FAILED (exit code: $EXIT5)${NC}" && WAVE3_FAILED=1 || echo -e "${GREEN}✓ Plant 05 completed${NC}"
+[ $EXIT6 -ne 0 ] && echo -e "${RED}✗ Plant 06 FAILED (exit code: $EXIT6)${NC}" && WAVE3_FAILED=1 || echo -e "${GREEN}✓ Plant 06 completed${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
