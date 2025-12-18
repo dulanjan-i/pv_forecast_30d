@@ -78,202 +78,126 @@ DESIGN DECISIONS
 - Sort by timestamp: Ensures temporal ordering for rolling origin splits
 - Keep plant_id: Useful for per-plant performance analysis later
 
-Author: PV Forecast Team
-Date: December 2024
-Version: 3.0 (Global Forecasting Model)
+CHANGELOG
+---------
+
+Version 3.1 - Global Forecasting Model: Super Matrix Builder
+
+Critical fixes:
+1) Sort by (plant_id, timestamp) to prevent accidental cross-plant windowing.
+2) Enforce required columns and drop rows with NaNs in model-required columns.
+3) Always create one-hot columns for all configured plants (PLANT_ONEHOT_COLS).
 """
+
+from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import pandas as pd
 
-# Add repo root to path for imports
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from src.data.schema import (
-    LSTM_INPUT_FEATURES,
-    PLANT_IDS,
+    DataPaths,
+    GLOBAL_LSTM_INPUT_FEATURES,
     PLANT_ID_COL,
+    PLANT_IDS,
     PLANT_ONEHOT_COLS,
-    TIME_COL,
+    REQUIRED_PRETRAIN_BASE,
     TARGET_COL,
+    TIME_COL,
+    validate_required_columns,
 )
 
 
-def load_plant_data(plant_id: str, base_dir: Path) -> pd.DataFrame:
+def _load_one_plant(plant_id: str, base_dir: Path) -> pd.DataFrame:
     """
-    Load pretrain_base.parquet for a single plant.
-    
-    Parameters
-    ----------
-    plant_id : str
-        Plant identifier (e.g., 'plant_01')
-    base_dir : Path
-        Base directory containing plant folders
-        
-    Returns
-    -------
-    pd.DataFrame
-        Plant data with columns [timestamp_utc, 15 LSTM features]
-        
-    Raises
-    ------
-    FileNotFoundError
-        If pretrain_base.parquet doesn't exist for this plant
+    Load a single plant pretrain base parquet and attach plant_id + one-hot columns.
     """
-    parquet_file = base_dir / f"{plant_id}_pretrain_base.parquet"
-    
-    if not parquet_file.exists():
-        raise FileNotFoundError(
-            f"Missing pretrain_base for {plant_id}: {parquet_file}\n"
-            f"Run germany_build_pretrain_base.py first!"
-        )
-    
-    df = pd.read_parquet(parquet_file)
-    
-    # Verify required columns
-    required_cols = [TIME_COL] + LSTM_INPUT_FEATURES
-    missing = set(required_cols) - set(df.columns)
-    if missing:
-        raise ValueError(f"{plant_id} missing columns: {missing}")
-    
-    # Add plant_id column
+    plant_dir = base_dir / plant_id
+    parquet_path = plant_dir / f"{plant_id}_pretrain_base.parquet"
+    if not parquet_path.exists():
+        raise FileNotFoundError(f"Missing pretrain base parquet: {parquet_path}")
+
+    df = pd.read_parquet(parquet_path)
+
+    validate_required_columns(df.columns, REQUIRED_PRETRAIN_BASE, context=f"{plant_id} pretrain_base")
+
+    # Canonical timestamp parsing
+    df[TIME_COL] = pd.to_datetime(df[TIME_COL], utc=True)
+
+    # Add plant_id categorical column
     df[PLANT_ID_COL] = plant_id
-    
-    print(f"[INFO] Loaded {plant_id}: {len(df):,} rows")
-    
+
+    # Create one-hot columns (all plants exist as columns, only one is 1)
+    for col in PLANT_ONEHOT_COLS:
+        df[col] = 0.0
+    df.loc[:, plant_id] = 1.0
+
+    # Drop rows that would break the model (any NaN in required model columns)
+    required_for_model = set(GLOBAL_LSTM_INPUT_FEATURES + [TARGET_COL, TIME_COL, PLANT_ID_COL])
+    missing_model_cols = sorted(required_for_model - set(df.columns))
+    if missing_model_cols:
+        raise ValueError(f"{plant_id}: missing required model columns: {missing_model_cols}")
+
+    before = len(df)
+    df = df.dropna(subset=list(required_for_model))
+    after = len(df)
+
+    dropped = before - after
+    if dropped > 0:
+        pct = 100.0 * dropped / max(1, before)
+        print(f"[WARN] {plant_id}: dropped {dropped:,} rows due to NaNs ({pct:.2f}%)")
+
     return df
 
 
-def create_supermatrix(base_dir: Path, output_dir: Path) -> Path:
-    """
-    Build Super Matrix by concatenating all 5 plants with one-hot plant IDs.
-    
-    Parameters
-    ----------
-    base_dir : Path
-        Directory containing plant_XX subdirectories
-    output_dir : Path
-        Output directory for supermatrix_base.parquet
-        
-    Returns
-    -------
-    Path
-        Path to saved supermatrix_base.parquet
-        
-    Process
-    -------
-    1. Load 5 plant pretrain_base files
-    2. Add plant_id string column
-    3. Concatenate vertically
-    4. Create one-hot encoding (5 binary columns)
-    5. Sort by timestamp (temporal ordering)
-    6. Save to output_dir/supermatrix_base.parquet
-    """
-    print("\n" + "="*80)
-    print("BUILDING GLOBAL SUPER MATRIX (Version 3)")
-    print("="*80)
-    
-    # Step 1: Load all plants
-    print("\n[STEP 1/5] Loading plant data...")
-    plant_dfs = []
-    
-    for plant_id in PLANT_IDS:
-        df = load_plant_data(plant_id, base_dir)
-        plant_dfs.append(df)
-    
-    # Step 2: Concatenate
-    print("\n[STEP 2/5] Concatenating all plants...")
-    supermatrix = pd.concat(plant_dfs, axis=0, ignore_index=True)
-    print(f"[INFO] Total rows after concatenation: {len(supermatrix):,}")
-    
-    # Step 2b: Drop NaNs (safety check - should be clean already from Version 02)
-    n_before = len(supermatrix)
-    supermatrix = supermatrix.dropna(subset=LSTM_INPUT_FEATURES + [TARGET_COL])
-    n_after = len(supermatrix)
-    n_dropped = n_before - n_after
-    if n_dropped > 0:
-        print(f"[WARNING] Dropped {n_dropped:,} rows with NaNs ({n_dropped/n_before*100:.2f}%)")
-    else:
-        print(f"[INFO] No NaNs found ✓")
-    
-    # Step 3: Sort by timestamp (critical for rolling origin splits)
-    print("\n[STEP 3/5] Sorting by timestamp...")
-    supermatrix = supermatrix.sort_values(TIME_COL).reset_index(drop=True)
-    print(f"[INFO] Date range: {supermatrix[TIME_COL].min()} to {supermatrix[TIME_COL].max()}")
-    
-    # Step 4: Create one-hot encoding
-    print("\n[STEP 4/5] Creating one-hot encoding for plant_id...")
-    for plant_id in PLANT_IDS:
-        # Binary column: 1 if this row belongs to plant_id, else 0
-        supermatrix[plant_id] = (supermatrix[PLANT_ID_COL] == plant_id).astype(np.float32)
-        print(f"[INFO]   {plant_id}: {supermatrix[plant_id].sum():,.0f} rows (1.0s)")
-    
-    # Verify one-hot encoding (each row should have exactly one 1.0)
-    onehot_sum = supermatrix[PLANT_ONEHOT_COLS].sum(axis=1)
-    if not (onehot_sum == 1.0).all():
-        raise ValueError(
-            f"One-hot encoding error! Each row should sum to 1.0, "
-            f"but found: min={onehot_sum.min()}, max={onehot_sum.max()}"
-        )
-    print("[INFO] One-hot validation PASSED (all rows sum to 1.0)")
-    
-    # Step 5: Save
-    print("\n[STEP 5/5] Saving Super Matrix...")
+def main() -> None:
+    paths = DataPaths(REPO_ROOT)
+    germany_dir = paths.germany_pretraining
+
+    # Inputs live here:
+    # data/processed/pretraining/germany/plant_XX/plant_XX_pretrain_base.parquet
+    input_base = germany_dir
+    output_dir = germany_dir / "global"
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_file = output_dir / "supermatrix_base.parquet"
-    
-    supermatrix.to_parquet(output_file, index=False)
-    
-    file_size_mb = output_file.stat().st_size / (1024 * 1024)
-    print(f"[INFO] Saved: {output_file}")
-    print(f"[INFO] File size: {file_size_mb:.2f} MB")
-    print(f"[INFO] Final shape: {supermatrix.shape}")
-    
-    # Summary statistics
-    print("\n" + "="*80)
-    print("SUPER MATRIX SUMMARY")
-    print("="*80)
-    print(f"Total samples: {len(supermatrix):,}")
-    print(f"Features: {len(LSTM_INPUT_FEATURES)} original + {len(PLANT_ONEHOT_COLS)} plant IDs = {len(LSTM_INPUT_FEATURES) + len(PLANT_ONEHOT_COLS)} total")
-    print(f"\nPer-plant breakdown:")
+
+    frames: List[pd.DataFrame] = []
+    print("\n" + "=" * 80)
+    print("BUILDING GERMANY SUPER MATRIX (Version 3)")
+    print("=" * 80)
+
     for plant_id in PLANT_IDS:
-        count = (supermatrix[PLANT_ID_COL] == plant_id).sum()
-        pct = (count / len(supermatrix)) * 100
-        print(f"  {plant_id}: {count:>7,} rows ({pct:>5.2f}%)")
-    
-    print("\n[SUCCESS] Super Matrix ready for rolling origin splits!")
-    print("="*80 + "\n")
-    
-    return output_file
+        print(f"[INFO] Loading {plant_id} ...")
+        df_p = _load_one_plant(plant_id, input_base)
+        print(f"[INFO] {plant_id}: {len(df_p):,} rows")
+        frames.append(df_p)
 
+    df = pd.concat(frames, axis=0, ignore_index=True)
 
-def main():
-    """
-    Main execution function.
-    
-    Builds Super Matrix from 5 Germany plants and saves to:
-        data/processed/pretraining/germany/global/supermatrix_base.parquet
-    """
-    # Paths
-    base_dir = REPO_ROOT / "data" / "processed" / "pretraining" / "germany"
-    output_dir = base_dir / "global"
-    
-    # Validate input directory exists
-    if not base_dir.exists():
-        raise FileNotFoundError(
-            f"Base directory not found: {base_dir}\n"
-            f"Run preprocessing pipeline first!"
-        )
-    
-    # Build Super Matrix
-    output_file = create_supermatrix(base_dir, output_dir)
-    
-    print(f"\n✅ Done! Super Matrix saved to:\n   {output_file}\n")
-    print("Next step: Run germany_global_rolling_origin_split.py")
+    # Sort by plant then time, so windowing cannot cross plants unless code is wrong.
+    df = df.sort_values([PLANT_ID_COL, TIME_COL]).reset_index(drop=True)
+
+    # Final sanity checks
+    # 1) one-hot correctness: exactly one hot per row
+    onehot_sum = df[PLANT_ONEHOT_COLS].sum(axis=1)
+    bad = (onehot_sum != 1.0).sum()
+    if bad > 0:
+        raise ValueError(f"One-hot invalid rows: {bad} rows do not sum to 1.0")
+
+    print("\n[INFO] Supermatrix summary")
+    print(f"  Rows: {len(df):,}")
+    print(f"  Date range: {df[TIME_COL].min()} to {df[TIME_COL].max()}")
+    print("  Rows per plant:")
+    print(df[PLANT_ID_COL].value_counts().sort_index())
+
+    out_path = output_dir / "supermatrix_base.parquet"
+    df.to_parquet(out_path, index=False)
+    print(f"\n[SUCCESS] Saved: {out_path}\n")
 
 
 if __name__ == "__main__":
