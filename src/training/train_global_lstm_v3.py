@@ -238,7 +238,7 @@ def setup_trainer(
 ) -> pl.Trainer:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    logger = CSVLogger(save_dir=str(output_dir), name="")
+    logger = CSVLogger(save_dir=str(output_dir), name="logs", version="")
 
     ckpt = ModelCheckpoint(
         dirpath=str(output_dir),
