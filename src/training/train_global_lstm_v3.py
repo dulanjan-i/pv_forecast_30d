@@ -234,6 +234,7 @@ def setup_trainer(
     max_epochs: int,
     patience: int,
     gpus: int,
+    precision: str,
 ) -> pl.Trainer:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -250,6 +251,16 @@ def setup_trainer(
 
     accelerator = "gpu" if gpus and torch.cuda.is_available() else "cpu"
     devices = 1 if accelerator == "gpu" else None
+    # Normalize precision strings across Lightning versions
+    prec = str(precision)
+    if prec.lower() in {"16-mixed", "bf16-mixed"}:
+    # Most Lightning versions accept these strings, keep as-is.
+        pass
+    elif prec in {"16", "32", "bf16"}:
+        pass
+    else:
+        print(f"[WARN] Unknown precision='{prec}', defaulting to 32")
+        prec = "32"
 
     trainer = pl.Trainer(
         max_epochs=max_epochs,
@@ -259,6 +270,7 @@ def setup_trainer(
         logger=logger,
         enable_progress_bar=True,
         log_every_n_steps=50,
+        precision=prec,
     )
     return trainer
 
@@ -275,11 +287,17 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--max_epochs", type=int, default=30)
     p.add_argument("--patience", type=int, default=5)
     p.add_argument("--gpus", type=int, default=1)
+    # Dataloader + mixed precision controls (kept to match run_stage3_global_training.sh)
+    p.add_argument("--num_workers", type=int, default=4)
+    p.add_argument("--precision", type=str, default="32")
+    p.add_argument("--precision_override", type=str, default=None)  # backward compatible; ignored
     return p.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.precision_override is not None:
+        print(f"[INFO] Ignoring --precision_override={args.precision_override} (kept for backward compatibility).")
 
     data_dir = REPO_ROOT / "data" / "processed" / "pretraining" / "germany" / "global"
     farm2107_ckpt = REPO_ROOT / "experiments" / "lstm" / "encoders" / "lstm_encoder_farm2107_CANONICAL.pt"
@@ -291,6 +309,7 @@ def main() -> None:
         val_df,
         window_size=args.window_size,
         batch_size=args.batch_size,
+        num_workers=args.num_workers,
     )
 
     model = create_model_with_transfer(
@@ -307,6 +326,7 @@ def main() -> None:
         max_epochs=args.max_epochs,
         patience=args.patience,
         gpus=args.gpus,
+        precision=args.precision,
     )
 
     print("\n" + "=" * 80)

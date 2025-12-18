@@ -119,7 +119,7 @@ def _load_one_plant(plant_id: str, base_dir: Path) -> pd.DataFrame:
     Load a single plant pretrain base parquet and attach plant_id + one-hot columns.
     """
     plant_dir = base_dir / plant_id
-    parquet_path = plant_dir / f"{plant_id}_pretrain_base.parquet"
+    parquet_path = base_dir / f"{plant_id}_pretrain_base.parquet"
     if not parquet_path.exists():
         raise FileNotFoundError(f"Missing pretrain base parquet: {parquet_path}")
 

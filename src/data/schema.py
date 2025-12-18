@@ -42,10 +42,11 @@ TIME_STEP_MINUTES: int = 15
 # IMPORTANT: This order must match Farm2107 pretraining feature order.
 # -----------------------------
 LSTM_INPUT_FEATURES: List[str] = [
-    POWER_NORM_COL,               # autoregressive input
+    POWER_NORM_COL,  # autoregressive input
+    "poa_irradiance",  # required for Farm2107 feature alignment
     "temperature_2m",
     "relative_humidity_2m",
-    "precipitation",              # pretrained weight expects this index
+    "precipitation",
     "weather_code",
     "cloud_cover",
     "wind_speed_10m",
@@ -56,7 +57,6 @@ LSTM_INPUT_FEATURES: List[str] = [
     "direct_normal_irradiance_instant",
     "global_tilted_irradiance_instant",
     "surface_pressure",
-    # If you truly have 15, keep it at 15. If you add more, you must update transfer logic.
 ]
 
 
@@ -67,6 +67,7 @@ REQUIRED_PV_ONLY: Set[str] = {TIME_COL, POWER_KW_COL, POWER_NORM_COL}
 
 REQUIRED_WEATHER_15MIN: Set[str] = {
     TIME_COL,
+    "poa_irradiance",
     "temperature_2m",
     "relative_humidity_2m",
     "precipitation",

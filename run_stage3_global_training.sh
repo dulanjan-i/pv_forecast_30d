@@ -170,7 +170,7 @@ print_separator
 TOTAL_FOLDS=5
 FAILED_FOLDS=()
 
-for fold in 1 2 3 4 5; do
+for fold in 1 2 3 4; do
     print_separator
     echo -e "${GREEN}TRAINING FOLD $fold / $TOTAL_FOLDS${NC}"
     print_separator
