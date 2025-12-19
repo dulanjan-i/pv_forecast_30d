@@ -1,18 +1,19 @@
 """
 src/data/schema.py
 
-Single source of truth for MiRACLE data contracts.
+Central schema for MiRACLE / pv_forecast_30d.
 
-Why this exists
-- Prevents column drift across branches (data-pipeline-build, pvlib-build, tft-build).
-- Ensures the pretrained LSTM encoder sees the exact same input tensor definition
-  in Stage 1 (Farm2107) and Stage 2 (Germany).
-- Column *names* can differ per dataset, but they must be mapped into these
-  canonical names and, critically, the feature *order* must be identical.
+This file defines canonical column names, feature lists, and Version 3 global-model
+constants (plant IDs, one-hot columns, etc.). Keep this as the single source of truth.
 
-Ground truth
-- Canonical LSTM input list and target are defined by:
-    experiments/lstm/pretrain_farm2107_CANONICAL.yaml
+Key contracts used by Stage 3 (Global LSTM Encoder):
+- TIME_COL: timestamp column
+- POWER_NORM_COL: normalized PV power (0..1)
+- TARGET_COL: prediction target (set to POWER_NORM_COL)
+- LSTM_INPUT_FEATURES: 15 base features (includes POWER_NORM_COL as an input feature)
+- GLOBAL_LSTM_INPUT_FEATURES: LSTM_INPUT_FEATURES + plant one-hot columns
+- PLANT_ID_COL: categorical plant identifier
+- PLANT_ONEHOT_COLS: one-hot columns (strings equal to PLANT_IDS)
 """
 
 from __future__ import annotations
@@ -26,37 +27,36 @@ from typing import Dict, List, Sequence, Set
 # Canonical column names
 # -----------------------------
 TIME_COL: str = "timestamp_utc"
-
-# Canonical target names used downstream (TFT training, evaluation).
-# Note: Farm2107 YAML used "pv_power_norm" as the target; we map that into POWER_NORM.
 POWER_KW_COL: str = "power_kw"
 POWER_NORM_COL: str = "power_norm"
 
+# Target contract (Stage 3 global encoder predicts next-step PV power)
+TARGET_COL: str = POWER_NORM_COL
+
+# Expected time step for 15-min data (used by window builders)
+TIME_STEP_MINUTES: int = 15
+
 
 # -----------------------------
-# Canonical feature order for pretrained LSTM encoder
-# IMPORTANT: This order must not change unless you retrain the LSTM.
-# Source: pretrain_farm2107_CANONICAL.yaml feature_cols
+# LSTM base feature order (15 features)
+# IMPORTANT: This order must match Farm2107 pretraining feature order.
 # -----------------------------
 LSTM_INPUT_FEATURES: List[str] = [
-    # autoregressive PV
-    POWER_NORM_COL,
-    # irradiance / POA feature (Farm2107 used poa_irradiance)
-    "poa_irradiance",
-    # weather features
+    POWER_NORM_COL,  # autoregressive input
+    "poa_irradiance",  # required for Farm2107 feature alignment
     "temperature_2m",
     "relative_humidity_2m",
+    "precipitation",
+    "weather_code",
     "cloud_cover",
     "wind_speed_10m",
     "wind_direction_10m",
-    "surface_pressure",
-    "precipitation",
-    "weather_code",
     "shortwave_radiation_instant",
     "direct_radiation_instant",
     "diffuse_radiation_instant",
     "direct_normal_irradiance_instant",
     "global_tilted_irradiance_instant",
+    "surface_pressure",
 ]
 
 
@@ -67,6 +67,7 @@ REQUIRED_PV_ONLY: Set[str] = {TIME_COL, POWER_KW_COL, POWER_NORM_COL}
 
 REQUIRED_WEATHER_15MIN: Set[str] = {
     TIME_COL,
+    "poa_irradiance",
     "temperature_2m",
     "relative_humidity_2m",
     "precipitation",
@@ -83,14 +84,28 @@ REQUIRED_WEATHER_15MIN: Set[str] = {
 }
 
 REQUIRED_MERGED: Set[str] = REQUIRED_PV_ONLY | (REQUIRED_WEATHER_15MIN - {TIME_COL})
-
-# Pretrain base must include whatever the LSTM encoder expects
 REQUIRED_PRETRAIN_BASE: Set[str] = {TIME_COL} | set(LSTM_INPUT_FEATURES)
 
 
 # -----------------------------
-# Canonical paths
-# (These are contracts, not hard requirements. Use for consistent tooling.)
+# Version 3: Global Forecasting Model constants
+# -----------------------------
+PLANT_IDS: List[str] = [
+    "plant_01",
+    "plant_02",
+    "plant_03",
+    "plant_05",
+    "plant_06",
+]
+
+PLANT_ID_COL: str = "plant_id"
+PLANT_ONEHOT_COLS: List[str] = PLANT_IDS
+
+GLOBAL_LSTM_INPUT_FEATURES: List[str] = LSTM_INPUT_FEATURES + PLANT_ONEHOT_COLS
+
+
+# -----------------------------
+# Canonical paths helper
 # -----------------------------
 @dataclass(frozen=True)
 class DataPaths:
@@ -101,24 +116,8 @@ class DataPaths:
         return self.repo_root / "data"
 
     @property
-    def raw(self) -> Path:
-        return self.data_dir / "raw"
-
-    @property
-    def interim(self) -> Path:
-        return self.data_dir / "interim"
-
-    @property
     def processed(self) -> Path:
         return self.data_dir / "processed"
-
-    @property
-    def germany_interim(self) -> Path:
-        return self.interim / "germany"
-
-    @property
-    def germany_processed(self) -> Path:
-        return self.processed / "germany"
 
     @property
     def germany_pretraining(self) -> Path:
@@ -127,18 +126,13 @@ class DataPaths:
 
 # -----------------------------
 # Dataset-specific column adapters
-# Map dataset-native names -> canonical names.
-# Keep this minimal and explicit.
 # -----------------------------
-# Example: Farm2107 uses measured_on and pv_power_norm in the YAML.
 FARM2107_TO_CANONICAL: Dict[str, str] = {
     "measured_on": TIME_COL,
     "pv_power_norm": POWER_NORM_COL,
-    # if your farm parquet uses a different name for POA, map it here.
     "poa_irradiance": "poa_irradiance",
 }
 
-# Germany: 
 GERMANY_TO_CANONICAL: Dict[str, str] = {
     "timestamp_utc": TIME_COL,
     "power_kw": POWER_KW_COL,
@@ -146,9 +140,8 @@ GERMANY_TO_CANONICAL: Dict[str, str] = {
 }
 
 
-
 # -----------------------------
-# Validation helpers (used by dataloaders / wrappers)
+# Validation helpers
 # -----------------------------
 def validate_required_columns(columns: Sequence[str], required: Set[str], context: str) -> None:
     cols = set(columns)
@@ -158,16 +151,10 @@ def validate_required_columns(columns: Sequence[str], required: Set[str], contex
 
 
 def canonicalize_columns(df, mapping: Dict[str, str]):
-    """
-    Rename dataset-specific columns into canonical names.
-    This does NOT reorder or select features; it only renames.
-    """
+    """Rename dataset-specific columns into canonical names (no reordering)."""
     return df.rename(columns=mapping)
 
 
 def enforce_lstm_feature_order(df):
-    """
-    Return a dataframe (or view) with columns ordered exactly as LSTM_INPUT_FEATURES.
-    Use this right before creating the LSTM input tensor.
-    """
+    """Return a view ordered exactly as LSTM_INPUT_FEATURES."""
     return df[LSTM_INPUT_FEATURES]

@@ -130,10 +130,13 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     # Extract experiment tracking info
     exp_cfg = cfg.get("experiment", {})
     paths_cfg = cfg.get("paths", {})
+    save_cfg = cfg.get("save", {})
     
     exp_name = exp_cfg.get("name", "pretrain")
     exp_tag = exp_cfg.get("tag", "default")
     output_dir = paths_cfg.get("output_dir", f"experiments/lstm/runs/{exp_tag}")
+    init_weights_path = paths_cfg.get("init_weights_path", None)  # ← Stage 2 support
+    encoder_save_path = save_cfg.get("encoder_path", None)  # ← Custom output path
     
     data_cfg = cfg["data"]
     model_cfg = cfg["model"]
@@ -202,6 +205,18 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
 
     model = LSTMEncoder(enc_cfg)
 
+    # 3.5) Load pretrained weights if specified (Stage 2 transfer learning)
+    if init_weights_path:
+        init_path = Path(init_weights_path)
+        if init_path.exists():
+            print(f"[Pretrain] Loading pretrained weights from: {init_path}")
+            state_dict = torch.load(init_path, map_location="cpu")
+            model.load_state_dict(state_dict, strict=True)
+            print(f"[Pretrain] ✓ Loaded pretrained encoder (Stage 2 transfer learning)")
+        else:
+            print(f"[Pretrain] WARNING: init_weights_path specified but not found: {init_path}")
+            print(f"[Pretrain] Training from scratch instead.")
+
     # 4) Set up Logger
     logger = pl.loggers.CSVLogger(
         save_dir=output_dir,
@@ -235,12 +250,20 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     print(f"[Pretrain] Training LSTMEncoder for {max_epochs} epochs on {train_path.name}")
     trainer.fit(model, train_loader, val_loader)
 
-    # 7) Save checkpoints / encoder weights with tag in filename
+    # 7) Save checkpoints / encoder weights
     ckpt_dir = Path(output_dir) / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    last_ckpt = ckpt_dir / f"lstm_encoder_farm2107_{exp_tag}_last.ckpt"
-    state_dict_path = ckpt_dir / f"lstm_encoder_farm2107_{exp_tag}_weights.pt"
+    # Use config-driven naming instead of hardcoded "farm2107"
+    # Default to using exp_tag for backward compatibility
+    last_ckpt = ckpt_dir / f"lstm_encoder_{exp_tag}_last.ckpt"
+    
+    # If encoder_save_path is specified, use it; otherwise use default in checkpoints
+    if encoder_save_path:
+        state_dict_path = Path(encoder_save_path)
+        state_dict_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        state_dict_path = ckpt_dir / f"lstm_encoder_{exp_tag}_weights.pt"
 
     trainer.save_checkpoint(str(last_ckpt))
     torch.save(model.state_dict(), state_dict_path)
