@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+"""
+Custom metrics for PV forecasting.
+"""
+# Placeholder: RMSE, MAE, R²
+=======
 # src/utils/metrics.py
 """
 Basic regression metrics for PV forecasting.
@@ -32,3 +38,4 @@ def mape(y_true: torch.Tensor, y_pred: torch.Tensor, eps: float = 1e-6) -> torch
     """
     denom = torch.clamp(torch.abs(y_true), min=eps)
     return torch.mean(torch.abs((y_true - y_pred) / denom))
+>>>>>>> origin/main

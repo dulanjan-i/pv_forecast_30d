@@ -1,5 +1,5 @@
 """
-German PV plant preprocessing
+German PV plant preprocessing - Stage 2 Transfer Learning (Version 02)
 
 Goal:
     Build a clean 15-min PV time series for each German plant, with:
@@ -14,6 +14,10 @@ This is an INTERIM product, analogous to:
 Later scripts will:
     - merge PV with weather
     - build final feature tables under data/processed/
+
+Version 02 Changes (16th Dec 2025):
+    - Excluded plant_04 due to data quality issues (100% zeros during Mar-Jun 2024)
+    - See reports/stage2_version01_failed_chronological_split.md for details
 """
 
 from pathlib import Path
@@ -131,11 +135,12 @@ def preprocess_plant(plant_id: str) -> Path:
 # ---------------------------------------------------------------------
 
 def main():
+    # Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
     plant_ids = [
         "plant_01",
         "plant_02",
         "plant_03",
-        "plant_04",
+        # "plant_04",  # EXCLUDED: See reports/stage2_version01_failed_chronological_split.md
         "plant_05",
         "plant_06",
     ]
