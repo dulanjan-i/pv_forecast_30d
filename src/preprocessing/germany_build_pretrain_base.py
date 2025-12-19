@@ -1,5 +1,5 @@
 """
-germany_build_pretrain_base.py
+germany_build_pretrain_base.py - Stage 2 Transfer Learning (Version 02)
 
 Build per-plant pretraining base parquets for Germany.
 
@@ -20,6 +20,11 @@ Contract
 Why this exists
 - Keeps Germany data aligned with the pretrained LSTM encoder contract defined in
   src/data/schema.py, especially feature presence and naming stability.
+
+Version 02 Changes (Dec 2025):
+- Excluded plant_04 due to data quality issues (100% zeros during Mar-Jun 2024)
+- Added NaN dropping for power_norm to ensure clean training data
+- See reports/stage2_version01_failed_chronological_split.md for details
 """
 from __future__ import annotations
 
@@ -44,11 +49,12 @@ from src.data.schema import (
     canonicalize_columns,
 )
 
+# Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
 PLANT_IDS: List[str] = [
     "plant_01",
     "plant_02",
     "plant_03",
-    "plant_04",
+    # "plant_04",  # EXCLUDED: See reports/stage2_version01_failed_chronological_split.md
     "plant_05",
     "plant_06",
 ]
@@ -90,6 +96,16 @@ def build_one(plant_id: str, paths: DataPaths) -> Path:
     # Basic sanity: target must exist
     if POWER_NORM_COL not in out_df.columns:
         raise ValueError(f"{plant_id}: missing target {POWER_NORM_COL} in pretrain base")
+
+    # Version 02: Drop rows with NaN in power_norm (ensures clean training data)
+    # This removes nighttime periods with missing production data and any data quality issues
+    rows_before = len(out_df)
+    out_df = out_df.dropna(subset=[POWER_NORM_COL])
+    rows_after = len(out_df)
+    rows_dropped = rows_before - rows_after
+    if rows_dropped > 0:
+        pct_dropped = (rows_dropped / rows_before) * 100
+        print(f"[INFO] {plant_id}: Dropped {rows_dropped:,} rows ({pct_dropped:.1f}%) with NaN in {POWER_NORM_COL}")
 
     # Write
     out_dir = paths.germany_pretraining

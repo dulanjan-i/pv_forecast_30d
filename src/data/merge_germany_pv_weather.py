@@ -1,5 +1,5 @@
 """
-merge_germany_pv_weather.py
+merge_germany_pv_weather.py - Stage 2 Transfer Learning (Version 02)
 
 Merge German PV (15-min, UTC) with German weather (15-min, UTC).
 
@@ -15,6 +15,10 @@ Rules:
   This avoids edge misalignment due to timezone/DST handling and ensures
   every row has both PV and weather.
 - No feature engineering here, only clean merge.
+
+Version 02 Changes (Dec 2025):
+- Excluded plant_04 due to data quality issues (100% zeros during Mar-Jun 2024)
+- See reports/stage2_version01_failed_chronological_split.md for details
 """
 
 from pathlib import Path
@@ -25,7 +29,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 INTERIM = REPO_ROOT / "data" / "interim" / "germany"
 PROCESSED = REPO_ROOT / "data" / "processed" / "germany"
 
-PLANT_IDS: List[str] = ["plant_01","plant_02","plant_03","plant_04","plant_05","plant_06"]
+# Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
+PLANT_IDS: List[str] = ["plant_01","plant_02","plant_03","plant_05","plant_06"]
 
 
 def merge_one(plant_id: str) -> Path:

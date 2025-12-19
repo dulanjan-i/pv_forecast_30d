@@ -265,6 +265,7 @@ def make_trainer(
     gpus: int = 0,
     precision: Optional[str] = None,
     ckpt_path: Optional[str] = None,
+    strategy: Optional[str] = None,
 ) -> pl.Trainer:
     """
     Small convenience wrapper to build a Lightning Trainer.
@@ -279,11 +280,18 @@ def make_trainer(
         pl.Trainer instance
     """
     accelerator = "gpu" if gpus and torch.cuda.is_available() else "cpu"
+    if accelerator == "gpu":
+        devices = gpus
+        ddp_strategy = strategy or ("ddp" if gpus > 1 else "auto")
+    else:
+        devices = 1
+        ddp_strategy = "auto"
 
     trainer = pl.Trainer(
         max_epochs=max_epochs,
         accelerator=accelerator,
-        devices=gpus if accelerator == "gpu" else 1,
+        devices=devices,
+        strategy=ddp_strategy,
         precision=precision,
         log_every_n_steps=10,
         enable_checkpointing=True,
