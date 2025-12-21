@@ -12,8 +12,8 @@ Plant metadata:
 - data/metadata/germany/<plant_id>.json
 
 Outputs:
-- data/processed/pretraining/germany/global/pvlib_tft/regional_train_pvlib.parquet
-- data/processed/pretraining/germany/global/pvlib_tft/regional_val_pvlib.parquet
+- data/processed/pretraining/germany/global/pvlib_tft/regional_train_pvlib_tft.parquet
+- data/processed/pretraining/germany/global/pvlib_tft/regional_val_pvlib_tft.parquet
 '
 
 REPO_ROOT="$(pwd)"
@@ -37,7 +37,7 @@ test -f "$VAL_W"
 test -d "$META_DIR"
 
 echo "[INFO] Cleaning previous outputs..."
-rm -f "$OUT_DIR/regional_train_pvlib.parquet" "$OUT_DIR/regional_val_pvlib.parquet" || true
+rm -f "$OUT_DIR/regional_train_pvlib_tft.parquet" "$OUT_DIR/regional_val_pvlib_tft.parquet" || true
 mkdir -p "$OUT_DIR"
 
 echo "[INFO] Running builder..."
