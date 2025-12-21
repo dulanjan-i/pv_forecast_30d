@@ -64,7 +64,7 @@ import pandas as pd
 import pvlib
 import inspect
 
-# Configure logging
+# Module logger
 logger = logging.getLogger(__name__)
 
 
@@ -143,9 +143,9 @@ def compute_cell_temperature(poa_global: np.ndarray, temp_air: np.ndarray, wind:
         return np.asarray(out, dtype=float)
 
     except Exception as e:
-        logger.warning(
-            f"SAPM cell temperature computation failed, falling back to PVsyst method. "
-            f"Error: {type(e).__name__}: {e}"
+        logger.exception(
+            "SAPM cell temperature computation failed, falling back to PVsyst method. "
+            "Error details:"
         )
 
     # Fallback: PVsyst
