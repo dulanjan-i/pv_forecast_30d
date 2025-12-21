@@ -54,6 +54,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -62,6 +63,9 @@ import pandas as pd
 
 import pvlib
 import inspect
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
@@ -138,8 +142,11 @@ def compute_cell_temperature(poa_global: np.ndarray, temp_air: np.ndarray, wind:
         out = pvlib.temperature.sapm_cell(poa_global, temp_air, wind)
         return np.asarray(out, dtype=float)
 
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(
+            f"SAPM cell temperature computation failed, falling back to PVsyst method. "
+            f"Error: {type(e).__name__}: {e}"
+        )
 
     # Fallback: PVsyst
     try:
