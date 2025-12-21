@@ -35,7 +35,9 @@ KEYS = ["plant_id", "timestamp_utc"]
 def _assert_no_dups(df: pd.DataFrame, name: str) -> None:
     d = df.duplicated(KEYS).sum()
     if d:
-        raise ValueError(f"{name}: duplicated keys={int(d)}")
+        raise ValueError(
+            f"{name}: duplicated ({', '.join(KEYS)}) combinations={int(d)}"
+        )
 
 
 def _merge_one(split: str, base_p: Path, weather_p: Path, pvlib_p: Path, out_p: Path) -> None:
