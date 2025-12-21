@@ -142,7 +142,7 @@ def compute_cell_temperature(poa_global: np.ndarray, temp_air: np.ndarray, wind:
         out = pvlib.temperature.sapm_cell(poa_global, temp_air, wind)
         return np.asarray(out, dtype=float)
 
-    except Exception as e:
+    except Exception:
         logger.exception(
             "SAPM cell temperature computation failed, falling back to PVsyst method. "
             "Error details:"
