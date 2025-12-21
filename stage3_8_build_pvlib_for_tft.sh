@@ -40,6 +40,8 @@ echo "[INFO] Cleaning previous outputs..."
 rm -f "$OUT_DIR/regional_train_pvlib.parquet" "$OUT_DIR/regional_val_pvlib.parquet" || true
 mkdir -p "$OUT_DIR"
 
+export PYTHONPATH="$REPO_ROOT"
+
 echo "[INFO] Running builder..."
 python "$REPO_ROOT/src/features/germany_build_pvlib_for_tft.py" \
   --train_weather "$TRAIN_W" \
