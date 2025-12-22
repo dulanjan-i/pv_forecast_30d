@@ -1,4 +1,7 @@
+# [DEPRECIATED] → MOVED TO VERSION 03 
+## which is the correct canonical version now
 # Stage 2 Transfer Learning - Active Todo List
+
 
 **Date**: December 16, 2025  
 **Current Version**: Version 02 (Stratified Split Complete)  
