@@ -1,0 +1,1 @@
+{"target":"power_norm","time_idx":"time_idx","group_ids":["plant_id"],"max_encoder_length":96,"max_prediction_length":96,"hidden_size":64,"lstm_layers":2,"attention_head_size":4,"dropout":0.1,"learning_rate":0.001,"weight_decay":0.0001,"quantiles":[0.1,0.5,0.9]}
