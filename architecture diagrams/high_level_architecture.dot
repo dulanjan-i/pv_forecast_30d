@@ -1,0 +1,43 @@
+// High-Level Architecture for Hybrid PV Forecasting with RL Meta-Controller
+digraph HybridPVForecasting {
+    rankdir=LR;  // Left to right layout
+    node [shape=box, style=filled, fillcolor=lightgray];
+
+    // Data Sources
+    HistoricalData [label="Historical Data\n- Weather\n- PV Output", fillcolor=lightblue];
+    RealTimeData [label="Real-Time Data\n- Weather API\n- PV Sensor", fillcolor=lightblue];
+
+    // LSTM Encoder Module
+    LSTM_Encoder [label="LSTM Encoder\nTemporal Pattern Extraction", fillcolor=lightgreen];
+
+    // PVLib Physical Model
+    PVLib_Model [label="PVLib Physical Model\nPhysical Simulation", fillcolor=lightgreen];
+
+    // TFT Module
+    TFT_Model [label="Temporal Fusion Transformer\nMulti-Horizon Prediction\nFeature Selection", fillcolor=orange];
+
+    // RL Meta Controller
+    RL_MetaController [label="RL Meta-Controller\nDynamic Training Management", shape=ellipse, fillcolor=yellow];
+
+    // Outputs
+    PV_Forecast [label="PV Power Forecast\n+ Confidence Intervals", fillcolor=lightpink];
+
+    // Feedback Loop
+    Feedback [label="Feedback Loop\nError Metrics + Confidence", shape=diamond, fillcolor=lightcoral];
+
+    // Connections
+    HistoricalData -> LSTM_Encoder [label="Preprocessed Historical Inputs"];
+    RealTimeData -> LSTM_Encoder [label="Preprocessed API Inputs"];
+
+    LSTM_Encoder -> TFT_Model [label="Encoded Signals"];
+    PVLib_Model -> TFT_Model [label="Physical PV Output"];
+    RealTimeData -> PVLib_Model [label="Weather API Inputs"];
+
+    TFT_Model -> PV_Forecast [label="PV Forecast Output"];
+
+    PV_Forecast -> Feedback [label="Prediction Performance Metrics"];
+    Feedback -> RL_MetaController [label="Performance Feedback"];
+    RL_MetaController -> LSTM_Encoder [label="Retrain / Update"];
+    RL_MetaController -> TFT_Model [label="Retrain / Update"];
+    RL_MetaController -> PVLib_Model [label="Adjust Parameters"];
+}
