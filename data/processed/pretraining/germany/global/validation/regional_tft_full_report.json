@@ -1,0 +1,49 @@
+{
+  "train": {
+    "name": "train",
+    "rows": 142190,
+    "cols": 97,
+    "time_min": "2023-01-01 23:00:00+00:00",
+    "time_max": "2023-11-30 23:45:00+00:00",
+    "plants": [
+      "plant_01",
+      "plant_02",
+      "plant_03",
+      "plant_05",
+      "plant_06"
+    ],
+    "has_plant_04": false,
+    "dup_keys": 0,
+    "nan_total": 0,
+    "has_suffix_x": false,
+    "has_suffix_y": false,
+    "object_cols": [
+      "plant_id"
+    ]
+  },
+  "val": {
+    "name": "val",
+    "rows": 36952,
+    "cols": 97,
+    "time_min": "2023-12-02 00:00:00+00:00",
+    "time_max": "2024-02-29 23:45:00+00:00",
+    "plants": [
+      "plant_01",
+      "plant_02",
+      "plant_03",
+      "plant_05",
+      "plant_06"
+    ],
+    "has_plant_04": false,
+    "dup_keys": 0,
+    "nan_total": 0,
+    "has_suffix_x": false,
+    "has_suffix_y": false,
+    "object_cols": [
+      "plant_id"
+    ]
+  },
+  "train_only_cols": [],
+  "val_only_cols": [],
+  "same_colset": true
+}
