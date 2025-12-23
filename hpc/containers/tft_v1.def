@@ -1,0 +1,21 @@
+BootStrap: localimage
+From: /shared/definitions/dbfz/pip_base.sif
+
+%files
+    # 1. Update the path to your requirements file
+    /shared/dbfz018/miracle/pv_forecast_30d/requirements/lock-hpc.txt /opt/lock.txt
+
+    # 2. COPY THE CONFIG: This is required for DBFZ
+    /shared/configs/dbfz/pip.conf /opt/pip.conf
+
+%post
+    set -eux
+    
+    # 3. USE THE CONFIG: Tell pip to use the internal Sonatype mirror
+    export PIP_CONFIG_FILE=/opt/pip.conf
+    
+    ls -lh /opt/lock.txt
+    python3 -m pip install --no-cache-dir -r /opt/lock.txt
+
+%runscript
+    exec "$@"
