@@ -8,37 +8,45 @@ Inputs
 
 Outputs
 - experiments/tft/runs/germany/v1_0/<run_id>/
-  - best.ckpt
-  - last.ckpt
-  - metrics.csv
+  - checkpoints/best.ckpt
+  - checkpoints/last.ckpt
+  - logs/metrics.csv
+  - run_config.json
+  - dataset_params_train.json
+  - dataset_params_val.json
+  - column_roles.json
 
-Notes
-- This script avoids fragile Lightning internals (no device_parser).
-- time_idx is computed from timestamp_utc in 15-minute bins since epoch,
-  so train/val share the same time axis.
+Design notes
+- time_idx is computed from timestamp_utc in 15-minute bins since epoch (UTC).
 - We drop:
   - poa_irradiance (GTI proxy used in LSTM stage)
   - plant_01..plant_06 one-hot columns (redundant with plant_id categorical)
-  - normalized irradiance duplicates when raw exists (keeps *_raw)
+  - normalized irradiance duplicates when *_raw exists (keeps *_raw)
+- Optional LSTM encodings:
+  - We DO NOT feed raw lstm_enc_* into the decoder horizon (leakage risk).
+  - Instead we add lagged encodings: lstm_enc_*_lagK = shift(lstm_enc_*, K) per plant.
+    Default K = pred_len (safe for multi-horizon forecasting).
 """
 
 from __future__ import annotations
 
 import argparse
+import json
+import subprocess
 from dataclasses import asdict
 from datetime import datetime, UTC
 from pathlib import Path
+from typing import Any, Dict, List
 
+import numpy as np
 import pandas as pd
 import torch
 
-# Lightning import that works for lightning>=2.x
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.loggers import CSVLogger
 
 from pytorch_forecasting import TimeSeriesDataSet
-from pytorch_forecasting.data import GroupNormalizer
 
 from src.models.tft_model import TFTConfig, build_tft_model, make_dataloaders
 
@@ -57,8 +65,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--batch_size", type=int, default=256)
     p.add_argument("--num_workers", type=int, default=2)
     p.add_argument("--gpus", type=int, default=1)
+
     p.add_argument("--encoder_len", type=int, default=96)
     p.add_argument("--pred_len", type=int, default=96)
+
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--hidden_size", type=int, default=64)
     p.add_argument("--lstm_layers", type=int, default=2)
@@ -67,7 +77,17 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--weight_decay", type=float, default=1e-4)
     p.add_argument("--precision", type=str, default="16-mixed")
     p.add_argument("--patience", type=int, default=5)
+
+    # Encodings
+    p.add_argument("--use_lstm_encodings", action="store_true")
+    p.add_argument("--enc_lag", type=int, default=None, help="Lag (in 15-min steps) for safe encoding features. Default=pred_len.")
     return p.parse_args()
+
+
+def _json_dump(path: Path, obj: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2, sort_keys=True, default=str)
 
 
 def _ensure_datetime_utc(df: pd.DataFrame) -> pd.DataFrame:
@@ -76,8 +96,7 @@ def _ensure_datetime_utc(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _add_time_idx(df: pd.DataFrame) -> pd.DataFrame:
-    # 15-min bins since epoch
-    # int64 nanoseconds -> seconds -> /900
+    # 15-min bins since epoch (UTC)
     t = df[KEY_TIME].astype("int64") // 10**9
     df["time_idx"] = (t // 900).astype("int64")
     return df
@@ -85,14 +104,13 @@ def _add_time_idx(df: pd.DataFrame) -> pd.DataFrame:
 
 def _add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     dt = df[KEY_TIME]
-    hour = dt.dt.hour + dt.dt.minute / 60.0
-    doy = dt.dt.dayofyear.astype("float")
+    hour = (dt.dt.hour.to_numpy(dtype=np.float64) + dt.dt.minute.to_numpy(dtype=np.float64) / 60.0)
+    doy = dt.dt.dayofyear.to_numpy(dtype=np.float64)
 
-    # cyclic
-    df["hour_sin"] = torch.sin(torch.tensor(2.0 * 3.141592653589793 * hour / 24.0)).numpy()
-    df["hour_cos"] = torch.cos(torch.tensor(2.0 * 3.141592653589793 * hour / 24.0)).numpy()
-    df["doy_sin"] = torch.sin(torch.tensor(2.0 * 3.141592653589793 * doy / 365.25)).numpy()
-    df["doy_cos"] = torch.cos(torch.tensor(2.0 * 3.141592653589793 * doy / 365.25)).numpy()
+    df["hour_sin"] = np.sin(2.0 * np.pi * hour / 24.0).astype(np.float32)
+    df["hour_cos"] = np.cos(2.0 * np.pi * hour / 24.0).astype(np.float32)
+    df["doy_sin"] = np.sin(2.0 * np.pi * doy / 365.25).astype(np.float32)
+    df["doy_cos"] = np.cos(2.0 * np.pi * doy / 365.25).astype(np.float32)
     return df
 
 
@@ -104,12 +122,81 @@ def _preclean(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(columns=drop_cols)
 
     # Prefer raw irradiance columns when both exist
-    for base in ["shortwave_radiation_instant", "direct_normal_irradiance_instant", "global_tilted_irradiance_instant"]:
+    for base in [
+        "shortwave_radiation_instant",
+        "direct_normal_irradiance_instant",
+        "global_tilted_irradiance_instant",
+    ]:
         raw = f"{base}_raw"
         if raw in df.columns and base in df.columns:
             df = df.drop(columns=[base])
 
     return df
+
+
+def _find_lstm_enc_cols(df: pd.DataFrame) -> List[str]:
+    enc = [c for c in df.columns if c.startswith("lstm_enc_")]
+    enc = sorted(enc)
+    return enc
+
+
+def _add_lagged_lstm_encodings(df: pd.DataFrame, lag: int) -> tuple[pd.DataFrame, List[str]]:
+    """
+    Create safe, lagged encoding features:
+      lstm_enc_XXX_lag{lag} = shift(lstm_enc_XXX, lag) per plant_id.
+    This prevents decoder leakage because decoder time u uses encoding from u-lag.
+    If lag == pred_len, then all decoder steps depend only on encoder-history time.
+    """
+    enc_cols = _find_lstm_enc_cols(df)
+    if not enc_cols:
+        raise ValueError("use_lstm_encodings was set but no lstm_enc_* columns were found in dataframe.")
+
+    lagged = df.groupby(KEY_GROUP, sort=False)[enc_cols].shift(lag)
+    lagged_cols = [f"{c}_lag{lag}" for c in enc_cols]
+    lagged.columns = lagged_cols
+
+    out = pd.concat([df, lagged], axis=1)
+
+    # Drop rows where lagged encodings are missing (startup region per plant)
+    before = len(out)
+    out = out.dropna(subset=lagged_cols).reset_index(drop=True)
+    dropped = before - len(out)
+    if dropped > 0:
+        print(f"[INFO] Dropped {dropped:,} rows due to lagged encoding NaNs (lag={lag}).")
+
+    # IMPORTANT: drop original encodings so we cannot accidentally feed leaky features
+    out = out.drop(columns=enc_cols)
+
+    return out, lagged_cols
+
+
+def _write_run_metadata(
+    run_dir: Path,
+    args: argparse.Namespace,
+    cfg: TFTConfig,
+    train_ds: TimeSeriesDataSet,
+    val_ds: TimeSeriesDataSet,
+    roles: Dict[str, Any],
+) -> None:
+    _json_dump(run_dir / "dataset_params_train.json", train_ds.get_parameters())
+    _json_dump(run_dir / "dataset_params_val.json", val_ds.get_parameters())
+    _json_dump(run_dir / "column_roles.json", roles)
+
+    run_cfg: Dict[str, Any] = {
+        "cli_args": vars(args),
+        "tft_config": asdict(cfg),
+        "timestamp_utc": datetime.now(UTC).isoformat(),
+    }
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+        dirty = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
+        run_cfg["git_commit"] = commit
+        run_cfg["git_dirty"] = bool(dirty)
+    except Exception:
+        run_cfg["git_commit"] = None
+        run_cfg["git_dirty"] = None
+
+    _json_dump(run_dir / "run_config.json", run_cfg)
 
 
 def main() -> None:
@@ -141,37 +228,40 @@ def main() -> None:
     train = _add_time_features(train)
     val = _add_time_features(val)
 
-    # Feature lists (derive dynamically so you do not hardcode 90 columns)
+    # Optional safe LSTM encodings
+    lag = args.enc_lag if args.enc_lag is not None else args.pred_len
+    lagged_enc_cols: List[str] = []
+    if args.use_lstm_encodings:
+        print(f"[INFO] Adding safe LSTM encoding features with lag={lag}...")
+        train, lagged_enc_cols = _add_lagged_lstm_encodings(train, lag=lag)
+        val, _ = _add_lagged_lstm_encodings(val, lag=lag)
+
+    # Known features (dynamic filter against columns present)
     known_time_reals = [
-        # time features
         "hour_sin", "hour_cos", "doy_sin", "doy_cos",
-        # weather (keep whatever exists)
         "temperature_2m", "relative_humidity_2m", "precipitation", "cloud_cover",
         "wind_speed_10m", "wind_direction_10m", "surface_pressure",
         "weather_code",
-        # irradiance
         "shortwave_radiation_instant_raw",
         "direct_normal_irradiance_instant_raw",
         "global_tilted_irradiance_instant_raw",
         "direct_radiation_instant", "diffuse_radiation_instant",
-        # pvlib (these are computable from weather + metadata)
         "pvlib_solar_zenith", "pvlib_solar_azimuth",
         "pvlib_poa_global", "pvlib_poa_direct", "pvlib_poa_diffuse", "pvlib_poa_ground_diffuse",
         "pvlib_dc_kw", "pvlib_ac_kw",
     ]
+    # append safe lagged encodings (if enabled)
+    known_time_reals += lagged_enc_cols
     known_time_reals = [c for c in known_time_reals if c in train.columns]
 
-    # For v1.0 baseline: do NOT include LSTM encodings yet (prevents leakage into decoder horizon).
-    # You can add them in v1.1 with "history-only" handling.
     unknown_time_reals = [TARGET]
 
-    # Dataset
-    max_encoder_length = args.encoder_len
-    max_prediction_length = args.pred_len
-
-    # Ensure sorted (required by TimeSeriesDataSet)
+    # Sort (required)
     train = train.sort_values([KEY_GROUP, "time_idx"]).reset_index(drop=True)
     val = val.sort_values([KEY_GROUP, "time_idx"]).reset_index(drop=True)
+
+    max_encoder_length = args.encoder_len
+    max_prediction_length = args.pred_len
 
     train_ds = TimeSeriesDataSet(
         train,
@@ -183,11 +273,11 @@ def main() -> None:
         static_categoricals=[KEY_GROUP],
         time_varying_known_reals=known_time_reals,
         time_varying_unknown_reals=unknown_time_reals,
-        target_normalizer=None,  # target is already power_norm
+        target_normalizer=None,
         add_relative_time_idx=True,
         add_target_scales=False,
         add_encoder_length=True,
-        allow_missing_timesteps=True,  # <-- THIS FIXES YOUR CRASH
+        allow_missing_timesteps=True,
     )
 
     val_ds = TimeSeriesDataSet.from_dataset(
@@ -220,32 +310,56 @@ def main() -> None:
         num_workers=args.num_workers,
     )
 
-    # Trainer setup (no device_parser)
+    # Trainer (force 1 GPU, pytorch-forecasting + ddp is not worth it here)
     use_gpu = torch.cuda.is_available() and args.gpus > 0
     accelerator = "gpu" if use_gpu else "cpu"
-    devices = args.gpus if use_gpu else 1
+    devices = 1
 
     ckpt = ModelCheckpoint(
-        dirpath=str(run_dir),
+        dirpath=str(run_dir / "checkpoints"),
         filename="best",
         monitor="val_loss",
         mode="min",
         save_last=True,
+        save_top_k=1,
     )
-
     callbacks = [
         ckpt,
         EarlyStopping(monitor="val_loss", mode="min", patience=args.patience),
         LearningRateMonitor(logging_interval="step"),
     ]
 
-    logger = CSVLogger(save_dir=str(run_dir), name="logs")
+    # Metrics at run_dir/logs/metrics.csv (no version_0)
+    logger = CSVLogger(save_dir=str(run_dir), name="logs", version="")
+
+    roles = {
+        "KEY_TIME": KEY_TIME,
+        "KEY_GROUP": KEY_GROUP,
+        "TARGET": TARGET,
+        "static_categoricals": [KEY_GROUP],
+        "time_varying_known_reals": known_time_reals,
+        "time_varying_unknown_reals": unknown_time_reals,
+        "use_lstm_encodings": bool(args.use_lstm_encodings),
+        "encoding_mode": ("lagged" if args.use_lstm_encodings else "none"),
+        "encoding_lag_steps": (lag if args.use_lstm_encodings else None),
+        "allow_missing_timesteps": True,
+        "dropped_gtiproxy_and_onehots": True,
+        "kept_raw_over_normalized_irradiance": True,
+    }
+
+    _write_run_metadata(
+        run_dir=run_dir,
+        args=args,
+        cfg=cfg,
+        train_ds=train_ds,
+        val_ds=val_ds,
+        roles=roles,
+    )
 
     trainer = pl.Trainer(
         max_epochs=args.max_epochs,
         accelerator=accelerator,
         devices=devices,
-        strategy="ddp" if (use_gpu and devices > 1) else "auto",
         precision=args.precision,
         callbacks=callbacks,
         logger=logger,
@@ -257,12 +371,9 @@ def main() -> None:
 
     trainer.fit(model, train_loader, val_loader)
 
-    # Save run config for reproducibility
-    (run_dir / "run_config.json").write_text(pd.Series(asdict(cfg)).to_json(), encoding="utf-8")
-
     print("[DONE] TFT training complete.")
     print(f"[INFO] best checkpoint: {ckpt.best_model_path}")
-    print(f"[INFO] last checkpoint: {(run_dir / 'last.ckpt') if (run_dir / 'last.ckpt').exists() else 'saved by lightning callback'}")
+    print(f"[INFO] metrics: {run_dir / 'logs' / 'metrics.csv'}")
 
 
 if __name__ == "__main__":
