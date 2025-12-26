@@ -103,16 +103,27 @@ def make_dataloaders(
     num_workers: int = 4,
 ) -> Tuple[DataLoader, Optional[DataLoader], Optional[DataLoader]]:
     """
-    Build PyTorch Forecasting dataloaders.
+    Build PyTorch Forecasting dataloaders with sane performance defaults.
     """
-    train_loader = train_ds.to_dataloader(train=True, batch_size=batch_size, num_workers=num_workers)
+    # These kwargs get forwarded to torch DataLoader in pytorch-forecasting
+    dl_kwargs = dict(
+        num_workers=num_workers,
+        pin_memory=True,
+        persistent_workers=(num_workers > 0),
+        prefetch_factor=2 if num_workers > 0 else None,
+        drop_last=True,
+    )
+    # Remove None keys (DataLoader errors on prefetch_factor=None)
+    dl_kwargs = {k: v for k, v in dl_kwargs.items() if v is not None}
+
+    train_loader = train_ds.to_dataloader(train=True, batch_size=batch_size, **dl_kwargs)
 
     val_loader = None
     if val_ds is not None:
-        val_loader = val_ds.to_dataloader(train=False, batch_size=batch_size, num_workers=num_workers)
+        val_loader = val_ds.to_dataloader(train=False, batch_size=batch_size, **dl_kwargs)
 
     test_loader = None
     if test_ds is not None:
-        test_loader = test_ds.to_dataloader(train=False, batch_size=batch_size, num_workers=num_workers)
+        test_loader = test_ds.to_dataloader(train=False, batch_size=batch_size, **dl_kwargs)
 
     return train_loader, val_loader, test_loader

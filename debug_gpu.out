@@ -1,0 +1,5 @@
+=== PYTHON CHECK ===
+PyTorch Version: 2.5.1+cu124
+CUDA Available:  True
+Device Count:    4
+Current Device:  NVIDIA H100 PCIe
