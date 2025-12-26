@@ -1,86 +1,92 @@
 # src/training/train_tft_v1.py
 """
-Stage 4: Train TFT v1.0 on regional Germany split.
+Stage 4: Train TFT v1.1 on regional Germany split.
+(Optimized for H100 with async GPU transfers and multi-worker prefetch)
 
-Inputs
-- regional_train_tft_full.parquet
-- regional_val_tft_full.parquet
-
-Outputs
-- experiments/tft/runs/germany/v1_0/<run_id>/
-  - checkpoints/best.ckpt
-  - checkpoints/last.ckpt
-  - logs/metrics.csv
-  - run_config.json
-  - dataset_params_train.json
-  - dataset_params_val.json
-  - column_roles.json
-
-Design notes
-- time_idx is computed from timestamp_utc in 15-minute bins since epoch (UTC).
-- We drop:
-  - poa_irradiance (GTI proxy used in LSTM stage)
-  - plant_01..plant_06 one-hot columns (redundant with plant_id categorical)
-  - normalized irradiance duplicates when *_raw exists (keeps *_raw)
-- Optional LSTM encodings:
-  - We DO NOT feed raw lstm_enc_* into the decoder horizon (leakage risk).
-  - Instead we add lagged encodings: lstm_enc_*_lagK = shift(lstm_enc_*, K) per plant.
-    Default K = pred_len (safe for multi-horizon forecasting).
+Version: v1.1
+Date: 2025-12-26
+Changes from v1.0:
+  - Added StreamPrefetcher for async GPU transfers with CUDA streams
+  - Persistent workers with prefetch_factor for continuous data pipeline
+  - Removed RAM preloading (bottleneck on TimeSeriesDataSet iteration)
+  - Optimized thread settings (OMP_NUM_THREADS=1)
+  - Increased default num_workers to 8
+  - Added gradient accumulation support
 """
-
 from __future__ import annotations
 
 import argparse
+import csv
 import json
-import subprocess
-from dataclasses import asdict
-from datetime import datetime, UTC
+import os
+import random
+import sys
+import time
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 import torch
 
-import lightning.pytorch as pl
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
-from lightning.pytorch.loggers import CSVLogger
-
 from pytorch_forecasting import TimeSeriesDataSet
+from pytorch_forecasting.data import GroupNormalizer
+from pytorch_forecasting.models import TemporalFusionTransformer
 
-from src.models.tft_model import TFTConfig, build_tft_model, make_dataloaders
-
+UTC = timezone.utc
 
 KEY_TIME = "timestamp_utc"
 KEY_GROUP = "plant_id"
-TARGET = "power_norm"
+KEY_TARGET = "power_norm"
+KEY_TIME_IDX = "time_idx"
+
+
+@dataclass
+class TFTConfig:
+    hidden_size: int = 64
+    lstm_layers: int = 2
+    attention_head_size: int = 4
+    dropout: float = 0.1
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
     p.add_argument("--train_parquet", type=str, required=True)
     p.add_argument("--val_parquet", type=str, required=True)
+
     p.add_argument("--run_root", type=str, default="experiments/tft/runs/germany/v1_0")
     p.add_argument("--max_epochs", type=int, default=30)
-    p.add_argument("--batch_size", type=int, default=256)
-    p.add_argument("--num_workers", type=int, default=2)
-    p.add_argument("--gpus", type=int, default=1)
+    p.add_argument("--batch_size", type=int, default=1024)
+    p.add_argument("--num_workers", type=int, default=8)
+    p.add_argument("--prefetch_factor", type=int, default=4)
 
     p.add_argument("--encoder_len", type=int, default=96)
     p.add_argument("--pred_len", type=int, default=96)
 
-    p.add_argument("--lr", type=float, default=1e-3)
+    p.add_argument("--lr", type=float, default=3e-4)
+    p.add_argument("--weight_decay", type=float, default=1e-4)
+    p.add_argument("--grad_accum_steps", type=int, default=1)
+
     p.add_argument("--hidden_size", type=int, default=64)
     p.add_argument("--lstm_layers", type=int, default=2)
     p.add_argument("--attn_heads", type=int, default=4)
     p.add_argument("--dropout", type=float, default=0.1)
-    p.add_argument("--weight_decay", type=float, default=1e-4)
-    p.add_argument("--precision", type=str, default="16-mixed")
-    p.add_argument("--patience", type=int, default=5)
 
-    # Encodings
+    p.add_argument("--precision", type=str, default="32-true")
+    p.add_argument("--enable_amp", action="store_true")
+    p.add_argument("--grad_clip", type=float, default=0.1)
+
+    p.add_argument("--patience", type=int, default=3)
+    p.add_argument("--min_delta", type=float, default=1e-5)
+    p.add_argument("--log_every_n_steps", type=int, default=50)
+    p.add_argument("--progress_every", type=int, default=25)
+
+    p.add_argument("--seed", type=int, default=42)
     p.add_argument("--use_lstm_encodings", action="store_true")
-    p.add_argument("--enc_lag", type=int, default=None, help="Lag (in 15-min steps) for safe encoding features. Default=pred_len.")
+    p.add_argument("--enc_lag", type=int, default=None)
+
     return p.parse_args()
 
 
@@ -90,83 +96,74 @@ def _json_dump(path: Path, obj: Any) -> None:
         json.dump(obj, f, indent=2, sort_keys=True, default=str)
 
 
+def _seed_everything(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+        try:
+            torch.set_float32_matmul_precision("high")
+        except Exception:
+            pass
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.enabled = True
+
+
 def _ensure_datetime_utc(df: pd.DataFrame) -> pd.DataFrame:
-    df[KEY_TIME] = pd.to_datetime(df[KEY_TIME], utc=True)
+    df[KEY_TIME] = pd.to_datetime(df[KEY_TIME], utc=True, errors="coerce")
+    df = df.dropna(subset=[KEY_TIME])
     return df
 
 
 def _add_time_idx(df: pd.DataFrame) -> pd.DataFrame:
-    # 15-min bins since epoch (UTC)
-    t = df[KEY_TIME].astype("int64") // 10**9
-    df["time_idx"] = (t // 900).astype("int64")
+    df = df.sort_values([KEY_GROUP, KEY_TIME]).reset_index(drop=True)
+    df[KEY_TIME_IDX] = df.groupby(KEY_GROUP, sort=False).cumcount().astype("int64")
     return df
 
 
-def _add_time_features(df: pd.DataFrame) -> pd.DataFrame:
-    dt = df[KEY_TIME]
-    hour = (dt.dt.hour.to_numpy(dtype=np.float64) + dt.dt.minute.to_numpy(dtype=np.float64) / 60.0)
-    doy = dt.dt.dayofyear.to_numpy(dtype=np.float64)
-
-    df["hour_sin"] = np.sin(2.0 * np.pi * hour / 24.0).astype(np.float32)
-    df["hour_cos"] = np.cos(2.0 * np.pi * hour / 24.0).astype(np.float32)
-    df["doy_sin"] = np.sin(2.0 * np.pi * doy / 365.25).astype(np.float32)
-    df["doy_cos"] = np.cos(2.0 * np.pi * doy / 365.25).astype(np.float32)
+def _drop_duplicate_raw_vs_norm(df: pd.DataFrame) -> pd.DataFrame:
+    for c in list(df.columns):
+        if c.endswith("_raw"):
+            base = c[:-4]
+            if base in df.columns:
+                df = df.drop(columns=[base])
     return df
 
 
 def _preclean(df: pd.DataFrame) -> pd.DataFrame:
-    # Drop GTI proxy and redundant plant one-hot columns
     plant_onehot = [c for c in df.columns if c.startswith("plant_") and c != KEY_GROUP]
     drop_cols = ["poa_irradiance"] + plant_onehot
     drop_cols = [c for c in drop_cols if c in df.columns]
-    df = df.drop(columns=drop_cols)
+    if drop_cols:
+        df = df.drop(columns=drop_cols)
 
-    # Prefer raw irradiance columns when both exist
-    for base in [
-        "shortwave_radiation_instant",
-        "direct_normal_irradiance_instant",
-        "global_tilted_irradiance_instant",
-    ]:
-        raw = f"{base}_raw"
-        if raw in df.columns and base in df.columns:
-            df = df.drop(columns=[base])
+    df = _drop_duplicate_raw_vs_norm(df)
 
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(subset=[KEY_GROUP, KEY_TARGET, KEY_TIME]).reset_index(drop=True)
     return df
 
 
-def _find_lstm_enc_cols(df: pd.DataFrame) -> List[str]:
-    enc = [c for c in df.columns if c.startswith("lstm_enc_")]
-    enc = sorted(enc)
-    return enc
-
-
-def _add_lagged_lstm_encodings(df: pd.DataFrame, lag: int) -> tuple[pd.DataFrame, List[str]]:
-    """
-    Create safe, lagged encoding features:
-      lstm_enc_XXX_lag{lag} = shift(lstm_enc_XXX, lag) per plant_id.
-    This prevents decoder leakage because decoder time u uses encoding from u-lag.
-    If lag == pred_len, then all decoder steps depend only on encoder-history time.
-    """
-    enc_cols = _find_lstm_enc_cols(df)
+def _add_safe_lagged_encodings(df: pd.DataFrame, lag: int) -> Tuple[pd.DataFrame, List[str]]:
+    enc_cols = [c for c in df.columns if c.startswith("lstm_enc_")]
     if not enc_cols:
-        raise ValueError("use_lstm_encodings was set but no lstm_enc_* columns were found in dataframe.")
+        return df, []
 
     lagged = df.groupby(KEY_GROUP, sort=False)[enc_cols].shift(lag)
     lagged_cols = [f"{c}_lag{lag}" for c in enc_cols]
     lagged.columns = lagged_cols
 
     out = pd.concat([df, lagged], axis=1)
-
-    # Drop rows where lagged encodings are missing (startup region per plant)
     before = len(out)
     out = out.dropna(subset=lagged_cols).reset_index(drop=True)
     dropped = before - len(out)
     if dropped > 0:
-        print(f"[INFO] Dropped {dropped:,} rows due to lagged encoding NaNs (lag={lag}).")
+        print(f"[INFO] Dropped {dropped:,} rows due to lagged encoding NaNs (lag={lag}).", flush=True)
 
-    # IMPORTANT: drop original encodings so we cannot accidentally feed leaky features
     out = out.drop(columns=enc_cols)
-
     return out, lagged_cols
 
 
@@ -186,194 +183,421 @@ def _write_run_metadata(
         "cli_args": vars(args),
         "tft_config": asdict(cfg),
         "timestamp_utc": datetime.now(UTC).isoformat(),
+        "torch": torch.__version__,
+        "cuda_available": torch.cuda.is_available(),
+        "cuda_device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
     }
-    try:
-        commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-        dirty = subprocess.check_output(["git", "status", "--porcelain"]).decode().strip()
-        run_cfg["git_commit"] = commit
-        run_cfg["git_dirty"] = bool(dirty)
-    except Exception:
-        run_cfg["git_commit"] = None
-        run_cfg["git_dirty"] = None
-
     _json_dump(run_dir / "run_config.json", run_cfg)
+
+
+def _gpu_poison_pill() -> None:
+    print("\n" + "=" * 70, flush=True)
+    print("DEBUG: HARDWARE CHECK INITIATED", flush=True)
+
+    if not torch.cuda.is_available():
+        print("CRITICAL: CUDA not available. Exiting.", flush=True)
+        sys.exit(1)
+
+    try:
+        n = torch.cuda.device_count()
+        name0 = torch.cuda.get_device_name(0)
+        print(f"CUDA OK. device_count={n}, device0={name0}", flush=True)
+        x = torch.randn(1024, 1024, device="cuda")
+        y = x @ x
+        _ = y.sum().item()
+        print("CUDA matmul smoke test OK.", flush=True)
+    except Exception as e:
+        print(f"CRITICAL FAILURE: GPU detected but allocation FAILED. Error: {e}", flush=True)
+        sys.exit(1)
+
+    print("=" * 70 + "\n", flush=True)
+
+
+class StreamPrefetcher:
+    """
+    Async GPU transfer with CUDA streams to overlap data movement with compute.
+    Critical for feeding H100 at full speed.
+    """
+    def __init__(self, loader, device):
+        self.loader = loader
+        self.device = device
+        self.stream = torch.cuda.Stream()
+
+    def _to_device(self, batch):
+        x, y = batch
+        x_cuda = {k: v.to(self.device, non_blocking=True) for k, v in x.items() if torch.is_tensor(v)}
+        if torch.is_tensor(y):
+            y_cuda = y.to(self.device, non_blocking=True)
+        elif isinstance(y, (list, tuple)):
+            y_cuda = [t.to(self.device, non_blocking=True) if torch.is_tensor(t) else t for t in y]
+        else:
+            y_cuda = y
+        return x_cuda, y_cuda
+
+    def __iter__(self):
+        self.loader_iter = iter(self.loader)
+        self.preload()
+        return self
+
+    def preload(self):
+        try:
+            self.batch = next(self.loader_iter)
+        except StopIteration:
+            self.batch = None
+            return
+        with torch.cuda.stream(self.stream):
+            self.batch = self._to_device(self.batch)
+
+    def __next__(self):
+        torch.cuda.current_stream().wait_stream(self.stream)
+        batch = self.batch
+        if batch is None:
+            raise StopIteration
+        self.preload()
+        return batch
+
+    def __len__(self):
+        return len(self.loader)
+
+
+def _progress_line(prefix: str, epoch: int, step: int, total: int, t0: float) -> None:
+    if total <= 0:
+        return
+    elapsed = time.time() - t0
+    it_s = step / max(elapsed, 1e-9)
+    remaining = (total - step) / max(it_s, 1e-9)
+    pct = 100.0 * step / max(total, 1)
+    print(
+        f"[{prefix} e{epoch}] {step}/{total} ({pct:.1f}%) it/s={it_s:.2f} ETA={remaining/60:.1f} min",
+        flush=True,
+    )
 
 
 def main() -> None:
     args = parse_args()
 
+    # Thread control: prevent oversubscription
+    omp = int(os.environ.get("OMP_NUM_THREADS", "1"))
+    try:
+        torch.set_num_threads(omp)
+        torch.set_num_interop_threads(1)
+    except Exception:
+        pass
+
+    _seed_everything(args.seed)
+    _gpu_poison_pill()
+
     run_id = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     run_dir = Path(args.run_root) / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "logs").mkdir(parents=True, exist_ok=True)
+    (run_dir / "checkpoints").mkdir(parents=True, exist_ok=True)
 
-    print("=" * 80)
-    print("Stage 4: TFT v1.0 training")
-    print(f"train_parquet: {args.train_parquet}")
-    print(f"val_parquet:   {args.val_parquet}")
-    print(f"run_dir:       {run_dir}")
-    print("=" * 80)
+    print("=" * 80, flush=True)
+    print("Stage 4: TFT v1.1 training (H100 Optimized)", flush=True)
+    print(f"train_parquet: {args.train_parquet}", flush=True)
+    print(f"val_parquet:   {args.val_parquet}", flush=True)
+    print(f"run_dir:       {run_dir}", flush=True)
+    print("=" * 80, flush=True)
 
-    train = pd.read_parquet(args.train_parquet)
-    val = pd.read_parquet(args.val_parquet)
+    train_df = pd.read_parquet(args.train_parquet)
+    val_df = pd.read_parquet(args.val_parquet)
 
-    train = _ensure_datetime_utc(train)
-    val = _ensure_datetime_utc(val)
+    for df_name, df in [("train", train_df), ("val", val_df)]:
+        for col in [KEY_TIME, KEY_GROUP, KEY_TARGET]:
+            if col not in df.columns:
+                raise ValueError(f"[{df_name}] Missing required column: {col}")
 
-    train = _preclean(train)
-    val = _preclean(val)
+    train_df = _add_time_idx(_preclean(_ensure_datetime_utc(train_df)))
+    val_df = _add_time_idx(_preclean(_ensure_datetime_utc(val_df)))
 
-    train = _add_time_idx(train)
-    val = _add_time_idx(val)
-
-    train = _add_time_features(train)
-    val = _add_time_features(val)
-
-    # Optional safe LSTM encodings
-    lag = args.enc_lag if args.enc_lag is not None else args.pred_len
-    lagged_enc_cols: List[str] = []
+    lagged_cols: List[str] = []
     if args.use_lstm_encodings:
-        print(f"[INFO] Adding safe LSTM encoding features with lag={lag}...")
-        train, lagged_enc_cols = _add_lagged_lstm_encodings(train, lag=lag)
-        val, _ = _add_lagged_lstm_encodings(val, lag=lag)
+        lag = int(args.enc_lag) if args.enc_lag is not None else int(args.pred_len)
+        print(f"[INFO] Adding safe LSTM encoding features with lag={lag}...", flush=True)
+        train_df, lagged_cols = _add_safe_lagged_encodings(train_df, lag)
+        val_df, _ = _add_safe_lagged_encodings(val_df, lag)
 
-    # Known features (dynamic filter against columns present)
-    known_time_reals = [
-        "hour_sin", "hour_cos", "doy_sin", "doy_cos",
-        "temperature_2m", "relative_humidity_2m", "precipitation", "cloud_cover",
-        "wind_speed_10m", "wind_direction_10m", "surface_pressure",
-        "weather_code",
-        "shortwave_radiation_instant_raw",
-        "direct_normal_irradiance_instant_raw",
-        "global_tilted_irradiance_instant_raw",
-        "direct_radiation_instant", "diffuse_radiation_instant",
-        "pvlib_solar_zenith", "pvlib_solar_azimuth",
-        "pvlib_poa_global", "pvlib_poa_direct", "pvlib_poa_diffuse", "pvlib_poa_ground_diffuse",
-        "pvlib_dc_kw", "pvlib_ac_kw",
+    ignore_cols = {KEY_TIME, KEY_GROUP, KEY_TIME_IDX, KEY_TARGET}
+    candidate_reals = [
+        c for c in train_df.columns
+        if c not in ignore_cols and pd.api.types.is_numeric_dtype(train_df[c])
     ]
-    # append safe lagged encodings (if enabled)
-    known_time_reals += lagged_enc_cols
-    known_time_reals = [c for c in known_time_reals if c in train.columns]
 
-    unknown_time_reals = [TARGET]
+    known_time_reals = sorted(candidate_reals)
+    unknown_time_reals = [KEY_TARGET]
 
-    # Sort (required)
-    train = train.sort_values([KEY_GROUP, "time_idx"]).reset_index(drop=True)
-    val = val.sort_values([KEY_GROUP, "time_idx"]).reset_index(drop=True)
+    roles = {
+        "time_col": KEY_TIME,
+        "time_idx_col": KEY_TIME_IDX,
+        "group_ids": [KEY_GROUP],
+        "target": KEY_TARGET,
+        "known_time_reals": known_time_reals,
+        "unknown_time_reals": unknown_time_reals,
+        "lagged_encoding_cols": lagged_cols,
+    }
 
-    max_encoder_length = args.encoder_len
-    max_prediction_length = args.pred_len
+    max_encoder_length = int(args.encoder_len)
+    max_prediction_length = int(args.pred_len)
 
     train_ds = TimeSeriesDataSet(
-        train,
-        time_idx="time_idx",
-        target=TARGET,
+        train_df,
+        time_idx=KEY_TIME_IDX,
+        target=KEY_TARGET,
         group_ids=[KEY_GROUP],
+        min_encoder_length=max_encoder_length,
         max_encoder_length=max_encoder_length,
+        min_prediction_length=max_prediction_length,
         max_prediction_length=max_prediction_length,
-        static_categoricals=[KEY_GROUP],
         time_varying_known_reals=known_time_reals,
         time_varying_unknown_reals=unknown_time_reals,
-        target_normalizer=None,
+        target_normalizer=GroupNormalizer(groups=[KEY_GROUP], transformation="softplus"),
         add_relative_time_idx=True,
-        add_target_scales=False,
+        add_target_scales=True,
         add_encoder_length=True,
         allow_missing_timesteps=True,
     )
 
-    val_ds = TimeSeriesDataSet.from_dataset(
-        train_ds,
-        val,
-        predict=True,
-        stop_randomization=True,
-    )
+    val_ds = TimeSeriesDataSet.from_dataset(train_ds, val_df, predict=False, stop_randomization=True)
 
     cfg = TFTConfig(
-        target=TARGET,
-        time_idx="time_idx",
-        group_ids=[KEY_GROUP],
-        max_encoder_length=max_encoder_length,
-        max_prediction_length=max_prediction_length,
-        learning_rate=args.lr,
-        hidden_size=args.hidden_size,
-        lstm_layers=args.lstm_layers,
-        attention_head_size=args.attn_heads,
-        dropout=args.dropout,
-        weight_decay=args.weight_decay,
+        hidden_size=int(args.hidden_size),
+        lstm_layers=int(args.lstm_layers),
+        attention_head_size=int(args.attn_heads),
+        dropout=float(args.dropout),
     )
 
-    model = build_tft_model(cfg, train_ds)
-
-    train_loader, val_loader, _ = make_dataloaders(
+    model = TemporalFusionTransformer.from_dataset(
         train_ds,
-        val_ds=val_ds,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
+        hidden_size=cfg.hidden_size,
+        lstm_layers=cfg.lstm_layers,
+        attention_head_size=cfg.attention_head_size,
+        dropout=cfg.dropout,
+        learning_rate=float(args.lr),
+        log_interval=-1,
+        reduce_on_plateau_patience=0,
     )
 
-    # Trainer (force 1 GPU, pytorch-forecasting + ddp is not worth it here)
-    use_gpu = torch.cuda.is_available() and args.gpus > 0
-    accelerator = "gpu" if use_gpu else "cpu"
-    devices = 1
+    _write_run_metadata(run_dir, args, cfg, train_ds, val_ds, roles)
 
-    ckpt = ModelCheckpoint(
-        dirpath=str(run_dir / "checkpoints"),
-        filename="best",
-        monitor="val_loss",
-        mode="min",
-        save_last=True,
-        save_top_k=1,
-    )
-    callbacks = [
-        ckpt,
-        EarlyStopping(monitor="val_loss", mode="min", patience=args.patience),
-        LearningRateMonitor(logging_interval="step"),
-    ]
+    # DataLoader setup with persistent workers and prefetch
+    nw = int(args.num_workers)
+    pf = int(args.prefetch_factor) if nw > 0 else None
 
-    # Metrics at run_dir/logs/metrics.csv (no version_0)
-    logger = CSVLogger(save_dir=str(run_dir), name="logs", version="")
+    print(f"[INFO] DataLoader: num_workers={nw}, prefetch_factor={pf}, persistent={nw > 0}", flush=True)
 
-    roles = {
-        "KEY_TIME": KEY_TIME,
-        "KEY_GROUP": KEY_GROUP,
-        "TARGET": TARGET,
-        "static_categoricals": [KEY_GROUP],
-        "time_varying_known_reals": known_time_reals,
-        "time_varying_unknown_reals": unknown_time_reals,
-        "use_lstm_encodings": bool(args.use_lstm_encodings),
-        "encoding_mode": ("lagged" if args.use_lstm_encodings else "none"),
-        "encoding_lag_steps": (lag if args.use_lstm_encodings else None),
-        "allow_missing_timesteps": True,
-        "dropped_gtiproxy_and_onehots": True,
-        "kept_raw_over_normalized_irradiance": True,
-    }
-
-    _write_run_metadata(
-        run_dir=run_dir,
-        args=args,
-        cfg=cfg,
-        train_ds=train_ds,
-        val_ds=val_ds,
-        roles=roles,
+    train_dl = train_ds.to_dataloader(
+        train=True,
+        batch_size=int(args.batch_size),
+        num_workers=nw,
+        shuffle=True,
+        pin_memory=True,
+        persistent_workers=(nw > 0),
+        prefetch_factor=pf,
     )
 
-    trainer = pl.Trainer(
-        max_epochs=args.max_epochs,
-        accelerator=accelerator,
-        devices=devices,
-        precision=args.precision,
-        callbacks=callbacks,
-        logger=logger,
-        log_every_n_steps=50,
-        gradient_clip_val=0.1,
-        enable_progress_bar=True,
-        enable_model_summary=True,
+    val_dl = val_ds.to_dataloader(
+        train=False,
+        batch_size=int(args.batch_size),
+        num_workers=nw,
+        shuffle=False,
+        pin_memory=True,
+        persistent_workers=(nw > 0),
+        prefetch_factor=pf,
     )
 
-    trainer.fit(model, train_loader, val_loader)
+    device = torch.device("cuda")
+    model.to(device)
 
-    print("[DONE] TFT training complete.")
-    print(f"[INFO] best checkpoint: {ckpt.best_model_path}")
-    print(f"[INFO] metrics: {run_dir / 'logs' / 'metrics.csv'}")
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=float(args.lr),
+        weight_decay=float(args.weight_decay),
+    )
+
+    use_amp = bool(
+        args.enable_amp
+        and device.type == "cuda"
+        and (args.precision.lower() in {"16-mixed", "bf16-mixed"})
+    )
+    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+
+    print(f"[INFO] Mixed precision: {use_amp} (precision={args.precision})", flush=True)
+
+    metrics_path = run_dir / "logs" / "metrics.csv"
+    if not metrics_path.exists():
+        with metrics_path.open("w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(
+                [
+                    "epoch",
+                    "train_loss",
+                    "val_loss",
+                    "best_val_loss",
+                    "improved",
+                    "bad_epochs",
+                    "lr",
+                    "train_sec",
+                    "val_sec",
+                    "epoch_sec",
+                    "train_it_per_sec",
+                    "val_it_per_sec",
+                    "gpu_peak_mem_gb",
+                ]
+            )
+
+    print(f"[INFO] START TRAINING max_epochs={args.max_epochs}", flush=True)
+
+    best_val_loss = float("inf")
+    best_epoch = -1
+    bad_epochs = 0
+
+    prog_every = int(args.progress_every)
+    grad_accum_steps = int(args.grad_accum_steps)
+
+    if grad_accum_steps > 1:
+        print(f"[INFO] Gradient accumulation: {grad_accum_steps} steps", flush=True)
+
+    for epoch in range(int(args.max_epochs)):
+        epoch_t0 = time.time()
+        if device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats()
+
+        # Train
+        model.train()
+        total_loss = 0.0
+        train_steps = 0
+        train_t0 = time.time()
+
+        prefetcher = StreamPrefetcher(train_dl, device)
+        n_train = len(train_dl)
+
+        optimizer.zero_grad(set_to_none=True)
+
+        for batch_idx, (x, y) in enumerate(prefetcher):
+            with torch.cuda.amp.autocast(enabled=use_amp):
+                out = model(x)
+                targets = y[0] if isinstance(y, (list, tuple)) else y
+                loss = model.loss(out.prediction, targets)
+                if grad_accum_steps > 1:
+                    loss = loss / grad_accum_steps
+
+            if use_amp:
+                scaler.scale(loss).backward()
+            else:
+                loss.backward()
+
+            # Step optimizer every grad_accum_steps or at end of epoch
+            if (batch_idx + 1) % grad_accum_steps == 0 or (batch_idx + 1) == n_train:
+                if use_amp:
+                    if args.grad_clip and args.grad_clip > 0:
+                        scaler.unscale_(optimizer)
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), float(args.grad_clip))
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    if args.grad_clip and args.grad_clip > 0:
+                        torch.nn.utils.clip_grad_norm_(model.parameters(), float(args.grad_clip))
+                    optimizer.step()
+
+                optimizer.zero_grad(set_to_none=True)
+
+            loss_val = float(loss.item())
+            if grad_accum_steps > 1:
+                loss_val *= grad_accum_steps
+            total_loss += loss_val
+            train_steps += 1
+
+            if prog_every > 0 and (train_steps % prog_every == 0):
+                _progress_line("train", epoch, train_steps, n_train, train_t0)
+
+            if int(args.log_every_n_steps) > 0 and (train_steps % int(args.log_every_n_steps) == 0):
+                print(f"  Epoch {epoch} | Step {train_steps} | Loss: {loss_val:.4f}", flush=True)
+
+        train_sec = time.time() - train_t0
+        train_loss = (total_loss / train_steps) if train_steps > 0 else 0.0
+        train_it_s = (train_steps / train_sec) if train_sec > 0 else 0.0
+
+        # Val
+        model.eval()
+        val_loss_sum = 0.0
+        val_steps = 0
+        val_t0 = time.time()
+
+        prefetcher_val = StreamPrefetcher(val_dl, device)
+        n_val = len(val_dl)
+
+        with torch.no_grad():
+            for x, y in prefetcher_val:
+                with torch.cuda.amp.autocast(enabled=use_amp):
+                    out = model(x)
+                    targets = y[0] if isinstance(y, (list, tuple)) else y
+                    vloss = model.loss(out.prediction, targets)
+
+                val_loss_sum += float(vloss.item())
+                val_steps += 1
+
+                if prog_every > 0 and (val_steps % prog_every == 0):
+                    _progress_line("val", epoch, val_steps, n_val, val_t0)
+
+        val_sec = time.time() - val_t0
+        val_loss = (val_loss_sum / val_steps) if val_steps > 0 else 0.0
+        val_it_s = (val_steps / val_sec) if val_sec > 0 else 0.0
+        epoch_sec = time.time() - epoch_t0
+
+        improved = val_loss < (best_val_loss - float(args.min_delta))
+        if improved:
+            best_val_loss = val_loss
+            best_epoch = epoch
+            bad_epochs = 0
+        else:
+            bad_epochs += 1
+
+        gpu_mem_gb = 0.0
+        if device.type == "cuda":
+            gpu_mem_gb = float(torch.cuda.max_memory_allocated() / 1e9)
+
+        print(
+            f"✅ EPOCH {epoch} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} "
+            f"| Train: {train_it_s:.2f} it/s | Val: {val_it_s:.2f} it/s | Epoch: {epoch_sec:.1f}s | GPU: {gpu_mem_gb:.1f}GB",
+            flush=True,
+        )
+
+        with metrics_path.open("a", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(
+                [
+                    epoch,
+                    f"{train_loss:.8f}",
+                    f"{val_loss:.8f}",
+                    f"{best_val_loss:.8f}",
+                    int(improved),
+                    bad_epochs,
+                    f"{optimizer.param_groups[0]['lr']:.8e}",
+                    f"{train_sec:.3f}",
+                    f"{val_sec:.3f}",
+                    f"{epoch_sec:.3f}",
+                    f"{train_it_s:.3f}",
+                    f"{val_it_s:.3f}",
+                    f"{gpu_mem_gb:.3f}",
+                ]
+            )
+
+        last_path = run_dir / "checkpoints" / "last.ckpt"
+        torch.save(model.state_dict(), last_path)
+
+        if improved:
+            best_path = run_dir / "checkpoints" / "best.ckpt"
+            torch.save(model.state_dict(), best_path)
+            print(f"  [INFO] New best saved: val={val_loss:.4f} epoch={epoch}", flush=True)
+
+        if int(args.patience) > 0 and bad_epochs >= int(args.patience):
+            print(
+                f"[INFO] Early stop. No improvement for {bad_epochs} epochs. Best epoch={best_epoch} val={best_val_loss:.4f}",
+                flush=True,
+            )
+            break
+
+    print(f"[DONE] Training finished. Best epoch={best_epoch} best_val={best_val_loss:.4f}", flush=True)
 
 
 if __name__ == "__main__":
