@@ -12,6 +12,13 @@ Changes from v1.0:
   - Optimized thread settings (OMP_NUM_THREADS=1)
   - Increased default num_workers to 8
   - Added gradient accumulation support
+
+Hotfix (2025-12-26):
+  - Mixed precision turns on if --precision is 16-mixed or bf16-mixed (no hidden gate)
+  - Removed per-step loss.item() GPU sync, only sync when logging and once per epoch
+  - Added --disable_prefetcher option
+  - Safe DataLoader kwargs: only pass prefetch_factor when num_workers > 0
+  - Added throughput log (samples/sec), because it/s alone is misleading
 """
 from __future__ import annotations
 
@@ -61,6 +68,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--batch_size", type=int, default=1024)
     p.add_argument("--num_workers", type=int, default=8)
     p.add_argument("--prefetch_factor", type=int, default=4)
+    p.add_argument("--disable_prefetcher", action="store_true")
 
     p.add_argument("--encoder_len", type=int, default=96)
     p.add_argument("--pred_len", type=int, default=96)
@@ -216,7 +224,6 @@ def _gpu_poison_pill() -> None:
 class StreamPrefetcher:
     """
     Async GPU transfer with CUDA streams to overlap data movement with compute.
-    Critical for feeding H100 at full speed.
     """
     def __init__(self, loader, device):
         self.loader = loader
@@ -260,6 +267,20 @@ class StreamPrefetcher:
         return len(self.loader)
 
 
+def _move_batch_to_device(batch, device: torch.device):
+    x, y = batch
+    if isinstance(x, dict):
+        x = {k: (v.to(device, non_blocking=True) if torch.is_tensor(v) else v) for k, v in x.items()}
+    elif torch.is_tensor(x):
+        x = x.to(device, non_blocking=True)
+
+    if torch.is_tensor(y):
+        y = y.to(device, non_blocking=True)
+    elif isinstance(y, (list, tuple)):
+        y = [t.to(device, non_blocking=True) if torch.is_tensor(t) else t for t in y]
+    return x, y
+
+
 def _progress_line(prefix: str, epoch: int, step: int, total: int, t0: float) -> None:
     if total <= 0:
         return
@@ -273,10 +294,20 @@ def _progress_line(prefix: str, epoch: int, step: int, total: int, t0: float) ->
     )
 
 
+def _normalize_precision(p: str) -> str:
+    p = str(p).strip().lower()
+    if p in {"32", "32-true", "fp32", "float32"}:
+        return "32-true"
+    if p in {"16", "16-mixed", "fp16", "float16", "mixed"}:
+        return "16-mixed"
+    if p in {"bf16", "bf16-mixed", "bfloat16"}:
+        return "bf16-mixed"
+    return "32-true"
+
+
 def main() -> None:
     args = parse_args()
 
-    # Thread control: prevent oversubscription
     omp = int(os.environ.get("OMP_NUM_THREADS", "1"))
     try:
         torch.set_num_threads(omp)
@@ -379,31 +410,35 @@ def main() -> None:
 
     _write_run_metadata(run_dir, args, cfg, train_ds, val_ds, roles)
 
-    # DataLoader setup with persistent workers and prefetch
     nw = int(args.num_workers)
-    pf = int(args.prefetch_factor) if nw > 0 else None
+    pf = int(args.prefetch_factor)
 
-    print(f"[INFO] DataLoader: num_workers={nw}, prefetch_factor={pf}, persistent={nw > 0}", flush=True)
+    print(f"[INFO] DataLoader: num_workers={nw}, prefetch_factor={(pf if nw > 0 else 'n/a')}, persistent={nw > 0}", flush=True)
 
-    train_dl = train_ds.to_dataloader(
+    train_kwargs = dict(
         train=True,
         batch_size=int(args.batch_size),
         num_workers=nw,
         shuffle=True,
         pin_memory=True,
         persistent_workers=(nw > 0),
-        prefetch_factor=pf,
     )
+    if nw > 0:
+        train_kwargs["prefetch_factor"] = pf
 
-    val_dl = val_ds.to_dataloader(
+    val_kwargs = dict(
         train=False,
         batch_size=int(args.batch_size),
         num_workers=nw,
         shuffle=False,
         pin_memory=True,
         persistent_workers=(nw > 0),
-        prefetch_factor=pf,
     )
+    if nw > 0:
+        val_kwargs["prefetch_factor"] = pf
+
+    train_dl = train_ds.to_dataloader(**train_kwargs)
+    val_dl = val_ds.to_dataloader(**val_kwargs)
 
     device = torch.device("cuda")
     model.to(device)
@@ -414,14 +449,22 @@ def main() -> None:
         weight_decay=float(args.weight_decay),
     )
 
-    use_amp = bool(
-        args.enable_amp
-        and device.type == "cuda"
-        and (args.precision.lower() in {"16-mixed", "bf16-mixed"})
-    )
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    prec = _normalize_precision(args.precision)
 
-    print(f"[INFO] Mixed precision: {use_amp} (precision={args.precision})", flush=True)
+    # FIX: AMP should be enabled when precision requests it,
+    # even if --enable_amp was forgotten.
+    wants_amp = prec in {"16-mixed", "bf16-mixed"}
+    use_amp = bool(device.type == "cuda" and (wants_amp or bool(args.enable_amp)))
+
+    # If user set --enable_amp but left precision fp32, default to bf16 on H100.
+    if use_amp and prec == "32-true":
+        prec = "bf16-mixed"
+
+    amp_dtype = torch.bfloat16 if (use_amp and prec == "bf16-mixed") else torch.float16
+    use_scaler = bool(use_amp and prec == "16-mixed")
+    scaler = torch.cuda.amp.GradScaler(enabled=use_scaler)
+
+    print(f"[INFO] Mixed precision: {use_amp} (precision={prec}, dtype={amp_dtype}, scaler={use_scaler})", flush=True)
 
     metrics_path = run_dir / "logs" / "metrics.csv"
     if not metrics_path.exists():
@@ -442,6 +485,7 @@ def main() -> None:
                     "train_it_per_sec",
                     "val_it_per_sec",
                     "gpu_peak_mem_gb",
+                    "samples_per_sec",
                 ]
             )
 
@@ -452,29 +496,34 @@ def main() -> None:
     bad_epochs = 0
 
     prog_every = int(args.progress_every)
-    grad_accum_steps = int(args.grad_accum_steps)
-
+    grad_accum_steps = max(1, int(args.grad_accum_steps))
     if grad_accum_steps > 1:
         print(f"[INFO] Gradient accumulation: {grad_accum_steps} steps", flush=True)
+
+    use_prefetcher = bool(device.type == "cuda" and (not args.disable_prefetcher))
 
     for epoch in range(int(args.max_epochs)):
         epoch_t0 = time.time()
         if device.type == "cuda":
             torch.cuda.reset_peak_memory_stats()
 
-        # Train
         model.train()
-        total_loss = 0.0
+        total_loss_t = torch.zeros((), device=device)
         train_steps = 0
         train_t0 = time.time()
 
-        prefetcher = StreamPrefetcher(train_dl, device)
         n_train = len(train_dl)
-
         optimizer.zero_grad(set_to_none=True)
 
-        for batch_idx, (x, y) in enumerate(prefetcher):
-            with torch.cuda.amp.autocast(enabled=use_amp):
+        train_iter = StreamPrefetcher(train_dl, device) if use_prefetcher else train_dl
+
+        for batch_idx, batch in enumerate(train_iter):
+            if use_prefetcher:
+                x, y = batch
+            else:
+                x, y = _move_batch_to_device(batch, device)
+
+            with torch.autocast(device_type="cuda", dtype=amp_dtype, enabled=use_amp):
                 out = model(x)
                 targets = y[0] if isinstance(y, (list, tuple)) else y
                 loss = model.loss(out.prediction, targets)
@@ -486,7 +535,6 @@ def main() -> None:
             else:
                 loss.backward()
 
-            # Step optimizer every grad_accum_steps or at end of epoch
             if (batch_idx + 1) % grad_accum_steps == 0 or (batch_idx + 1) == n_train:
                 if use_amp:
                     if args.grad_clip and args.grad_clip > 0:
@@ -501,46 +549,55 @@ def main() -> None:
 
                 optimizer.zero_grad(set_to_none=True)
 
-            loss_val = float(loss.item())
+            # FIX: no per-step .item() sync
+            loss_unscaled = loss.detach()
             if grad_accum_steps > 1:
-                loss_val *= grad_accum_steps
-            total_loss += loss_val
+                loss_unscaled = loss_unscaled * grad_accum_steps
+            total_loss_t += loss_unscaled
             train_steps += 1
 
             if prog_every > 0 and (train_steps % prog_every == 0):
                 _progress_line("train", epoch, train_steps, n_train, train_t0)
 
             if int(args.log_every_n_steps) > 0 and (train_steps % int(args.log_every_n_steps) == 0):
-                print(f"  Epoch {epoch} | Step {train_steps} | Loss: {loss_val:.4f}", flush=True)
+                # Sync only occasionally
+                print(f"  Epoch {epoch} | Step {train_steps} | Loss: {float(loss_unscaled.item()):.4f}", flush=True)
 
         train_sec = time.time() - train_t0
-        train_loss = (total_loss / train_steps) if train_steps > 0 else 0.0
+        train_loss = float((total_loss_t / max(train_steps, 1)).item()) if train_steps > 0 else 0.0
         train_it_s = (train_steps / train_sec) if train_sec > 0 else 0.0
 
-        # Val
+        # More meaningful than it/s
+        samples_s = float(int(args.batch_size) * train_it_s)
+
         model.eval()
-        val_loss_sum = 0.0
+        val_loss_sum_t = torch.zeros((), device=device)
         val_steps = 0
         val_t0 = time.time()
-
-        prefetcher_val = StreamPrefetcher(val_dl, device)
         n_val = len(val_dl)
 
+        val_iter = StreamPrefetcher(val_dl, device) if use_prefetcher else val_dl
+
         with torch.no_grad():
-            for x, y in prefetcher_val:
-                with torch.cuda.amp.autocast(enabled=use_amp):
+            for batch in val_iter:
+                if use_prefetcher:
+                    x, y = batch
+                else:
+                    x, y = _move_batch_to_device(batch, device)
+
+                with torch.autocast(device_type="cuda", dtype=amp_dtype, enabled=use_amp):
                     out = model(x)
                     targets = y[0] if isinstance(y, (list, tuple)) else y
                     vloss = model.loss(out.prediction, targets)
 
-                val_loss_sum += float(vloss.item())
+                val_loss_sum_t += vloss.detach()
                 val_steps += 1
 
                 if prog_every > 0 and (val_steps % prog_every == 0):
                     _progress_line("val", epoch, val_steps, n_val, val_t0)
 
         val_sec = time.time() - val_t0
-        val_loss = (val_loss_sum / val_steps) if val_steps > 0 else 0.0
+        val_loss = float((val_loss_sum_t / max(val_steps, 1)).item()) if val_steps > 0 else 0.0
         val_it_s = (val_steps / val_sec) if val_sec > 0 else 0.0
         epoch_sec = time.time() - epoch_t0
 
@@ -552,13 +609,12 @@ def main() -> None:
         else:
             bad_epochs += 1
 
-        gpu_mem_gb = 0.0
-        if device.type == "cuda":
-            gpu_mem_gb = float(torch.cuda.max_memory_allocated() / 1e9)
+        gpu_mem_gb = float(torch.cuda.max_memory_allocated() / 1e9) if device.type == "cuda" else 0.0
 
         print(
             f"✅ EPOCH {epoch} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} "
-            f"| Train: {train_it_s:.2f} it/s | Val: {val_it_s:.2f} it/s | Epoch: {epoch_sec:.1f}s | GPU: {gpu_mem_gb:.1f}GB",
+            f"| Train: {train_it_s:.2f} it/s | Val: {val_it_s:.2f} it/s | Samples/s: {samples_s:.1f} "
+            f"| Epoch: {epoch_sec:.1f}s | GPU: {gpu_mem_gb:.1f}GB",
             flush=True,
         )
 
@@ -579,6 +635,7 @@ def main() -> None:
                     f"{train_it_s:.3f}",
                     f"{val_it_s:.3f}",
                     f"{gpu_mem_gb:.3f}",
+                    f"{samples_s:.3f}",
                 ]
             )
 
