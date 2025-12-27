@@ -2,7 +2,7 @@
 #SBATCH --job-name=tft_h100_fix
 #SBATCH --partition=gpuh100
 #SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=24
 #SBATCH --mem=64G
 #SBATCH --time=04:00:00
 #SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
@@ -10,64 +10,73 @@
 
 set -euo pipefail
 
-# --- CONFIGURATION ---
+echo "HOST=$(hostname)"
+echo "SLURM_JOB_ID=$SLURM_JOB_ID"
+echo "SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID:-NA}"
+date
+
 REPO="/shared/$USER/miracle/pv_forecast_30d"
 IMG="/shared/$USER/miracle/containers/tft_env_v1.sif"
 
-# Source Data
-SRC_TRAIN="$REPO/data/processed/pretraining/germany/global/tft_inputs/regional_train_tft_full.parquet"
-SRC_VAL="$REPO/data/processed/pretraining/germany/global/tft_inputs/regional_val_tft_full.parquet"
+SRC_TRAIN="$REPO/data/processed/pretraining/germany/global/tft_inputs_pca32/train_pca32.parquet"
+SRC_VAL="$REPO/data/processed/pretraining/germany/global/tft_inputs_pca32/val_pca32.parquet"
 
-# Local Scratch (Fast SSD)
 LOCAL_DIR="/tmp/$USER/$SLURM_JOB_ID"
 
-echo "=== 1. SETUP ==="
+echo "=== SETUP ==="
+echo "HOST: $(hostname)"
+echo "REPO: $REPO"
+echo "IMG:  $IMG"
 mkdir -p "$LOCAL_DIR"
-echo "Created local scratch: $LOCAL_DIR"
 
-echo "=== 2. DATA COPY (To Local SSD) ==="
+echo "=== COPY DATA TO LOCAL SSD ==="
 cp "$SRC_TRAIN" "$LOCAL_DIR/train.parquet"
 cp "$SRC_VAL"   "$LOCAL_DIR/val.parquet"
-echo "Data copy finished."
+ls -lah "$LOCAL_DIR" | head
 
-# --- CRITICAL PERFORMANCE SETTINGS ---
-# 1. Threads: Limit OMP threads so they don't fight the DataLoader workers
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-# 2. Singularity Bind: MUST include /dev/shm for PyTorch workers to function!
-BINDS="/shared/$USER:/shared/$USER,/home/$USER:/home/$USER,/tmp:/tmp,/dev/shm:/dev/shm"
+# Use env-based binding to avoid forbidden singularity flags
+export SINGULARITY_BINDPATH="/shared/$USER:/shared/$USER,/home/$USER:/home/$USER,/tmp:/tmp,/dev/shm:/dev/shm"
 
-echo "=== 3. RUNNING TRAINING ==="
-# Note: We use -C (clean env) + --nv (nvidia) + correct Binds
-singularity exec -C --nv \
-  --bind "$BINDS" \
-  --pwd "$REPO" \
-  "$IMG" \
-  bash -c "
-    echo 'Inside Container: checking GPU...'
-    nvidia-smi -L
-    
-    export PYTHONPATH=$REPO:\$PYTHONPATH
-    
-    # Python Command
-    # Changes made:
-    # 1. --batch_size 2048:  Saturate the H100 (it has 80GB RAM, use it!)
-    # 2. --num_workers 12:   Feed the beast. Now works because of /dev/shm bind.
-    # 3. --precision 32-true: Safe, stable, and still crazy fast on H100.
-    
-    python3 -m src.training.train_tft_v1 \
-      --train_parquet $LOCAL_DIR/train.parquet \
-      --val_parquet   $LOCAL_DIR/val.parquet \
-      --use_lstm_encodings \
-      --enc_lag 96 \
-      --max_epochs 30 \
-      --batch_size 4096 \
-      --num_workers 8 \
-      --precision "16-mixed" \
-      --lr 2e-3
-  "
+echo "=== CONTAINER SMOKE TEST ==="
+singularity exec --nv "$IMG" bash -lc "
+  set -euo pipefail
+  echo 'IN CONTAINER HOST:' \$(hostname)
+  echo 'PWD:' \$(pwd)
+  python3 - <<'PY'
+import torch
+print('torch:', torch.__version__)
+print('cuda_available:', torch.cuda.is_available())
+if torch.cuda.is_available():
+    print('gpu:', torch.cuda.get_device_name(0))
+PY
+  ls -lah $LOCAL_DIR | head
+"
 
-echo "=== 4. CLEANUP ==="
+echo "=== TRAIN ==="
+singularity exec --nv "$IMG" bash -lc "
+  set -euo pipefail
+  cd $REPO
+  export PYTHONPATH="$REPO:${PYTHONPATH:-}"
+
+  python3 -m src.training.train_tft_v1 \
+    --train_parquet $LOCAL_DIR/train.parquet \
+    --val_parquet   $LOCAL_DIR/val.parquet \
+    --use_lstm_encodings \
+    --enc_lag 96 \
+    --max_epochs 30 \
+    --batch_size 512 \
+    --grad_accum_steps 8 \
+    --num_workers 16 \
+    --prefetch_factor 2 \
+    --precision bf16-mixed \
+    --enable_amp \
+    --lr 2e-3
+"
+
+echo "=== CLEANUP ==="
 rm -rf "$LOCAL_DIR"
-echo "Job Complete."
+echo "DONE"
