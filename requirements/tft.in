@@ -1,0 +1,12 @@
+***REMOVED*** Core
+numpy
+pandas
+pyarrow
+
+***REMOVED*** ML
+torch
+lightning
+pytorch-forecasting
+
+***REMOVED*** Common deps
+scikit-learn

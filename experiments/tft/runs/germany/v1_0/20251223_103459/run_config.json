@@ -1,0 +1,46 @@
+{
+  "cli_args": {
+    "attn_heads": 4,
+    "batch_size": 256,
+    "dropout": 0.1,
+    "enc_lag": 96,
+    "encoder_len": 96,
+    "gpus": 1,
+    "hidden_size": 64,
+    "lr": 0.001,
+    "lstm_layers": 2,
+    "max_epochs": 1,
+    "num_workers": 2,
+    "patience": 5,
+    "precision": "16-mixed",
+    "pred_len": 96,
+    "run_root": "experiments/tft/runs/germany/v1_0",
+    "train_parquet": "data/processed/pretraining/germany/global/tft_inputs/regional_train_tft_full.parquet",
+    "use_lstm_encodings": true,
+    "val_parquet": "data/processed/pretraining/germany/global/tft_inputs/regional_val_tft_full.parquet",
+    "weight_decay": 0.0001
+  },
+  "git_commit": "d84ef82acf677cc3147e8786f88a2d4a6f224eb8",
+  "git_dirty": true,
+  "tft_config": {
+    "attention_head_size": 4,
+    "dropout": 0.1,
+    "group_ids": [
+      "plant_id"
+    ],
+    "hidden_size": 64,
+    "learning_rate": 0.001,
+    "lstm_layers": 2,
+    "max_encoder_length": 96,
+    "max_prediction_length": 96,
+    "quantiles": [
+      0.1,
+      0.5,
+      0.9
+    ],
+    "target": "power_norm",
+    "time_idx": "time_idx",
+    "weight_decay": 0.0001
+  },
+  "timestamp_utc": "2025-12-23T10:35:04.020278+00:00"
+}
