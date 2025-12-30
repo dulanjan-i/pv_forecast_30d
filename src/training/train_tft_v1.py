@@ -94,6 +94,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--use_lstm_encodings", action="store_true")
     p.add_argument("--enc_lag", type=int, default=None)
+    p.add_argument("--init_state_dict", type=str, default="", help="Optional path to a torch-saved model.state_dict() to warm-start from.")
+    p.add_argument("--init_strict", action="store_true", help="Strict loading for init_state_dict (default: non-strict).")
+
 
     return p.parse_args()
 
@@ -407,6 +410,20 @@ def main() -> None:
         log_interval=-1,
         reduce_on_plateau_patience=0,
     )
+
+    if args.init_state_dict:
+        init_path = Path(args.init_state_dict)
+        if not init_path.exists():
+            raise FileNotFoundError(f"--init_state_dict not found: {init_path}")
+        sd = torch.load(str(init_path), map_location="cpu")
+        strict = bool(args.init_strict)
+        missing, unexpected = model.load_state_dict(sd, strict=strict)
+        print(f"[INFO] Warm-start loaded from {init_path} strict={strict}")
+        if missing:
+            print(f"[WARN] Missing keys: {missing[:20]}{' ...' if len(missing) > 20 else ''}")
+        if unexpected:
+            print(f"[WARN] Unexpected keys: {unexpected[:20]}{' ...' if len(unexpected) > 20 else ''}")
+
 
     _write_run_metadata(run_dir, args, cfg, train_ds, val_ds, roles)
 
