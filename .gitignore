@@ -246,3 +246,14 @@ data/processed/**/*.parquet
 # Thesis presentations
 *.pptx
 *.pptm  
+
+data/processed/
+experiments/**/runs/
+**/*.parquet
+**/*.ckpt
+**/*.diff
+
+**/*.pkl
+**/*.pcl
+!experiments/tft/run_bundles/**/*.pkl
+!experiments/tft/run_bundles/**/*.pcl
