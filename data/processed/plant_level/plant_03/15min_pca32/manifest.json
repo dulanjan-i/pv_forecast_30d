@@ -1,0 +1,30 @@
+{
+  "plant_id": "plant_03",
+  "capacity_kw": 7358.94,
+  "global_sample_count_reference": 31982,
+  "source_parquet": "data/processed/pretraining/germany/global/tft_inputs_pca32_ablations/train_tft_pvlib.parquet",
+  "splits": {
+    "train_frac": 0.7,
+    "val_frac": 0.15,
+    "test_frac": 0.15
+  },
+  "train": {
+    "rows": 22380,
+    "start": "2023-01-01 23:00:00+00:00",
+    "end": "2023-08-23 01:45:00+00:00",
+    "cols": 33
+  },
+  "val": {
+    "rows": 4795,
+    "start": "2023-08-23 02:00:00+00:00",
+    "end": "2023-10-12 00:30:00+00:00",
+    "cols": 33
+  },
+  "test": {
+    "rows": 4797,
+    "start": "2023-10-12 00:45:00+00:00",
+    "end": "2023-11-30 23:45:00+00:00",
+    "cols": 33
+  },
+  "note": "Plant 3 chosen due to highest samples and clean tilt/azimuth metadata."
+}
