@@ -257,19 +257,116 @@ class RLIntegratedForecaster:
             
             elif action_index == 1:  # FINE_TUNE_SHORT_TFT
                 logger.info("[Action] FINE_TUNE_SHORT_TFT - adjusting hyperparameters")
-                # TODO: Implement hyperparameter adjustment
-                # For now: log only
-                return True
+                if self.forecaster is None:
+                    logger.warning("  No forecaster loaded, skipping")
+                    return False
+                
+                # Get current learning rate (stored in model's hparams)
+                if hasattr(self.forecaster, 'short_model') and hasattr(self.forecaster.short_model, 'hparams'):
+                    current_lr = self.forecaster.short_model.hparams.get('learning_rate', 1e-3)
+                    
+                    # Decide adjustment based on recent performance
+                    if len(self.metrics_history) > 0:
+                        recent_rmse = self.metrics_history[-1].get('short_rmse_1h', 0.05)
+                        if recent_rmse > 0.08:
+                            # High error: increase LR (learn faster)
+                            new_lr = min(current_lr * 1.2, 1e-2)  # Cap at 0.01
+                            logger.info(f"  High RMSE ({recent_rmse:.4f}), increasing LR: {current_lr:.2e} → {new_lr:.2e}")
+                        else:
+                            # Low error: decrease LR (fine-tune)
+                            new_lr = max(current_lr * 0.8, 1e-5)  # Floor at 1e-5
+                            logger.info(f"  Low RMSE ({recent_rmse:.4f}), decreasing LR: {current_lr:.2e} → {new_lr:.2e}")
+                        
+                        # Update hparams (will be picked up by optimizer on next fit)
+                        self.forecaster.short_model.hparams['learning_rate'] = new_lr
+                        return True
+                    else:
+                        logger.warning("  No metrics history to guide adjustment")
+                        return False
+                else:
+                    logger.warning("  Short model hparams not accessible")
+                    return False
             
             elif action_index == 2:  # FINE_TUNE_LONG_TFT
                 logger.info("[Action] FINE_TUNE_LONG_TFT - adjusting hyperparameters")
-                # TODO: Implement hyperparameter adjustment
-                return True
+                if self.forecaster is None:
+                    logger.warning("  No forecaster loaded, skipping")
+                    return False
+                
+                # Get current learning rate (stored in model's hparams)
+                if hasattr(self.forecaster, 'long_model') and hasattr(self.forecaster.long_model, 'hparams'):
+                    current_lr = self.forecaster.long_model.hparams.get('learning_rate', 1e-3)
+                    
+                    # Decide adjustment based on recent performance
+                    if len(self.metrics_history) > 0:
+                        recent_rmse = self.metrics_history[-1].get('long_rmse_30d', 0.05)
+                        if recent_rmse > 0.10:
+                            # High error: increase LR
+                            new_lr = min(current_lr * 1.2, 1e-2)
+                            logger.info(f"  High RMSE ({recent_rmse:.4f}), increasing LR: {current_lr:.2e} → {new_lr:.2e}")
+                        else:
+                            # Low error: decrease LR
+                            new_lr = max(current_lr * 0.8, 1e-5)
+                            logger.info(f"  Low RMSE ({recent_rmse:.4f}), decreasing LR: {current_lr:.2e} → {new_lr:.2e}")
+                        
+                        # Update hparams
+                        self.forecaster.long_model.hparams['learning_rate'] = new_lr
+                        return True
+                    else:
+                        logger.warning("  No metrics history to guide adjustment")
+                        return False
+                else:
+                    logger.warning("  Long model hparams not accessible")
+                    return False
             
             elif action_index == 3:  # RECALIBRATE_PVLIB
                 logger.info("[Action] RECALIBRATE_PVLIB - adjusting panel metadata")
-                # TODO: Implement PVLib recalibration
-                return True
+                if self.forecaster is None or not hasattr(self.forecaster, 'pvlib_predictor'):
+                    logger.warning("  No PVLib predictor loaded, skipping")
+                    return False
+                
+                # Access PVLib predictor
+                pvlib = self.forecaster.pvlib_predictor
+                
+                # Check if we have tilt/azimuth attributes
+                if hasattr(pvlib, 'tilt_deg') and hasattr(pvlib, 'azimuth_deg'):
+                    # Decide adjustments based on recent physics residual
+                    if len(self.metrics_history) > 0:
+                        residual = self.metrics_history[-1].get('physics_residual', 0.05)
+                        
+                        if residual > 0.15:
+                            # High residual: adjust parameters
+                            old_tilt = pvlib.tilt_deg
+                            old_azimuth = pvlib.azimuth_deg
+                            
+                            # Small random adjustments within bounds
+                            import random
+                            tilt_delta = random.uniform(-3, 3)  # ±3° (within ±5° bound)
+                            azimuth_delta = random.uniform(-5, 5)  # ±5° (within ±10° bound)
+                            
+                            new_tilt = np.clip(old_tilt + tilt_delta, 10, 60)
+                            new_azimuth = np.clip(old_azimuth + azimuth_delta, 90, 270)
+                            
+                            # Update both stored attributes and PVSystem
+                            pvlib.tilt_deg = new_tilt
+                            pvlib.azimuth_deg = new_azimuth
+                            pvlib.system.surface_tilt = new_tilt
+                            pvlib.system.surface_azimuth = new_azimuth
+                            
+                            logger.info(f"  High residual ({residual:.4f}), adjusting:")
+                            logger.info(f"    Tilt: {old_tilt:.1f}° → {new_tilt:.1f}°")
+                            logger.info(f"    Azimuth: {old_azimuth:.1f}° → {new_azimuth:.1f}°")
+                            
+                            return True
+                        else:
+                            logger.info(f"  Residual acceptable ({residual:.4f}), no adjustment needed")
+                            return True
+                    else:
+                        logger.warning("  No metrics history to guide adjustment")
+                        return False
+                else:
+                    logger.warning("  PVLib tilt/azimuth attributes not accessible")
+                    return False
             
             elif action_index in [4, 5, 6]:  # BLEND adjustments
                 preset = self.rl_system.meta_controller.BLEND_PRESETS.get(action_index, {})
