@@ -364,8 +364,8 @@ RLConfig(
 
 ```python
 RLConfig(
-    target_update_freq=1000,  # Update every N steps
-    tau=0.005                  # Soft update coefficient
+    target_update_freq=1,  # Soft update every step (smooth weather tracking)
+    tau=0.005              # Soft update coefficient (0.5% per step)
 )
 ```
 
