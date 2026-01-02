@@ -1,0 +1,39 @@
+            ┌────────────────────────────┐
+            │   🟦 DATA INPUTS           │
+            │  • Historical Weather + PV │
+            │  • Real-Time Weather API   │
+            │  • PVLib Physical Model    │
+            └────────────┬───────────────┘
+                         │
+                         ▼
+            ┌────────────────────────────┐
+            │   🟩 LEARNERS              │
+            │  • LSTM Encoder (historical)│
+            │  • TFT (fusion + forecast) │
+            └────────────┬───────────────┘
+                         │
+                         ▼
+            ┌────────────────────────────┐
+            │   🟨 FEEDBACK SYSTEM        │
+            │  • RMSE / MAE / SHAP drift │
+            │  • Data alignment checks   │
+            │  • Model performance logs  │
+            └────────────┬───────────────┘
+                         │
+                         ▼
+            ┌────────────────────────────┐
+            │   🟧 RL META-CONTROLLER     │
+            │  • Reads feedback          │
+            │  • Decides actions:        │
+            │     – retrain / skip       │
+            │     – full vs incremental  │
+            │     – parameter adjust     │
+            └────────────┬───────────────┘
+                         │
+                         ▼
+            ┌────────────────────────────┐
+            │   🩷 OUTPUT + DATABASE      │
+            │  • Final PV forecast       │
+            │  • Stored predictions      │
+            │  • Rolling window updates  │
+            └────────────────────────────┘

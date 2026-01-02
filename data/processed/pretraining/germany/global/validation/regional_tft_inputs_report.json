@@ -1,0 +1,160 @@
+{
+  "train": {
+    "base": {
+      "rows": 142190,
+      "cols": 89,
+      "time_min": "2023-01-01 23:00:00+00:00",
+      "time_max": "2023-11-30 23:45:00+00:00",
+      "plants": [
+        "plant_01",
+        "plant_02",
+        "plant_03",
+        "plant_05",
+        "plant_06"
+      ],
+      "has_plant_04": false,
+      "dup_keys": 0,
+      "nan_total": 0
+    },
+    "weather": {
+      "rows": 142190,
+      "cols": 15,
+      "time_min": "2023-01-01 23:00:00+00:00",
+      "time_max": "2023-11-30 23:45:00+00:00",
+      "plants": [
+        "plant_01",
+        "plant_02",
+        "plant_03",
+        "plant_05",
+        "plant_06"
+      ],
+      "has_plant_04": false,
+      "dup_keys": 0,
+      "nan_total": 0
+    },
+    "pvlib": {
+      "rows": 142190,
+      "cols": 10,
+      "time_min": "2023-01-01 23:00:00+00:00",
+      "time_max": "2023-11-30 23:45:00+00:00",
+      "plants": [
+        "plant_01",
+        "plant_02",
+        "plant_03",
+        "plant_05",
+        "plant_06"
+      ],
+      "has_plant_04": false,
+      "dup_keys": 0,
+      "nan_total": 0
+    },
+    "merge": {
+      "overlap_base_weather": [
+        "cloud_cover",
+        "diffuse_radiation_instant",
+        "direct_normal_irradiance_instant",
+        "direct_radiation_instant",
+        "global_tilted_irradiance_instant",
+        "precipitation",
+        "relative_humidity_2m",
+        "shortwave_radiation_instant",
+        "surface_pressure",
+        "temperature_2m",
+        "weather_code",
+        "wind_direction_10m",
+        "wind_speed_10m"
+      ],
+      "overlap_base_pvlib": [],
+      "overlap_weather_pvlib": [],
+      "merged_rows": 142190,
+      "merged_cols": 110,
+      "keys_base_only": 0,
+      "keys_weather_only": 0,
+      "keys_pvlib_only": 0,
+      "merged_dup_keys": 0,
+      "merged_nan_total": 0,
+      "pvlib_min": 0.0,
+      "pvlib_max": 6870.193359375,
+      "pvlib_negative_rows": 0
+    }
+  },
+  "val": {
+    "base": {
+      "rows": 36952,
+      "cols": 89,
+      "time_min": "2023-12-02 00:00:00+00:00",
+      "time_max": "2024-02-29 23:45:00+00:00",
+      "plants": [
+        "plant_01",
+        "plant_02",
+        "plant_03",
+        "plant_05",
+        "plant_06"
+      ],
+      "has_plant_04": false,
+      "dup_keys": 0,
+      "nan_total": 0
+    },
+    "weather": {
+      "rows": 36952,
+      "cols": 15,
+      "time_min": "2023-12-02 00:00:00+00:00",
+      "time_max": "2024-02-29 23:45:00+00:00",
+      "plants": [
+        "plant_01",
+        "plant_02",
+        "plant_03",
+        "plant_05",
+        "plant_06"
+      ],
+      "has_plant_04": false,
+      "dup_keys": 0,
+      "nan_total": 0
+    },
+    "pvlib": {
+      "rows": 36952,
+      "cols": 10,
+      "time_min": "2023-12-02 00:00:00+00:00",
+      "time_max": "2024-02-29 23:45:00+00:00",
+      "plants": [
+        "plant_01",
+        "plant_02",
+        "plant_03",
+        "plant_05",
+        "plant_06"
+      ],
+      "has_plant_04": false,
+      "dup_keys": 0,
+      "nan_total": 0
+    },
+    "merge": {
+      "overlap_base_weather": [
+        "cloud_cover",
+        "diffuse_radiation_instant",
+        "direct_normal_irradiance_instant",
+        "direct_radiation_instant",
+        "global_tilted_irradiance_instant",
+        "precipitation",
+        "relative_humidity_2m",
+        "shortwave_radiation_instant",
+        "surface_pressure",
+        "temperature_2m",
+        "weather_code",
+        "wind_direction_10m",
+        "wind_speed_10m"
+      ],
+      "overlap_base_pvlib": [],
+      "overlap_weather_pvlib": [],
+      "merged_rows": 36952,
+      "merged_cols": 110,
+      "keys_base_only": 0,
+      "keys_weather_only": 0,
+      "keys_pvlib_only": 0,
+      "merged_dup_keys": 0,
+      "merged_nan_total": 0,
+      "pvlib_min": 0.0,
+      "pvlib_max": 4225.89892578125,
+      "pvlib_negative_rows": 0
+    }
+  }
+}

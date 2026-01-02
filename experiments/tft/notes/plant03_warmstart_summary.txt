@@ -1,0 +1,1 @@
+plant_03 pvlib warmstart (from global noleak): best_val=0.0267 best_epoch=12 run_dir=/shared/dbfz018/miracle/pv_forecast_30d/experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100
