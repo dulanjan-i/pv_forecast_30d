@@ -1,0 +1,35 @@
+{
+  "exclude_plant_id": "plant_03",
+  "rows": {
+    "train_after": 110218,
+    "train_before": 142190,
+    "val_after": 34171,
+    "val_before": 36952
+  },
+  "src_train": "/shared/dbfz018/miracle/pv_forecast_30d/data/processed/pretraining/germany/global/tft_inputs_pca32_ablations/train_tft_pvlib.parquet",
+  "src_val": "/shared/dbfz018/miracle/pv_forecast_30d/data/processed/pretraining/germany/global/tft_inputs_pca32_ablations/val_tft_pvlib.parquet",
+  "time_range": {
+    "train_after": {
+      "end": "2023-11-30 23:45:00+00:00",
+      "start": "2023-01-01 23:00:00+00:00"
+    },
+    "val_after": {
+      "end": "2024-02-29 23:45:00+00:00",
+      "start": "2023-12-02 00:00:00+00:00"
+    }
+  },
+  "unique_plants": {
+    "train_after": [
+      "plant_01",
+      "plant_02",
+      "plant_05",
+      "plant_06"
+    ],
+    "val_after": [
+      "plant_01",
+      "plant_02",
+      "plant_05",
+      "plant_06"
+    ]
+  }
+}

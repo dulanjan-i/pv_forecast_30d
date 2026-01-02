@@ -1,0 +1,17 @@
+digraph MetaController1 {
+    rankdir=LR;
+
+    "Historical Weather Data" -> "LSTM Encoder" [label="Preprocessed Weather Inputs"];
+    "Historical PV Data" -> "LSTM Encoder";
+    "LSTM Encoder" -> "Encoded Signals";
+
+    "Encoded Signals" -> "TFT Model" [label="Encoded Inputs"];
+    "PVLib Outputs" -> "TFT Model";
+
+    "TFT Model" -> "PV Power Forecast";
+
+    "Real-time Weather API Data" -> "Meta Controller 1" [label="Error Monitoring"];
+    "PV Power Forecast" -> "Meta Controller 1";
+    "Meta Controller 1" -> "Trigger TFT Retraining?" [label="Decision"];
+    "Trigger TFT Retraining?" -> "TFT Model" [label="Retrain Signal", style=dashed];
+}

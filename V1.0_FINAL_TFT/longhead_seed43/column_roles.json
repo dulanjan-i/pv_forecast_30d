@@ -1,0 +1,35 @@
+{
+  "group_ids": [
+    "plant_id"
+  ],
+  "known_time_reals": [
+    "cloud_cover",
+    "diffuse_radiation_instant",
+    "direct_normal_irradiance_instant_raw",
+    "direct_radiation_instant",
+    "global_tilted_irradiance_instant_raw",
+    "precipitation",
+    "pvlib_ac_kw",
+    "pvlib_dc_kw",
+    "pvlib_poa_diffuse",
+    "pvlib_poa_direct",
+    "pvlib_poa_global",
+    "pvlib_poa_ground_diffuse",
+    "pvlib_solar_azimuth",
+    "pvlib_solar_zenith",
+    "relative_humidity_2m",
+    "shortwave_radiation_instant_raw",
+    "surface_pressure",
+    "temperature_2m",
+    "weather_code",
+    "wind_direction_10m",
+    "wind_speed_10m"
+  ],
+  "lagged_encoding_cols": [],
+  "target": "power_norm",
+  "time_col": "timestamp_utc",
+  "time_idx_col": "time_idx",
+  "unknown_time_reals": [
+    "power_norm"
+  ]
+}

@@ -1,0 +1,61 @@
+# experiments/lstm/germany/pretrain_plant_05.yaml
+# 
+# STAGE 2: Transfer Learning from Farm2107 → Germany Plant 05
+# Initialized with: experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt
+# Best config from stage 1: h64_l2_lr1em03 (RMSE=0.040388)
+#
+# Purpose:
+# - Transfer pretrained encoder to Germany plant_05 data
+# - Fine-tune on local weather/irradiance patterns
+# - Prepare encoder for downstream TFT ensemble
+
+experiment:
+  name: "germany_plant_05_pretrain"
+  tag: "stage02_plant05"
+
+paths:
+  output_dir: "experiments/lstm/runs/germany/pretrain_plant_05/"
+  init_weights_path: "experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"  # ← STAGE 1 weights
+
+data:
+  train_path: "data/processed/pretraining/germany/plant_05/train.parquet"
+  val_path: "data/processed/pretraining/germany/plant_05/val.parquet"
+  time_col: "timestamp_utc"
+  id_col: null                # Single plant, no grouping needed
+  feature_cols:
+    # ⚠️ CRITICAL: Order LOCKED to match farm2107_CANONICAL pretrained weights!
+    - power_norm                              # autoregressive PV
+    - poa_irradiance                          # POA feature
+    - temperature_2m                          # weather
+    - relative_humidity_2m
+    - precipitation                           # ← Index 4 (pretrained expects this)
+    - weather_code                            # ← Index 5
+    - cloud_cover                             # ← Index 6
+    - wind_speed_10m                          # ← Index 7
+    - wind_direction_10m                      # ← Index 8
+    - shortwave_radiation_instant             # radiation
+    - direct_radiation_instant
+    - diffuse_radiation_instant
+    - direct_normal_irradiance_instant
+    - global_tilted_irradiance_instant
+    - surface_pressure                        # ← Index 14 (last)
+  target_col: "power_norm"
+  window_size: 96          # encoder length (24h @ 15-min)
+  horizon: 1               # next-step prediction for pretraining
+
+model:
+  hidden_size: 64          # ✓ Validated optimal from farm2107 canonical
+  num_layers: 2            # ✓ Validated optimal from farm2107 canonical
+  dropout: 0.1
+
+training:
+  batch_size: 512          # ✓ Optimized for L4 GPUs (24GB) - 2x stage 1
+  max_epochs: 20           # Stage 2 typically needs fewer epochs (fine-tuning)
+  learning_rate: 1e-4      # Conservative for transfer learning fine-tuning
+  weight_decay: 1e-4
+  gradient_clip_val: 1.0
+  gpus: 1                  # Single GPU per plant (parallel across 4 L4s on calc02)
+  num_workers: 4
+
+save:
+  encoder_path: "experiments/lstm/encoders/lstm_encoder_plant_05.pt"  # ← Output for stage 2

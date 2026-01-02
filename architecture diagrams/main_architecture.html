@@ -1,0 +1,38 @@
+Historical Data + Real-Time Data
+            │
+            ▼
+      ┌─────────────┐
+      │ LSTM Encoder│
+      └─────────────┘
+            │
+Encoded LSTM Output ─────────────┐
+                                  │
+             ┌──────────────┐     │
+PVLib Output │ PVLib Model  │────┘
+             └──────────────┘
+                                  │
+             ┌──────────────┐     │
+API Data     │ Preprocessor │────┘
+             └──────────────┘
+                                  │
+            ┌─────────────────────────────────────┐
+            │              TFT Model               │
+            └─────────────────────────────────────┘
+                                  │
+                   PV Forecast Output + Confidence
+                                  │
+                                  ▼
+                      ┌──────────────────┐
+                      │ Feedback Loop    │
+                      │ (Error Metrics) │
+                      └──────────────────┘
+                                  │
+                                  ▼
+                 ┌──────────────────────────┐
+                 │ RL Meta-Controller      │
+                 │ States, Actions, Rewards│
+                 └──────────────────────────┘
+             ┌───────────────┬───────────────┬───────────────┐
+             ▼               ▼               ▼
+      Retrain TFT     Retrain LSTM      Adjust PVLib Params
+      Forecast Type   Forecast Update    Data Update
