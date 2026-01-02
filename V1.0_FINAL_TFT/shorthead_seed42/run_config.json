@@ -1,0 +1,43 @@
+{
+  "cli_args": {
+    "attn_heads": 4,
+    "batch_size": 512,
+    "disable_prefetcher": false,
+    "dropout": 0.15,
+    "enable_amp": false,
+    "enc_lag": null,
+    "encoder_len": 96,
+    "grad_accum_steps": 8,
+    "grad_clip": 0.1,
+    "hidden_size": 64,
+    "init_state_dict": "/shared/dbfz018/miracle/pv_forecast_30d/experiments/tft/runs/germany/global_noleak/target03_excluded/20251229_134852/checkpoints/best_state_dict.pt",
+    "init_strict": false,
+    "log_every_n_steps": 50,
+    "lr": 0.0006,
+    "lstm_layers": 2,
+    "max_epochs": 50,
+    "min_delta": 1e-05,
+    "num_workers": 8,
+    "patience": 5,
+    "precision": "bf16-mixed",
+    "pred_len": 96,
+    "prefetch_factor": 4,
+    "progress_every": 25,
+    "run_root": "experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak",
+    "seed": 42,
+    "train_parquet": "/shared/dbfz018/miracle/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/train.parquet",
+    "use_lstm_encodings": false,
+    "val_parquet": "/shared/dbfz018/miracle/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/val.parquet",
+    "weight_decay": 0.0001
+  },
+  "cuda_available": true,
+  "cuda_device_name": "NVIDIA H100 PCIe",
+  "tft_config": {
+    "attention_head_size": 4,
+    "dropout": 0.15,
+    "hidden_size": 64,
+    "lstm_layers": 2
+  },
+  "timestamp_utc": "2025-12-29T15:11:01.807732+00:00",
+  "torch": "2.5.1+cu124"
+}
