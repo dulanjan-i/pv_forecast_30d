@@ -257,3 +257,4 @@ experiments/**/runs/
 **/*.pcl
 !experiments/tft/run_bundles/**/*.pkl
 !experiments/tft/run_bundles/**/*.pcl
+.ecmwf_credentials.json
