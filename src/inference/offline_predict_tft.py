@@ -212,13 +212,18 @@ def main() -> None:
 
     run_cfg = _read_json(run_dir / "run_config.json")
     cfg = run_cfg.get("cfg", run_cfg)
+    
+    # Support both config key styles: "cli_args" dict or top-level keys
+    if "cli_args" in cfg:
+        cfg = cfg["cli_args"]
 
-    max_encoder_length = int(cfg.get("max_encoder_length", 96))
-    max_prediction_length = int(cfg.get("max_prediction_length", 96))
+    # Support both naming conventions: max_encoder_length/encoder_len, max_prediction_length/pred_len
+    max_encoder_length = int(cfg.get("max_encoder_length", cfg.get("encoder_len", 96)))
+    max_prediction_length = int(cfg.get("max_prediction_length", cfg.get("pred_len", 96)))
 
     hidden_size = int(cfg.get("hidden_size", 64))
     lstm_layers = int(cfg.get("lstm_layers", 2))
-    attention_head_size = int(cfg.get("attention_head_size", 4))
+    attention_head_size = int(cfg.get("attention_head_size", cfg.get("attn_heads", 4)))
     dropout = float(cfg.get("dropout", 0.1))
     # Default to pytorch_forecasting.metrics.QuantileLoss default quantiles (7 quantiles)
     quantiles = cfg.get("quantiles", [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98])
