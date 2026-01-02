@@ -261,7 +261,7 @@ Before deploying on real data, validate on controlled scenario:
 
 ### 6.1 Modular Design
 
-Propose new module: `src/models/hierarchical_fusion.py`
+Propose new module for MiRACLE (Meta Intelligent Reinforcement Driven Adaptive Control for Learning Based Ensembles): `src/models/hierarchical_fusion.py`
 
 **Key Classes:**
 ```python
