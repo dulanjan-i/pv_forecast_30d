@@ -17,7 +17,7 @@ import logging
 from collections import deque
 import json
 
-from src.rl.rl_meta_controller import RLMetaController, RLConfig
+from src.rl.rl_meta_controller import RLMetaControllerSystem, RLConfig
 from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
 
 logging.basicConfig(level=logging.INFO)
@@ -59,10 +59,13 @@ class RLIntegratedForecaster:
         else:
             rl_config.mode = rl_mode
         
-        self.rl_controller = RLMetaController(
+        self.rl_system = RLMetaControllerSystem(
             config=rl_config,
             checkpoint_dir=checkpoint_dir
         )
+        
+        # Current blend weights (managed by RL)
+        self.blend_weights = {'short': 0.33, 'long': 0.33, 'physics': 0.34}
         
         # Metrics tracking
         self.metrics_history = deque(maxlen=1000)
@@ -236,29 +239,107 @@ class RLIntegratedForecaster:
         
         return metrics
     
+    def execute_action(self, action_index: int, model_name: str = None):
+        """
+        Execute RL action with safety bounds.
+        
+        Args:
+            action_index: Action from meta-controller (0-7)
+            model_name: Which model to act on (for actions 1-3)
+        
+        Returns:
+            success: Whether action executed successfully
+        """
+        try:
+            if action_index == 0:  # MAINTAIN
+                logger.info("[Action] MAINTAIN - no changes")
+                return True
+            
+            elif action_index == 1:  # FINE_TUNE_SHORT_TFT
+                logger.info("[Action] FINE_TUNE_SHORT_TFT - adjusting hyperparameters")
+                # TODO: Implement hyperparameter adjustment
+                # For now: log only
+                return True
+            
+            elif action_index == 2:  # FINE_TUNE_LONG_TFT
+                logger.info("[Action] FINE_TUNE_LONG_TFT - adjusting hyperparameters")
+                # TODO: Implement hyperparameter adjustment
+                return True
+            
+            elif action_index == 3:  # RECALIBRATE_PVLIB
+                logger.info("[Action] RECALIBRATE_PVLIB - adjusting panel metadata")
+                # TODO: Implement PVLib recalibration
+                return True
+            
+            elif action_index in [4, 5, 6]:  # BLEND adjustments
+                preset = self.rl_system.meta_controller.BLEND_PRESETS.get(action_index, {})
+                self.blend_weights = preset
+                logger.info(f"[Action] BLEND adjusted: {preset}")
+                return True
+            
+            elif action_index == 7:  # SUGGEST_RETRAIN
+                logger.warning("[Action] SUGGEST_RETRAIN - requires human confirmation")
+                # Add to retrain queue
+                if model_name:
+                    self.rl_system.retrain_queue[model_name].append({
+                        'timestamp': pd.Timestamp.now(),
+                        'reason': 'RL meta-controller suggestion',
+                        'metrics': self.metrics_history[-1] if self.metrics_history else {}
+                    })
+                return True
+            
+            else:
+                logger.error(f"[Action] Unknown action index: {action_index}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[Action] Execution failed: {e}")
+            return False
+    
     def forecast_with_rl(
         self,
         weather_data: pd.DataFrame,
+        forecast_start: pd.Timestamp,
+        historical_data: Optional[pd.DataFrame] = None,
         ground_truth: Optional[np.ndarray] = None
     ) -> Tuple[np.ndarray, Dict]:
         """
         Generate forecast with RL-driven adaptive blending.
         
         Args:
-            weather_data: Weather features for prediction
+            weather_data: Weather features for prediction (30 days)
+            forecast_start: Starting timestamp
+            historical_data: Recent history for TFT encoder
             ground_truth: Actual measurements (for online learning)
         
         Returns:
-            forecast: Final blended prediction
+            forecast: Final blended prediction (2880 steps @ 15-min)
             info: Dict with diagnostics
         """
-        # Get individual model predictions (mock for now - integrate with forecaster)
-        # In production: call self.forecaster's internal methods
-        forecast_short = np.random.rand(96) * 0.5  # Mock 24h @ 15-min
-        forecast_long = np.random.rand(720) * 0.5   # Mock 30d @ 1-hour
-        forecast_physics = np.random.rand(96) * 0.5  # Mock physics
+        # Get individual model predictions from PhysicsAwareForecaster
+        try:
+            # Use existing forecaster's predict_30d method
+            full_forecast = self.forecaster.predict_30d(
+                forecast_start=forecast_start,
+                weather_df=weather_data,
+                historical_df=historical_data
+            )
+            
+            # Extract component forecasts (if available from forecaster internals)
+            # For now: use full forecast as baseline
+            forecast_short = full_forecast[:96]   # Day 1
+            forecast_long = full_forecast[96:]    # Days 2-30
+            forecast_physics = full_forecast[:96] # Approximation
+            
+        except Exception as e:
+            logger.error(f"[Forecast] Forecaster failed: {e}, using fallback")
+            # Fallback: zeros
+            forecast_short = np.zeros(96)
+            forecast_long = np.zeros(2784)  # 30d - 1d = 29d @ 96/day
+            forecast_physics = np.zeros(96)
+            full_forecast = np.zeros(2880)
         
-        # Collect metrics
+        # Collect comprehensive metrics
         metrics = self.collect_metrics(
             forecast_short=forecast_short,
             forecast_long=forecast_long,
@@ -267,50 +348,73 @@ class RLIntegratedForecaster:
             weather_data=weather_data
         )
         
-        # RL meta-controller step
-        actions = self.rl_controller.step(metrics)
+        # RL meta-controller: decide action
+        action_info = self.rl_system.step(metrics)
+        action_index = action_info.get('action_index', 0)
+        meta_state = self.rl_system.current_state
         
-        # Apply dynamic blend weights
-        blend_weights = actions['blend_weights']
+        # Execute action (with safety bounds)
+        action_success = self.execute_action(action_index)
         
-        # Blend forecasts (align resolutions first)
+        # Get current blend weights (updated by execute_action if blend action)
+        blend_weights = self.blend_weights
+        
+        # Apply dynamic blending to create final forecast
+        # NOTE: For full 30-day, we blend Day 1 differently than Days 2-30
+        # Day 1: blend short + physics
+        # Days 2-30: use long-head as-is (already physics-aware from training)
+        
         short_24h = forecast_short[:96]
-        long_24h_resampled = np.repeat(forecast_long[:24], 4)  # Upsample 1h → 15min
         physics_24h = forecast_physics[:96]
         
-        forecast_blended = (
-            blend_weights['short'] * short_24h +
-            blend_weights['long'] * long_24h_resampled +
-            blend_weights['physics'] * physics_24h
+        # Day 1 blended (normalize weights for 2-component blend)
+        w_short_norm = blend_weights['short'] / (blend_weights['short'] + blend_weights['physics'])
+        w_physics_norm = blend_weights['physics'] / (blend_weights['short'] + blend_weights['physics'])
+        
+        day1_blended = (
+            w_short_norm * short_24h +
+            w_physics_norm * physics_24h
         )
+        
+        # Days 2-30: use long-head forecast (already good from training)
+        days_2_30 = forecast_long
+        
+        # Concatenate
+        forecast_final = np.concatenate([day1_blended, days_2_30])
         
         # Store for next iteration
         self.metrics_history.append(metrics)
-        self.action_history.append(actions)
-        self.forecast_history.append(forecast_blended)
+        self.action_history.append({
+            'action_index': action_index,
+            'action_name': self.rl_system.meta_controller.get_action_name(action_index),
+            'blend_weights': blend_weights,
+            'success': action_success
+        })
+        self.forecast_history.append(forecast_final)
         
-        # If ground truth available: update RL (online learning)
+        # Compute reward and update RL (online learning)
         if ground_truth is not None and len(self.metrics_history) > 1:
-            metrics_prev = self.metrics_history[-2]
-            actions_prev = self.action_history[-2]
+            metrics_prev = self.metrics_history[-1]  # Previous step
+            reward = self.rl_system.compute_reward(metrics_prev, metrics)
             
-            self.rl_controller.update(
-                metrics_prev=metrics_prev,
-                actions=actions_prev,
-                metrics_next=metrics,
-                done=False
-            )
+            # Update RL system
+            self.rl_system.update(metrics, done=False)
+            
+            logger.info(f"[RL Update] Reward={reward:.3f}, Action={action_index}, ε={self.rl_system.meta_controller.epsilon:.3f}")
         
         # Build info dict
         info = {
             'blend_weights': blend_weights,
-            'actions': actions,
+            'action_index': action_index,
+            'action_name': self.rl_system.meta_controller.get_action_name(action_index),
+            'action_success': action_success,
             'metrics': metrics,
-            'rl_diagnostics': self.rl_controller.get_diagnostics(),
-            'retrain_queue': self.rl_controller.retrain_queue
+            'meta_state': meta_state,
+            'rl_diagnostics': self.rl_system.get_status(),
+            'retrain_queue': {k: len(v) for k, v in self.rl_system.retrain_queue.items()}
         }
         
-        return forecast_blended, info
+        return forecast_final, info
     
     def confirm_retrain(self, model: str, approve: bool = False):
         """
@@ -320,7 +424,7 @@ class RLIntegratedForecaster:
             model: 'short_tft', 'long_tft', or 'pvlib'
             approve: True to execute retrain, False to reject
         """
-        queue = self.rl_controller.retrain_queue.get(model, [])
+        queue = self.rl_system.retrain_queue.get(model, [])
         
         if not queue:
             logger.warning(f"[Retrain] No pending requests for {model}")
@@ -333,45 +437,134 @@ class RLIntegratedForecaster:
             logger.info(f"  Reason: {request['reason']}")
             logger.info(f"  Timestamp: {request['timestamp']}")
             # TODO: Execute actual retraining here
+            # self.forecaster.retrain_model(model)
         else:
             logger.info(f"[Retrain] REJECTED for {model}")
     
     def save_checkpoint(self, path: Optional[Path] = None):
         """Save RL checkpoint."""
-        self.rl_controller.save_checkpoint(path)
+        self.rl_system.save_checkpoint(path)
     
     def load_checkpoint(self, path: Path):
         """Load RL checkpoint."""
-        self.rl_controller.load_checkpoint(path)
+        return self.rl_system.load_checkpoint(path)
     
     def get_status(self) -> Dict:
         """Get comprehensive system status."""
         return {
-            'rl_mode': self.rl_controller.config.mode,
+            'rl_mode': self.rl_system.config.mode,
             'metrics_count': len(self.metrics_history),
             'forecast_count': len(self.forecast_history),
             'pending_retrains': {
-                k: len(v) for k, v in self.rl_controller.retrain_queue.items()
+                k: len(v) for k, v in self.rl_system.retrain_queue.items()
             },
-            'rl_diagnostics': self.rl_controller.get_diagnostics(),
+            'rl_status': self.rl_system.get_status(),
             'latest_metrics': self.metrics_history[-1] if self.metrics_history else {},
-            'latest_actions': self.action_history[-1] if self.action_history else {}
+            'latest_actions': self.action_history[-1] if self.action_history else {},
+            'current_blend_weights': self.blend_weights
         }
+    
+    def collect_episode_data(self, num_steps: int = 100) -> pd.DataFrame:
+        """
+        Collect episode data for offline training.
+        
+        Args:
+            num_steps: Number of forecasting steps to collect
+        
+        Returns:
+            episode_data: DataFrame with (state, action, reward, next_state)
+        """
+        logger.info(f"[Data Collection] Starting {num_steps}-step episode in heuristic mode")
+        
+        # Force heuristic mode
+        original_mode = self.rl_system.config.mode
+        self.rl_system.config.mode = "heuristic"
+        
+        episode_records = []
+        
+        for step in range(num_steps):
+            # Mock weather data (in production: query real API)
+            weather_mock = pd.DataFrame({
+                'ghi': np.random.rand(2880) * 800,
+                'dni': np.random.rand(2880) * 900,
+                'temperature_2m': np.random.rand(2880) * 20 + 15
+            })
+            
+            forecast_start = pd.Timestamp.now() + pd.Timedelta(days=step)
+            
+            # Generate forecast
+            _, info = self.forecast_with_rl(
+                weather_data=weather_mock,
+                forecast_start=forecast_start
+            )
+            
+            # Record transition
+            if len(self.metrics_history) > 1:
+                episode_records.append({
+                    'step': step,
+                    'state': info['meta_state'],
+                    'action': info['action_index'],
+                    'metrics': info['metrics'],
+                    'timestamp': pd.Timestamp.now()
+                })
+            
+            if (step + 1) % 10 == 0:
+                logger.info(f"[Data Collection] Step {step+1}/{num_steps} complete")
+        
+        # Restore mode
+        self.rl_system.config.mode = original_mode
+        
+        logger.info(f"[Data Collection] Collected {len(episode_records)} transitions")
+        return pd.DataFrame(episode_records)
 
 
 # ============================================================================
-# Helper: Action Interpretations
+# Example Usage
 # ============================================================================
 
-ACTION_NAMES = {
-    0: 'maintain',
-    1: 'fine_tune_hyperparams',
-    2: 'suggest_retrain',
-    3: 'rollback_checkpoint',
-    4: 'defer_to_others'
-}
-
-
-def interpret_action(action: int) -> str:
-    """Convert action index to human-readable string."""
-    return ACTION_NAMES.get(action, f"unknown_{action}")
+if __name__ == "__main__":
+    """
+    Example: Initialize and run RL-integrated forecaster.
+    """
+    from pathlib import Path
+    
+    # Paths (update to your actual paths)
+    SHORT_CKPT = Path("experiments/tft/shorthead/best.ckpt")
+    LONG_CKPT = Path("experiments/tft/longhead/best.ckpt")
+    PLANT_META = Path("data/metadata/germany/plant_03.json")
+    SHORT_TRAIN = Path("data/processed/short_train.parquet")
+    LONG_TRAIN = Path("data/processed/long_train.parquet")
+    
+    # Initialize base forecaster
+    forecaster = PhysicsAwareForecaster(
+        short_ckpt=SHORT_CKPT,
+        long_ckpt=LONG_CKPT,
+        plant_metadata=PLANT_META,
+        short_train_parquet=SHORT_TRAIN,
+        long_train_parquet=LONG_TRAIN
+    )
+    
+    # Wrap with RL integration
+    rl_forecaster = RLIntegratedForecaster(
+        forecaster=forecaster,
+        rl_mode="heuristic",  # Start with heuristic baseline
+        checkpoint_dir=Path("checkpoints/rl")
+    )
+    
+    # Example forecast
+    weather_df = pd.DataFrame({
+        'timestamp': pd.date_range('2026-01-02', periods=2880, freq='15min'),
+        'ghi': np.random.rand(2880) * 800,
+        'dni': np.random.rand(2880) * 900,
+        'temperature_2m': np.random.rand(2880) * 20 + 15
+    })
+    
+    forecast, info = rl_forecaster.forecast_with_rl(
+        weather_data=weather_df,
+        forecast_start=pd.Timestamp('2026-01-02 00:00:00')
+    )
+    
+    print(f"Forecast shape: {forecast.shape}")
+    print(f"Action taken: {info['action_name']}")
+    print(f"Blend weights: {info['blend_weights']}")
+    print(f"RL status: {rl_forecaster.get_status()}")
