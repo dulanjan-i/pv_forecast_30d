@@ -5,10 +5,16 @@ Test action executors with real TFT models.
 Verifies that fine-tuning and recalibration actually modify model parameters.
 """
 
+import sys
+from pathlib import Path
+
+# Add repo root to path
+repo_root = Path(__file__).parent.parent
+sys.path.insert(0, str(repo_root))
+
 import torch
 import numpy as np
 import pandas as pd
-from pathlib import Path
 import logging
 
 from src.rl.rl_integrated_forecaster import RLIntegratedForecaster
