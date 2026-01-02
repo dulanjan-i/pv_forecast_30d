@@ -92,7 +92,7 @@ This document confirms the successful completion and verification of the MiRACLE
 ### 📄 Thesis-Ready Documents (NEW)
 
 1. **Methodology Section**  
-   - File: [reports/miracle_v1_methodology.md](miracle_v1_methodology.md)
+   - File: [reports/miracle_v1_methodology_CORRECTED.md](miracle_v1_methodology_CORRECTED.md)
    - Content:
      - Data sources and preprocessing (Section 2)
      - Physics-based feature engineering via PVLib (Section 2.4)
@@ -104,15 +104,15 @@ This document confirms the successful completion and verification of the MiRACLE
    - Length: ~6,800 words
 
 2. **Results Section**  
-   - File: [reports/miracle_v1_results.md](miracle_v1_results.md)
+   - File: [reports/miracle_v1_results_CORRECTED.md](miracle_v1_results_CORRECTED.md)
    - Content:
      - Ablation study quantitative results (Section 2)
      - Global pretraining validation (Section 3)
      - Cold vs. warm transfer learning comparison (Section 4)
-     - Statistical significance testing (Section 7)
-     - Computational resource summary (Section 9)
-     - Future work recommendations (Section 11)
-   - Format: Tables, LaTeX equations, publication-ready figures
+     - Computational resource summary (Section 7)
+     - Production model selection (Section 6)
+     - Future work recommendations (Section 8)
+   - Format: Tables, LaTeX equations, reproducible results with evidence paths
    - Length: ~7,200 words
 
 3. **MiRACLE v2.0 Proposal: Hierarchical Fusion** (NEW)  
@@ -210,8 +210,8 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ### Question 2: "Write methodology and results for thesis"
 **Answer**: ✅ **COMPLETE — Two thesis-ready documents delivered**
-- [reports/miracle_v1_methodology.md](miracle_v1_methodology.md): 6,800 words, academic tone, LaTeX equations
-- [reports/miracle_v1_results.md](miracle_v1_results.md): 7,200 words, tables, statistical tests, literature comparison
+- [reports/miracle_v1_methodology_CORRECTED.md](miracle_v1_methodology_CORRECTED.md): 6,800 words, academic tone, LaTeX equations, fully verified
+- [reports/miracle_v1_results_CORRECTED.md](miracle_v1_results_CORRECTED.md): 7,200 words, tables, reproducible results with evidence paths
 
 ### Question 3: "Does the hierarchical fusion approach make sense?"
 **Answer**: ✅ **YES — Strongly recommended**
@@ -230,13 +230,95 @@ This document confirms the successful completion and verification of the MiRACLE
 ```bibtex
 @misc{miracle_v1_2026,
   author = {Your Name},
-  title = {MiRACLE v1.0: Multi-Resolution Adaptive Context Learning Engine for Photovoltaic Power Forecasting},
+  title = {MiRACLE v1.0: Meta Intelligent Reinforcement Driven Adaptive Control for Learning Based Ensembles for Photovoltaic Power Forecasting},
   year = {2026},
   note = {Experimental validation: Germany 5-site dataset, Jan 2023–Feb 2024},
   howpublished = {Thesis Chapter},
   doi = {pending}
 }
 ```
+
+---
+
+## Appendix A: Metric Computation Methods
+
+### Evaluation Metrics
+
+All evaluation metrics are computed on flattened multi-horizon forecasts:
+
+**Root Mean Squared Error (RMSE):**
+$$
+\text{RMSE} = \sqrt{\frac{1}{N \cdot H} \sum_{i=1}^{N} \sum_{h=1}^{H} (y_{i,h} - \hat{y}_{i,h})^2}
+$$
+
+**Mean Absolute Error (MAE):**
+$$
+\text{MAE} = \frac{1}{N \cdot H} \sum_{i=1}^{N} \sum_{h=1}^{H} |y_{i,h} - \hat{y}_{i,h}|
+$$
+
+**Relative Improvement (%):**
+$$
+\text{Improvement} = \frac{\text{RMSE}_{\text{baseline}} - \text{RMSE}_{\text{method}}}{\text{RMSE}_{\text{baseline}}} \times 100\%
+$$
+
+Where:
+- $N$ = number of validation samples
+- $H$ = prediction horizon length (96 for short-term, 720 for long-term)
+- $y_{i,h}$ = ground truth at sample $i$, horizon step $h$
+- $\hat{y}_{i,h}$ = predicted value (median quantile from TFT output)
+
+### Dataset Statistics Computation
+
+**Code to verify parquet row counts and date ranges:**
+```python
+import pandas as pd
+from pathlib import Path
+
+paths = [
+  "data/processed/pretraining/germany/global/tft_inputs_pca32_ablations/train_tft_pvlib.parquet",
+  "data/processed/pretraining/germany/global/tft_inputs_pca32_ablations/val_tft_pvlib.parquet",
+]
+
+for p in paths:
+    df = pd.read_parquet(p, columns=["timestamp_utc"])
+    n_rows = len(df)
+    min_ts = df["timestamp_utc"].min()
+    max_ts = df["timestamp_utc"].max()
+    print(f"{Path(p).name}: n_rows={n_rows:,}, min={min_ts}, max={max_ts}")
+```
+
+**Output:**
+```
+train_tft_pvlib.parquet: n_rows=142,190, min=2023-01-01 23:00:00+00:00, max=2023-11-30 23:45:00+00:00
+val_tft_pvlib.parquet: n_rows=36,952, min=2023-12-02 00:00:00+00:00, max=2024-02-29 23:45:00+00:00
+```
+
+### GPU-Hour Computation
+
+**Code to compute training time from metrics.csv:**
+```python
+import pandas as pd
+
+# Example: compute total GPU-hours for a run
+metrics_path = "experiments/tft/runs/germany/global_noleak/target03_excluded/20251229_134852/logs/metrics.csv"
+df = pd.read_csv(metrics_path)
+
+if "epoch_sec" in df.columns:
+    total_seconds = df["epoch_sec"].sum()
+    total_hours = total_seconds / 3600
+    n_epochs = len(df)
+    best_val = df["val_loss"].min()
+    best_epoch = df.loc[df["val_loss"].idxmin(), "epoch"]
+    
+    print(f"Total epochs: {n_epochs}")
+    print(f"Total GPU-hours: {total_hours:.2f}")
+    print(f"Best val loss: {best_val:.6f} at epoch {int(best_epoch)}")
+```
+
+**Verified Results:**
+- **Ablation study**: 2.47 GPU-hours (tft_only: 1.34h, tft_pvlib: 1.13h)
+- **Global pretraining**: 1.19 GPU-hours (11 epochs, best at epoch 7)
+- **Fine-tuning winner (seed 42)**: 0.37 GPU-hours (18 epochs, best at epoch 12)
 
 ---
 
@@ -249,7 +331,8 @@ This document confirms the successful completion and verification of the MiRACLE
 ---
 
 **Verification Date**: January 1, 2026  
-**Verified By**: GitHub Copilot (Claude Sonnet 4.5)  
-**Status**: ✅ **PRODUCTION-READY** — All systems validated, documentation complete
+**Status**: ✅ **EXPERIMENTALLY VALIDATED** — All workflows verified, thesis-ready documentation complete
 
-**Next Action**: Proceed with hierarchical fusion proof-of-concept (Strategy A)
+**Note**: This is a research prototype with validated offline evaluation. The RL meta-controller and real-time inference integration remain future work.
+
+**Next Action**: Proceed with hierarchical fusion proof-of-concept (Strategy A) or deploy for field validation
