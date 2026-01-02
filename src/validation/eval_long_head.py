@@ -1,5 +1,5 @@
 """
-Evaluate short-head TFT candidates (15-min, 96-step) with RMSE/MAE on validation.
+Evaluate long-head TFT candidates (1-hour, 720-step = 30 days) with RMSE/MAE on validation.
 
 Important:
 - Your train_tft_v1.py saves checkpoints as plain state_dict via torch.save(model.state_dict()).
@@ -10,8 +10,8 @@ Robust to:
 - Quantile outputs (B, T, Q) (we take median quantile)
 
 Outputs:
-- <out_dir>/short_head_eval.csv
-- <out_dir>/short_head_model_selection.md
+- <out_dir>/long_head_eval.csv
+- <out_dir>/long_head_model_selection.md
 """
 
 from __future__ import annotations
@@ -20,9 +20,8 @@ import argparse
 import json
 import math
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 
-import numpy as np
 import pandas as pd
 import torch
 
@@ -127,7 +126,7 @@ def update_streaming_metrics(sum_abs: float, sum_sq: float, n: int, y_true: torc
     return sum_abs, sum_sq, n
 
 
-def eval_one(mode: str, run_dir: Path, train_parquet: Path, val_parquet: Path, batch_size: int = 1024) -> Dict:
+def eval_one(mode: str, run_dir: Path, train_parquet: Path, val_parquet: Path, batch_size: int = 512) -> Dict:
     run_dir = run_dir.resolve()
     ckpt = run_dir / "checkpoints" / "best.ckpt"
     if not ckpt.exists():
@@ -138,8 +137,8 @@ def eval_one(mode: str, run_dir: Path, train_parquet: Path, val_parquet: Path, b
     cli = run_cfg.get("cli_args", {})
     tft_cfg = run_cfg.get("tft_config", {})
 
-    enc_len = int(cli.get("encoder_len", 96))
-    pred_len = int(cli.get("pred_len", 96))
+    enc_len = int(cli.get("encoder_len", 720))
+    pred_len = int(cli.get("pred_len", 720))
 
     hidden_size = int(tft_cfg.get("hidden_size", cli.get("hidden_size", 64)))
     lstm_layers = int(tft_cfg.get("lstm_layers", cli.get("lstm_layers", 2)))
@@ -217,7 +216,7 @@ def write_markdown(df: pd.DataFrame, out_md: Path) -> None:
     winner = df2.iloc[0]
 
     lines = []
-    lines.append("# Short-head (15-min, 24h) evaluation\n\n")
+    lines.append("# Long-head (1-hour, 720-step = 30 days) evaluation\n\n")
     lines.append("Metrics are computed on validation as RMSE/MAE over all horizons (flattened).\n\n")
     lines.append("| mode | rmse | mae | enc_len | pred_len | hidden | lstm_layers | attn_heads | dropout | lr |\n")
     lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
@@ -228,87 +227,55 @@ def write_markdown(df: pd.DataFrame, out_md: Path) -> None:
         )
 
     lines.append("\n## Selected model\n")
-    lines.append(f"Winner by RMSE: **{winner['mode']}**\n\n")
-    lines.append(f"- run_dir: {winner['run_dir']}\n")
-    lines.append(f"- ckpt: {winner['ckpt']}\n")
+    lines.append(f"**Mode:** {winner['mode']}\n")
+    lines.append(f"**RMSE:** {winner['rmse']:.6f}\n")
+    lines.append(f"**MAE:** {winner['mae']:.6f}\n")
+    lines.append(f"**Checkpoint:** `{winner['ckpt']}`\n")
+
     out_md.write_text("".join(lines))
+    print(f"[INFO] Wrote markdown to {out_md}")
 
 
-def main() -> None:
+def main():
     ap = argparse.ArgumentParser()
-    # Flexible interface: either legacy ablation args OR new multi-mode args
-    ap.add_argument("--run_tft_only", help="(Legacy) TFT-only run dir")
-    ap.add_argument("--run_tft_pvlib", help="(Legacy) TFT+PVLib run dir")
-    ap.add_argument("--train_tft_only", help="(Legacy) TFT-only train parquet")
-    ap.add_argument("--val_tft_only", help="(Legacy) TFT-only val parquet")
-    ap.add_argument("--train_tft_pvlib", help="(Legacy) TFT+PVLib train parquet")
-    ap.add_argument("--val_tft_pvlib", help="(Legacy) TFT+PVLib val parquet")
-    # New multi-mode interface
-    ap.add_argument("--modes", nargs="+", help="Mode labels (e.g., warm_seed42 cold_seed43)")
-    ap.add_argument("--run_dirs", nargs="+", help="Run directories with checkpoints/best.ckpt")
-    ap.add_argument("--train_parquet", help="Training parquet path (shared for all runs)")
-    ap.add_argument("--val_parquet", help="Validation parquet path (shared for all runs)")
-    ap.add_argument("--out_dir", default="experiments/tft/notes")
-    ap.add_argument("--batch_size", type=int, default=1024)
+    ap.add_argument("--modes", nargs="+", required=True, help="Mode labels (e.g., warm_seed42 cold_seed43)")
+    ap.add_argument("--run_dirs", nargs="+", required=True, help="Run directories with checkpoints/best.ckpt")
+    ap.add_argument("--train_parquet", type=str, required=True, help="Training parquet path")
+    ap.add_argument("--val_parquet", type=str, required=True, help="Validation parquet path")
+    ap.add_argument("--out_dir", type=str, required=True, help="Output directory for CSV and markdown")
+    ap.add_argument("--batch_size", type=int, default=512, help="Batch size for evaluation")
     args = ap.parse_args()
 
+    if len(args.modes) != len(args.run_dirs):
+        raise ValueError(f"Length mismatch: {len(args.modes)} modes vs {len(args.run_dirs)} run_dirs")
+
+    train_parquet = Path(args.train_parquet)
+    val_parquet = Path(args.val_parquet)
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []
-    
-    # Detect which interface to use
-    if args.modes and args.run_dirs:
-        # New multi-mode interface
-        if len(args.modes) != len(args.run_dirs):
-            raise ValueError(f"Length mismatch: {len(args.modes)} modes vs {len(args.run_dirs)} run_dirs")
-        train_parquet = Path(args.train_parquet)
-        val_parquet = Path(args.val_parquet)
-        
-        for mode, run_dir_str in zip(args.modes, args.run_dirs):
-            run_dir = Path(run_dir_str)
-            print(f"\n[INFO] Evaluating {mode}: {run_dir}")
-            try:
-                row = eval_one(mode, run_dir, train_parquet, val_parquet, args.batch_size)
-                rows.append(row)
-                print(f"  ✓ RMSE={row['rmse']:.6f}, MAE={row['mae']:.6f}")
-            except Exception as e:
-                print(f"  ✗ Failed: {e}")
-    else:
-        # Legacy ablation interface
-        rows.append(
-            eval_one(
-                "tft_only",
-                Path(args.run_tft_only),
-                Path(args.train_tft_only),
-                Path(args.val_tft_only),
-                batch_size=args.batch_size,
-            )
-        )
-        rows.append(
-            eval_one(
-                "tft_pvlib",
-                Path(args.run_tft_pvlib),
-                Path(args.train_tft_pvlib),
-                Path(args.val_tft_pvlib),
-                batch_size=args.batch_size,
-            )
-        )
+    for mode, run_dir_str in zip(args.modes, args.run_dirs):
+        run_dir = Path(run_dir_str)
+        print(f"\n[INFO] Evaluating {mode}: {run_dir}")
+        try:
+            row = eval_one(mode, run_dir, train_parquet, val_parquet, args.batch_size)
+            rows.append(row)
+            print(f"  ✓ RMSE={row['rmse']:.6f}, MAE={row['mae']:.6f}")
+        except Exception as e:
+            print(f"  ✗ Failed: {e}")
 
     if not rows:
         print("[ERROR] No successful evaluations")
         return
 
     df = pd.DataFrame(rows)
-    out_csv = out_dir / "short_head_eval.csv"
+    out_csv = out_dir / "long_head_eval.csv"
     df.to_csv(out_csv, index=False)
+    print(f"\n[INFO] Wrote CSV to {out_csv}")
 
-    out_md = out_dir / "short_head_model_selection.md"
+    out_md = out_dir / "long_head_model_selection.md"
     write_markdown(df, out_md)
-
-    print("\n" + df.sort_values("rmse")[["mode", "rmse", "mae", "enc_len", "pred_len", "dropout", "lr"]].to_string(index=False))
-    print(f"\n[DONE] wrote {out_csv}")
-    print(f"[DONE] wrote {out_md}")
 
 
 if __name__ == "__main__":
