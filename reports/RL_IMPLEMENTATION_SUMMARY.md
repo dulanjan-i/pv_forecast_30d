@@ -123,7 +123,7 @@ R = w₁(−RMSE) + w₂(−Mismatch) + w₃(−Drift) + w₄(−Cost)
 ### 1. Hierarchical DQN
 
 - **Policy Networks:** 3-layer MLP (state → 128 → 128 → actions)
-- **Target Networks:** Soft updates every 1000 steps (τ=0.005)
+- **Target Networks:** Soft updates every step (τ=0.005, smooth weather tracking)
 - **Optimizer:** Adam (lr=1e-4)
 - **Exploration:** ε-greedy (1.0 → 0.1 decay over 10k steps)
 
