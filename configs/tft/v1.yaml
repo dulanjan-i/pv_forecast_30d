@@ -1,0 +1,38 @@
+DROP_COLS = [
+    "poa_irradiance",
+    "plant_01", "plant_02", "plant_03", "plant_05", "plant_06",
+    "shortwave_radiation_instant",
+    "direct_radiation_instant",
+    "diffuse_radiation_instant",
+    "direct_normal_irradiance_instant",
+    "global_tilted_irradiance_instant",
+]
+
+STATIC_CATEGORICALS = ["plant_id"]
+STATIC_REALS = []
+
+TV_OBS_REALS = ["power_norm"] + [f"lstm_enc_{i:03d}" for i in range(64)]
+
+TV_KNOWN_REALS = [
+    "global_tilted_irradiance_instant_raw",
+    "direct_normal_irradiance_instant_raw",
+    "shortwave_radiation_instant_raw",
+    "temperature_2m",
+    "relative_humidity_2m",
+    "precipitation",
+    "weather_code",
+    "cloud_cover",
+    "wind_speed_10m",
+    "wind_direction_10m",
+    "surface_pressure",
+    "pvlib_solar_zenith",
+    "pvlib_solar_azimuth",
+    "pvlib_poa_global",
+    "pvlib_poa_direct",
+    "pvlib_poa_diffuse",
+    "pvlib_poa_ground_diffuse",
+    "pvlib_dc_kw",
+    "pvlib_ac_kw",
+]
+
+TV_KNOWN_CATEGORICALS = []
