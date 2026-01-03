@@ -628,14 +628,26 @@ class RLIntegratedForecaster:
     
     def log_metrics_to_file(self, metrics: Dict, action: int, reward: float):
         """Save metrics to JSONL for dashboard."""
+        # Convert any non-JSON-serializable types to strings
+        clean_metrics = {}
+        for k, v in metrics.items():
+            if hasattr(v, 'isoformat'):  # Timestamp
+                clean_metrics[k] = v.isoformat()
+            elif isinstance(v, (np.integer, np.floating)):
+                clean_metrics[k] = float(v)
+            elif isinstance(v, np.ndarray):
+                clean_metrics[k] = v.tolist()
+            else:
+                clean_metrics[k] = v
+        
         log_entry = {
             'timestamp': pd.Timestamp.now().isoformat(),
-            'action': action,
-            'reward': reward,
-            **metrics,  # Includes all RMSE, drift, blend weights, etc.
-            'blend_short': self.blend_weights['short'],
-            'blend_long': self.blend_weights['long'],
-            'blend_physics': self.blend_weights['physics']
+            'action': int(action),
+            'reward': float(reward),
+            **clean_metrics,
+            'blend_short': float(self.blend_weights['short']),
+            'blend_long': float(self.blend_weights['long']),
+            'blend_physics': float(self.blend_weights['physics'])
         }
         
         with open(self.metrics_log_file, 'a') as f:
@@ -659,13 +671,13 @@ class RLIntegratedForecaster:
         
         rl_state = {
             'timestamp': pd.Timestamp.now().isoformat(),
-            'epsilon': meta.epsilon,
-            'epsilon_delta': meta.epsilon - meta.epsilon_min,
-            'last_action': int(self.action_history[-1]) if len(self.action_history) > 0 else 0,
+            'epsilon': float(meta.epsilon),
+            'epsilon_delta': float(meta.epsilon - getattr(meta, 'epsilon_min', 0.1)),
+            'last_action': int(self.action_history[-1]['action_index']) if len(self.action_history) > 0 else 0,
             'q_max': q_max,
             'buffer_size': len(meta.replay_buffer),
             'buffer_capacity': meta.replay_buffer.capacity,
-            'total_steps': meta.steps
+            'total_steps': int(meta.steps)
         }
         
         with open(self.rl_state_file, 'w') as f:
