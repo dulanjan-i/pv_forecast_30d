@@ -66,7 +66,7 @@ def create_mock_weather_data(duration_days: int = 30) -> pd.DataFrame:
     logger.info(f"Creating mock weather data for {duration_days} days...")
     
     # Generate timestamps (15-min resolution)
-    start = pd.Timestamp.now().floor('15min')
+    start = pd.Timestamp.now(tz='UTC').floor('15min')
     n_steps = duration_days * 96  # 96 steps per day @ 15-min
     timestamps = pd.date_range(start, periods=n_steps, freq='15min')
     
@@ -177,7 +177,7 @@ def test_rl_integration_basic():
         
         # Generate forecast
         logger.info("Running forecast_with_rl()...")
-        forecast_start = pd.Timestamp.now().floor('15min')
+        forecast_start = pd.Timestamp.now(tz='UTC').floor('15min')
         
         if forecaster is None:
             logger.warning("Skipping actual forecast (no trained models available)")
