@@ -80,7 +80,14 @@ class RLIntegratedForecaster:
         self.ground_truth_buffer = deque(maxlen=2880)  # 30 days @ 15-min
         self.prediction_buffer = deque(maxlen=2880)
         
+        # Logging for dashboard
+        self.log_dir = checkpoint_dir / "logs" if checkpoint_dir else Path("checkpoints/rl/logs")
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.metrics_log_file = self.log_dir / "metrics.jsonl"
+        self.rl_state_file = self.log_dir / "rl_state.json"
+        
         logger.info(f"[RLIntegratedForecaster] Initialized in '{rl_mode}' mode")
+        logger.info(f"[RLIntegratedForecaster] Logging to {self.log_dir}")
     
     def collect_metrics(
         self,
@@ -490,6 +497,7 @@ class RLIntegratedForecaster:
         self.forecast_history.append(forecast_final)
         
         # Compute reward and update RL (online learning)
+        reward = 0.0
         if ground_truth is not None and len(self.metrics_history) > 1:
             metrics_prev = self.metrics_history[-1]  # Previous step
             reward = self.rl_system.compute_reward(metrics_prev, metrics)
@@ -498,6 +506,10 @@ class RLIntegratedForecaster:
             self.rl_system.update(metrics, done=False)
             
             logger.info(f"[RL Update] Reward={reward:.3f}, Action={action_index}, ε={self.rl_system.meta_controller.epsilon:.3f}")
+        
+        # Log to dashboard files
+        self.log_metrics_to_file(metrics, action_index, reward)
+        self.log_rl_state_to_file()
         
         # Build info dict
         info = {
@@ -613,6 +625,51 @@ class RLIntegratedForecaster:
         
         logger.info(f"[Data Collection] Collected {len(episode_records)} transitions")
         return pd.DataFrame(episode_records)
+    
+    def log_metrics_to_file(self, metrics: Dict, action: int, reward: float):
+        """Save metrics to JSONL for dashboard."""
+        log_entry = {
+            'timestamp': pd.Timestamp.now().isoformat(),
+            'action': action,
+            'reward': reward,
+            **metrics,  # Includes all RMSE, drift, blend weights, etc.
+            'blend_short': self.blend_weights['short'],
+            'blend_long': self.blend_weights['long'],
+            'blend_physics': self.blend_weights['physics']
+        }
+        
+        with open(self.metrics_log_file, 'a') as f:
+            f.write(json.dumps(log_entry) + '\n')
+    
+    def log_rl_state_to_file(self):
+        """Save current RL state for dashboard."""
+        meta = self.rl_system.meta_controller
+        
+        # Safe Q-value extraction
+        try:
+            if hasattr(meta, 'last_state') and meta.last_state is not None:
+                import torch
+                state_tensor = torch.FloatTensor(meta.last_state).unsqueeze(0).to(meta.device)
+                q_values = meta.q_network(state_tensor).detach().cpu().numpy()[0]
+                q_max = float(np.max(q_values))
+            else:
+                q_max = 0.0
+        except Exception:
+            q_max = 0.0
+        
+        rl_state = {
+            'timestamp': pd.Timestamp.now().isoformat(),
+            'epsilon': meta.epsilon,
+            'epsilon_delta': meta.epsilon - meta.epsilon_min,
+            'last_action': int(self.action_history[-1]) if len(self.action_history) > 0 else 0,
+            'q_max': q_max,
+            'buffer_size': len(meta.replay_buffer),
+            'buffer_capacity': meta.replay_buffer.capacity,
+            'total_steps': meta.steps
+        }
+        
+        with open(self.rl_state_file, 'w') as f:
+            json.dump(rl_state, f, indent=2)
 
 
 # ============================================================================
