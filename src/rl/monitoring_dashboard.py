@@ -420,7 +420,7 @@ def main():
         
         st.markdown("---")
         st.markdown(f"**Log Directory:**  \n`{log_dir}`")
-        st.markdown(f"**Last Updated:**  \n{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        st.markdown(f"**Last Updated:**  \n{pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d %H:%M:%S UTC')}")
     
     # Load data
     df = load_metrics_log(log_dir)

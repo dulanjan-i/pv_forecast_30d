@@ -25,7 +25,7 @@ print(f"📊 Generating test data for dashboard in: {log_dir}")
 metrics_file = log_dir / "metrics.jsonl"
 with open(metrics_file, 'w') as f:
     for i in range(200):
-        timestamp = datetime.now() - timedelta(minutes=15*(200-i))
+        timestamp = pd.Timestamp.now(tz='UTC') - timedelta(minutes=15*(200-i))
         
         # Simulate RL learning: RMSE decreases, rewards increase
         short_rmse_1h = 0.12 - 0.0003 * i + np.random.rand() * 0.01
@@ -79,7 +79,7 @@ print(f"✅ Generated {metrics_file}")
 
 # Generate current RL state
 rl_state = {
-    'timestamp': datetime.now().isoformat(),
+    'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
     'epsilon': 0.25,
     'epsilon_delta': 0.15,
     'last_action': 4,  # BLEND_SHORT
