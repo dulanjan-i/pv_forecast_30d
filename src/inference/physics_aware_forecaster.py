@@ -287,20 +287,22 @@ class PhysicsAwareForecaster:
             if df_freq in ['15T', '15min']:
                 print("       Resampling to hourly for long-head...")
                 
-                # Separate numeric and non-numeric columns
-                numeric_cols = historical_df.select_dtypes(include=[np.number]).columns.tolist()
-                cat_cols = [c for c in historical_df.columns if c not in numeric_cols + ['timestamp_utc']]
+                # Separate numeric and non-numeric columns for EACH dataframe independently
+                hist_numeric_cols = historical_df.select_dtypes(include=[np.number]).columns.tolist()
+                hist_cat_cols = [c for c in historical_df.columns if c not in hist_numeric_cols + ['timestamp_utc']]
                 
-                # Resample numeric columns (mean aggregation)
-                hourly_hist = historical_df[['timestamp_utc'] + numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
-                hourly_weather = weather_df[['timestamp_utc'] + numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
+                weather_numeric_cols = weather_df.select_dtypes(include=[np.number]).columns.tolist()
+                weather_cat_cols = [c for c in weather_df.columns if c not in weather_numeric_cols + ['timestamp_utc']]
+                
+                # Resample numeric columns (mean aggregation) for each dataframe
+                hourly_hist = historical_df[['timestamp_utc'] + hist_numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
+                hourly_weather = weather_df[['timestamp_utc'] + weather_numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
                 
                 # Add back categorical columns (copy first value)
-                for col in cat_cols:
-                    if col in historical_df.columns:
-                        hourly_hist[col] = historical_df[col].iloc[0]
-                    if col in weather_df.columns:
-                        hourly_weather[col] = weather_df[col].iloc[0]
+                for col in hist_cat_cols:
+                    hourly_hist[col] = historical_df[col].iloc[0]
+                for col in weather_cat_cols:
+                    hourly_weather[col] = weather_df[col].iloc[0]
                 
                 print(f"       Hourly shape: historical={hourly_hist.shape}, weather={hourly_weather.shape}")
             else:
@@ -386,6 +388,17 @@ class PhysicsAwareForecaster:
             )
             
             forecast_15min[day_start_idx:day_end_idx] = day_forecast
+            
+            # Update historical_df with today's prediction for next day's encoder
+            # Extract today's weather slice and add predicted power_norm
+            day_weather_slice = weather_df[
+                (weather_df['timestamp_utc'] >= day_start) &
+                (weather_df['timestamp_utc'] < day_start + pd.Timedelta(hours=24))
+            ].copy()
+            day_weather_slice['power_norm'] = day_forecast  # Add predictions
+            
+            # Append to historical_df for dynamic encoder anchoring
+            historical_df = pd.concat([historical_df, day_weather_slice], ignore_index=True)
             
             if (day + 1) % 5 == 0:  # Progress every 5 days
                 print(f"          Day {day+1:2d}/30: α_short={weights['alpha_short']:.2f}, "
