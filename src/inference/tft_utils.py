@@ -419,15 +419,28 @@ def create_inference_dataframe(
     """
     Create properly formatted inference DataFrame from encoder + decoder windows.
     
+    CRITICAL: decoder_df (future weather) will NOT have power_norm (target).
+    TimeSeriesDataSet requires it for validation, so we fill with dummy 0.0.
+    The TFT model ignores decoder's target values during inference (predict=True mode).
+    
     Args:
-        encoder_df: Historical data (encoder window)
-        decoder_df: Future data (decoder window)
+        encoder_df: Historical data (encoder window) - MUST have power_norm
+        decoder_df: Future data (decoder window) - will fill power_norm with 0.0
         roles: Column roles from config
         plant_id: Plant identifier
     
     Returns:
         Combined DataFrame ready for TimeSeriesDataSet
     """
+    # Get target column name
+    target_col = roles.get('target', 'power_norm')
+    
+    # Fill decoder's target with dummy values (TimeSeriesDataSet needs it for validation)
+    # The TFT model WON'T use these values during inference (predict=True ignores decoder target)
+    if target_col not in decoder_df.columns:
+        decoder_df = decoder_df.copy()
+        decoder_df[target_col] = 0.0  # Dummy value - not used in prediction
+    
     # Concatenate encoder + decoder
     inference_df = pd.concat([encoder_df, decoder_df], ignore_index=True)
     
