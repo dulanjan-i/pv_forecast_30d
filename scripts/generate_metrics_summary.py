@@ -162,7 +162,7 @@ def main():
     lines.append("3. **Consistency**: Transfer learning benefits observed in both selection criterion (val loss) and interpretable metrics (RMSE)\n")
     lines.append("4. **Multi-horizon validation**: Benefits persist across short-term (24h) and long-term (30-day) horizons\n\n")
     lines.append("---\n\n")
-    lines.append(f"**Generated**: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    lines.append(f"**Generated**: {pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
     
     out_path = repo / "experiments/tft/notes/comprehensive_metrics_summary.md"
     out_path.write_text("".join(lines))
