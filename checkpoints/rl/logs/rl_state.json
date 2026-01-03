@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-01-03T00:00:06.901003",
+  "epsilon": 0.25,
+  "epsilon_delta": 0.15,
+  "last_action": 4,
+  "q_max": 0.85,
+  "buffer_size": 3245,
+  "buffer_capacity": 10000,
+  "total_steps": 200
+}
