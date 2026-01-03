@@ -43,10 +43,17 @@ logger = logging.getLogger(__name__)
 class Phase1Pipeline:
     """Production inference pipeline with dynamic encoder updates."""
     
-    def __init__(self):
+    def __init__(self, weather_source='historical'):
+        """
+        Initialize pipeline.
+        
+        Args:
+            weather_source: 'historical' (ERA5 archive) or 'api' (real-time forecast)
+        """
         self.base_dir = Path("/home/dwijenayake/pv_forecast_30d")
         self.phase1_dir = self.base_dir / "data/processed/test_phase1_dec2023_dec2024"
         self.test_dir = self.base_dir / "data/processed/plant_level/plant_03"
+        self.weather_source = weather_source
         
         # Initialize weather client
         self.weather_client = WeatherClient()
@@ -63,46 +70,86 @@ class Phase1Pipeline:
         self.azimuth = self.metadata['azimuth_deg']
     
     def step1_fetch_weather(self):
-        """Fetch weather Dec 1, 2023 → Dec 31, 2024 (13 months) using ERA5."""
+        """Fetch weather Dec 1, 2023 → Dec 31, 2024 (13 months) using ERA5 OR real-time API."""
         logger.info("\n" + "="*70)
-        logger.info("STEP 1: FETCHING WEATHER (Dec 2023 - Dec 2024)")
+        logger.info(f"STEP 1: FETCHING WEATHER (source: {self.weather_source})")
         logger.info("="*70)
         
-        start_date = "2023-12-01"
-        end_date = "2024-12-31"
-        
-        logger.info(f"Period: {start_date} → {end_date}")
-        logger.info(f"Location: {self.lat}°N, {self.lon}°E")
-        logger.info("Using: OpenMeteo Historical Archive (ERA5)")
-        
-        import openmeteo_requests
-        import requests_cache
-        from retry_requests import retry
-        import urllib3
-        
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        
-        cache_session = requests_cache.CachedSession('.cache', expire_after=-1)
-        cache_session.verify = False  # Disable SSL verification for DBFZ
-        retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
-        client = openmeteo_requests.Client(session=retry_session)
-        
-        # Fetch in chunks (60 days each to avoid API limits)
-        all_data = []
-        current = pd.to_datetime(start_date)
-        end_dt = pd.to_datetime(end_date)
-        
-        chunk_idx = 0
-        while current <= end_dt:
-            days_left = (end_dt - current).days + 1
-            days_to_fetch = min(60, days_left)
-            chunk_end = current + timedelta(days=days_to_fetch - 1)
+        if self.weather_source == 'api':
+            # Real-time forecast from API
+            logger.info("Using: Open-Meteo Forecast API (Real-time)")
+            logger.info(f"Location: {self.lat}°N, {self.lon}°E")
             
-            logger.info(f"\n[Chunk {chunk_idx+1}] {current.strftime('%Y-%m-%d')} → {chunk_end.strftime('%Y-%m-%d')}")
+            from src.data.weather_api_orchestrator import WeatherAPIOrchestrator
+            api = WeatherAPIOrchestrator()
             
-            try:
-                params = {
-                    "latitude": self.lat,
+            # Fetch 15-day forecast
+            weather_hourly = api.fetch_with_fallback(
+                lat=self.lat,
+                lon=self.lon,
+                days_ahead=15
+            )
+            
+            logger.info(f"✓ Fetched {len(weather_hourly)} hourly timesteps from API")
+            
+            # Map API column names to training column names
+            logger.info("Mapping API columns to training format...")
+            column_mapping = {
+                'shortwave_radiation': 'shortwave_radiation_instant',
+                'direct_radiation': 'direct_radiation_instant',
+                'diffuse_radiation': 'diffuse_radiation_instant',
+                'direct_normal_irradiance': 'direct_normal_irradiance_instant'
+            }
+            weather_hourly = weather_hourly.rename(columns=column_mapping)
+            
+            # Add missing columns that API doesn't provide
+            if 'weather_code' not in weather_hourly.columns:
+                weather_hourly['weather_code'] = 0  # Default: clear sky
+            
+            # Resample to 15min
+            logger.info(f"Resampling to 15min...")
+            weather_hourly_indexed = weather_hourly.set_index('timestamp_utc')
+            numeric_cols = weather_hourly.select_dtypes(include=[np.number]).columns.tolist()
+            weather_15min = weather_hourly_indexed[numeric_cols].resample('15min').interpolate(method='linear').reset_index()
+            
+        else:
+            # Historical ERA5 archive (Phase 1 validation mode)
+            logger.info("Using: OpenMeteo Historical Archive (ERA5)")
+            
+            start_date = "2023-12-01"
+            end_date = "2024-12-31"
+            
+            logger.info(f"Period: {start_date} → {end_date}")
+            logger.info(f"Location: {self.lat}°N, {self.lon}°E")
+        
+            import openmeteo_requests
+            import requests_cache
+            from retry_requests import retry
+            import urllib3
+            
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            cache_session = requests_cache.CachedSession('.cache', expire_after=-1)
+            cache_session.verify = False  # Disable SSL verification for DBFZ
+            retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
+            client = openmeteo_requests.Client(session=retry_session)
+            
+            # Fetch in chunks (60 days each to avoid API limits)
+            all_data = []
+            current = pd.to_datetime(start_date)
+            end_dt = pd.to_datetime(end_date)
+            
+            chunk_idx = 0
+            while current <= end_dt:
+                days_left = (end_dt - current).days + 1
+                days_to_fetch = min(60, days_left)
+                chunk_end = current + timedelta(days=days_to_fetch - 1)
+                
+                logger.info(f"\n[Chunk {chunk_idx+1}] {current.strftime('%Y-%m-%d')} → {chunk_end.strftime('%Y-%m-%d')}")
+                
+                try:
+                    params = {
+                        "latitude": self.lat,
                     "longitude": self.lon,
                     "start_date": current.strftime("%Y-%m-%d"),
                     "end_date": chunk_end.strftime("%Y-%m-%d"),
@@ -114,57 +161,54 @@ class Phase1Pipeline:
                     ],
                     "timezone": "UTC"
                 }
+                    
+                    url = "https://archive-api.open-meteo.com/v1/archive"
+                    responses = client.weather_api(url, params=params)
+                    response = responses[0]
+                    
+                    # Extract hourly data
+                    hourly = response.Hourly()
+                    hourly_data = {
+                        "timestamp_utc": pd.date_range(
+                            start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
+                            end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
+                            freq=pd.Timedelta(seconds=hourly.Interval()),
+                            inclusive="left"
+                        ),
+                        "temperature_2m": hourly.Variables(0).ValuesAsNumpy(),
+                        "relative_humidity_2m": hourly.Variables(1).ValuesAsNumpy(),
+                        "precipitation": hourly.Variables(2).ValuesAsNumpy(),
+                        "surface_pressure": hourly.Variables(3).ValuesAsNumpy(),
+                        "cloud_cover": hourly.Variables(4).ValuesAsNumpy(),
+                        "wind_speed_10m": hourly.Variables(5).ValuesAsNumpy(),
+                        "wind_direction_10m": hourly.Variables(6).ValuesAsNumpy(),
+                        "shortwave_radiation_instant": hourly.Variables(7).ValuesAsNumpy(),  # GHI
+                        "direct_radiation_instant": hourly.Variables(8).ValuesAsNumpy(),
+                        "diffuse_radiation_instant": hourly.Variables(9).ValuesAsNumpy(),  # DHI
+                        "direct_normal_irradiance_instant": hourly.Variables(10).ValuesAsNumpy(),  # DNI
+                        "weather_code": hourly.Variables(11).ValuesAsNumpy(),  # WMO weather code
+                    }
+                    
+                    chunk_df = pd.DataFrame(hourly_data)
+                    all_data.append(chunk_df)
+                    logger.info(f"  ✓ Fetched {len(chunk_df)} steps @ hourly")
+                    
+                except Exception as e:
+                    logger.error(f"  ✗ Failed: {e}")
+                    break
                 
-                url = "https://archive-api.open-meteo.com/v1/archive"
-                responses = client.weather_api(url, params=params)
-                response = responses[0]
-                
-                # Extract hourly data
-                hourly = response.Hourly()
-                hourly_data = {
-                    "timestamp_utc": pd.date_range(
-                        start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
-                        end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
-                        freq=pd.Timedelta(seconds=hourly.Interval()),
-                        inclusive="left"
-                    ),
-                    "temperature_2m": hourly.Variables(0).ValuesAsNumpy(),
-                    "relative_humidity_2m": hourly.Variables(1).ValuesAsNumpy(),
-                    "precipitation": hourly.Variables(2).ValuesAsNumpy(),
-                    "surface_pressure": hourly.Variables(3).ValuesAsNumpy(),
-                    "cloud_cover": hourly.Variables(4).ValuesAsNumpy(),
-                    "wind_speed_10m": hourly.Variables(5).ValuesAsNumpy(),
-                    "wind_direction_10m": hourly.Variables(6).ValuesAsNumpy(),
-                    "shortwave_radiation_instant": hourly.Variables(7).ValuesAsNumpy(),  # GHI
-                    "direct_radiation_instant": hourly.Variables(8).ValuesAsNumpy(),
-                    "diffuse_radiation_instant": hourly.Variables(9).ValuesAsNumpy(),  # DHI
-                    "direct_normal_irradiance_instant": hourly.Variables(10).ValuesAsNumpy(),  # DNI
-                    "weather_code": hourly.Variables(11).ValuesAsNumpy(),  # WMO weather code
-                }
-                
-                chunk_df = pd.DataFrame(hourly_data)
-                all_data.append(chunk_df)
-                logger.info(f"  ✓ Fetched {len(chunk_df)} steps @ hourly")
-                
-            except Exception as e:
-                logger.error(f"  ✗ Failed: {e}")
-                break
+            # Combine
+            weather_hourly = pd.concat(all_data, ignore_index=True)
+            weather_hourly = weather_hourly.drop_duplicates(subset=['timestamp_utc']).sort_values('timestamp_utc').reset_index(drop=True)
             
-            current += timedelta(days=days_to_fetch)
-            chunk_idx += 1
+            # Resample to 15min
+            logger.info(f"\nResampling {len(weather_hourly)} hourly steps → 15min...")
+            weather_hourly_indexed = weather_hourly.set_index('timestamp_utc')
+            
+            numeric_cols = weather_hourly.select_dtypes(include=[np.number]).columns.tolist()
+            weather_15min = weather_hourly_indexed[numeric_cols].resample('15min').interpolate(method='linear').reset_index()
         
-        # Combine
-        weather_hourly = pd.concat(all_data, ignore_index=True)
-        weather_hourly = weather_hourly.drop_duplicates(subset=['timestamp_utc']).sort_values('timestamp_utc').reset_index(drop=True)
-        
-        # Resample to 15min
-        logger.info(f"\nResampling {len(weather_hourly)} hourly steps → 15min...")
-        weather_hourly_indexed = weather_hourly.set_index('timestamp_utc')
-        
-        numeric_cols = weather_hourly.select_dtypes(include=[np.number]).columns.tolist()
-        weather_15min = weather_hourly_indexed[numeric_cols].resample('15min').interpolate(method='linear').reset_index()
-        
-        # Step 1: Keep RAW copies (before any normalization)
+        # Common processing for both sources:
         # These are the *_instant_raw columns used as TFT features
         logger.info("Saving raw irradiance copies...")
         weather_15min['shortwave_radiation_instant_raw'] = weather_15min['shortwave_radiation_instant'].copy()
@@ -553,7 +597,13 @@ class Phase1Pipeline:
 
 
 def main():
-    pipeline = Phase1Pipeline()
+    import argparse
+    parser = argparse.ArgumentParser(description='MiRACLE Inference Pipeline')
+    parser.add_argument('--weather-source', choices=['historical', 'api'], default='historical',
+                       help='Weather data source: historical (ERA5) or api (real-time forecast)')
+    args = parser.parse_args()
+    
+    pipeline = Phase1Pipeline(weather_source=args.weather_source)
     pipeline.run()
 
 
