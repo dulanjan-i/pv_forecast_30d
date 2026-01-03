@@ -113,7 +113,7 @@ class RLIntegratedForecaster:
         metrics = {}
         
         # Timestamp
-        metrics['timestamp'] = pd.Timestamp.now()
+        metrics['timestamp'] = pd.Timestamp.now(tz='UTC')
         
         # Performance metrics (if ground truth available)
         if ground_truth is not None:
@@ -176,7 +176,7 @@ class RLIntegratedForecaster:
             metrics['long_confidence'] = 0.5
         
         # Context
-        now = pd.Timestamp.now()
+        now = pd.Timestamp.now(tz='UTC')
         metrics['hour_of_day'] = now.hour
         metrics['is_night'] = 1.0 if (now.hour < 6 or now.hour > 20) else 0.0
         metrics['season'] = (now.month - 1) // 3  # 0-3
@@ -386,7 +386,7 @@ class RLIntegratedForecaster:
                 # Add to retrain queue
                 if model_name:
                     self.rl_system.retrain_queue[model_name].append({
-                        'timestamp': pd.Timestamp.now(),
+                        'timestamp': pd.Timestamp.now(tz='UTC'),
                         'reason': 'RL meta-controller suggestion',
                         'metrics': self.metrics_history[-1] if self.metrics_history else {}
                     })
@@ -599,7 +599,7 @@ class RLIntegratedForecaster:
                 'temperature_2m': np.random.rand(2880) * 20 + 15
             })
             
-            forecast_start = pd.Timestamp.now() + pd.Timedelta(days=step)
+            forecast_start = pd.Timestamp.now(tz='UTC') + pd.Timedelta(days=step)
             
             # Generate forecast
             _, info = self.forecast_with_rl(
@@ -614,7 +614,7 @@ class RLIntegratedForecaster:
                     'state': info['meta_state'],
                     'action': info['action_index'],
                     'metrics': info['metrics'],
-                    'timestamp': pd.Timestamp.now()
+                    'timestamp': pd.Timestamp.now(tz='UTC')
                 })
             
             if (step + 1) % 10 == 0:
@@ -641,7 +641,7 @@ class RLIntegratedForecaster:
                 clean_metrics[k] = v
         
         log_entry = {
-            'timestamp': pd.Timestamp.now().isoformat(),
+            'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
             'action': int(action),
             'reward': float(reward),
             **clean_metrics,
@@ -670,7 +670,7 @@ class RLIntegratedForecaster:
             q_max = 0.0
         
         rl_state = {
-            'timestamp': pd.Timestamp.now().isoformat(),
+            'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
             'epsilon': float(meta.epsilon),
             'epsilon_delta': float(meta.epsilon - getattr(meta, 'epsilon_min', 0.1)),
             'last_action': int(self.action_history[-1]['action_index']) if len(self.action_history) > 0 else 0,
