@@ -81,7 +81,7 @@ class RLIntegratedForecaster:
         self.prediction_buffer = deque(maxlen=2880)
         
         # Logging for dashboard
-        self.log_dir = checkpoint_dir / "logs" if checkpoint_dir else Path("checkpoints/rl/logs")
+        self.log_dir = checkpoint_dir / "logs" if checkpoint_dir else Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl/logs")
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.metrics_log_file = self.log_dir / "metrics.jsonl"
         self.rl_state_file = self.log_dir / "rl_state.json"
@@ -185,10 +185,21 @@ class RLIntegratedForecaster:
         if weather_data is not None:
             metrics['weather_api_used'] = 1  # Assume ECMWF (from current system)
             metrics['api_agreement'] = 0.95  # Simplified
-            metrics['cloud_cover'] = weather_data.get('cloud_cover', [0.0])[0] if 'cloud_cover' in weather_data else 0.0
-            metrics['ghi'] = weather_data.get('ghi', [0.0])[0] if 'ghi' in weather_data else 0.0
-            metrics['dni'] = weather_data.get('dni', [0.0])[0] if 'dni' in weather_data else 0.0
-            metrics['temperature'] = weather_data.get('temperature_2m', [20.0])[0] if 'temperature_2m' in weather_data else 20.0
+            
+            # Handle both dict and DataFrame inputs
+            if isinstance(weather_data, pd.DataFrame):
+                metrics['cloud_cover'] = float(weather_data['cloud_cover'].iloc[0]) if 'cloud_cover' in weather_data else 0.0
+                # Use available irradiance columns: poa_irradiance, global_tilted_irradiance_instant, direct_normal_irradiance_instant
+                metrics['ghi'] = float(weather_data['global_tilted_irradiance_instant'].iloc[0]) if 'global_tilted_irradiance_instant' in weather_data else 0.0
+                metrics['dni'] = float(weather_data['direct_normal_irradiance_instant'].iloc[0]) if 'direct_normal_irradiance_instant' in weather_data else 0.0
+                metrics['temperature'] = float(weather_data['temperature_2m'].iloc[0]) if 'temperature_2m' in weather_data else 20.0
+            else:
+                # Dict-like access (backward compatibility)
+                metrics['cloud_cover'] = weather_data.get('cloud_cover', [0.0])[0] if 'cloud_cover' in weather_data else 0.0
+                metrics['ghi'] = weather_data.get('ghi', [0.0])[0] if 'ghi' in weather_data else 0.0
+                metrics['dni'] = weather_data.get('dni', [0.0])[0] if 'dni' in weather_data else 0.0
+                metrics['temperature'] = weather_data.get('temperature_2m', [20.0])[0] if 'temperature_2m' in weather_data else 20.0
+            
             metrics['weather_quality'] = 1.0
         else:
             metrics['weather_api_used'] = 0
@@ -714,7 +725,7 @@ if __name__ == "__main__":
     rl_forecaster = RLIntegratedForecaster(
         forecaster=forecaster,
         rl_mode="heuristic",  # Start with heuristic baseline
-        checkpoint_dir=Path("checkpoints/rl")
+        checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
     )
     
     # Example forecast

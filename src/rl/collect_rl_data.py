@@ -81,17 +81,15 @@ def load_test_data(test_parquet: Path, num_samples: int = None):
         
         window = df.iloc[i:i+window_size].copy()
         
-        # Weather features (input)
-        weather_cols = [c for c in window.columns if c in [
-            'ghi', 'dni', 'dhi', 'temperature_2m', 'wind_speed_10m',
-            'cloud_cover', 'precipitation', 'humidity'
-        ]]
+        # Pass full window to forecaster (it needs all columns: power_norm, poa_irradiance, plant features, weather, pvlib)
+        weather_df = window.copy()
+        if time_col != 'timestamp_utc':
+            weather_df = weather_df.rename(columns={time_col: 'timestamp_utc'})
         
-        weather_df = window[[time_col] + weather_cols].copy()
-        weather_df = weather_df.rename(columns={time_col: 'timestamp'})
-        
-        # Ground truth (target)
-        if 'power_normalized' in window.columns:
+        # Ground truth (target) - power_norm is the normalized power
+        if 'power_norm' in window.columns:
+            ground_truth = window['power_norm'].values
+        elif 'power_normalized' in window.columns:
             ground_truth = window['power_normalized'].values
         elif 'target' in window.columns:
             ground_truth = window['target'].values
@@ -139,25 +137,38 @@ def collect_transitions(
         
         try:
             # Get forecast start time from weather data
-            forecast_start = weather_df['timestamp'].iloc[0]
+            forecast_start = weather_df['timestamp_utc'].iloc[0]
             
             # Run forecast (RL picks action via heuristics, updates state)
-            # Note: Not passing ground_truth since alignment is complex
-            # Rewards will be computed based on heuristic performance metrics
             forecast, info = rl_forecaster.forecast_with_rl(
                 weather_data=weather_df,
-                forecast_start=forecast_start
+                forecast_start=forecast_start,
+                ground_truth=ground_truth  # Pass ground truth for RMSE computation
             )
             
-            # Now extract state/action/reward (already computed in forecast_with_rl)
+            # Extract state/action (already computed in forecast_with_rl)
             state = info['meta_state'].copy()
             action = info['action_index']
             
-            # Get reward from RL system (computed during update)
-            if hasattr(rl_forecaster.rl_system, 'last_reward'):
-                reward = rl_forecaster.rl_system.last_reward
+            # Compute reward from forecast error vs ground truth
+            # Align forecast with ground truth (forecast is typically 1-day, ground_truth is 30-day window)
+            if hasattr(forecast, 'shape'):
+                forecast_len = len(forecast)
+            elif hasattr(forecast, '__len__'):
+                forecast_len = len(forecast)
             else:
-                reward = 0.0
+                forecast_len = 96  # Default 1 day @ 15min
+            
+            # Take only the first N steps of ground truth to match forecast
+            gt_aligned = ground_truth[:forecast_len]
+            forecast_aligned = forecast[:forecast_len] if hasattr(forecast, '__getitem__') else np.zeros(forecast_len)
+            
+            if len(gt_aligned) > 0 and len(forecast_aligned) == len(gt_aligned):
+                rmse = np.sqrt(np.mean((forecast_aligned - gt_aligned) ** 2))
+                reward = -rmse / 0.01  # Normalize: 0.01 RMSE = -1.0 reward
+            else:
+                rmse = 0.05
+                reward = -5.0
             
             # Compute next_state from current metrics (will be state for next step)
             metrics = info['metrics']
@@ -166,8 +177,6 @@ def collect_transitions(
             if sample_idx == 0:
                 next_state = state.copy()
             else:
-                # Next state is current state (closed loop)
-            
                 # Next state is current state (closed loop)
                 next_state = state.copy()
             
@@ -261,33 +270,33 @@ def analyze_transitions(df: pd.DataFrame):
 def main():
     parser = argparse.ArgumentParser(description="Collect RL training data from heuristic mode")
     
-    # Model paths
+    # Model paths - CANONICAL HARDCODED
     parser.add_argument('--short-ckpt', type=str, 
-                       default='V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt',
+                       default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt',
                        help='Short-head TFT checkpoint')
     parser.add_argument('--long-ckpt', type=str,
-                       default='V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt',
+                       default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt',
                        help='Long-head TFT checkpoint')
     parser.add_argument('--plant-meta', type=str,
-                       default='V1.0_FINAL_TFT/plant_metadata/plant_03.json',
+                       default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json',
                        help='Plant metadata JSON')
     
-    # Data paths
+    # Data paths - CANONICAL HARDCODED
     parser.add_argument('--short-train', type=str,
-                       default='data/processed/plant_level/plant_03/15min_pca32/train.parquet',
+                       default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/train.parquet',
                        help='Short-head training data (for TFT initialization)')
     parser.add_argument('--long-train', type=str,
-                       default='data/processed/plant_level/plant_03/hourly_longhead/train.parquet',
+                       default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/hourly_longhead/train.parquet',
                        help='Long-head training data')
     parser.add_argument('--test-data', type=str,
-                       default='data/processed/plant_level/plant_03/15min_pca32/test.parquet',
+                       default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/test.parquet',
                        help='Test data for rolling forecasts')
     
     # Collection params
     parser.add_argument('--num-samples', type=int, default=1000,
                        help='Number of samples to collect')
     parser.add_argument('--output', type=str, 
-                       default='data/rl_transitions/heuristic_run_001.parquet',
+                       default='/home/dwijenayake/pv_forecast_30d/data/rl_transitions/heuristic_run_001.parquet',
                        help='Output parquet file')
     parser.add_argument('--checkpoint-freq', type=int, default=100,
                        help='Save checkpoint every N samples')

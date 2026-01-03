@@ -127,8 +127,8 @@ def test_rl_integration_basic():
         gpu_short, gpu_long = check_gpu_availability()
         
         # Paths to V1.0 FINAL TFT checkpoints
-        SHORT_CKPT = Path("V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt")
-        LONG_CKPT = Path("V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt")
+        SHORT_CKPT = Path("/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt")
+        LONG_CKPT = Path("/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt")
         PLANT_META = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
         SHORT_TRAIN = Path("data/processed/plant_level/plant_03/15min_pca32/train.parquet")
         LONG_TRAIN = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
@@ -163,7 +163,7 @@ def test_rl_integration_basic():
         rl_forecaster = RLIntegratedForecaster(
             forecaster=forecaster,
             rl_mode="heuristic",
-            checkpoint_dir=Path("checkpoints/rl")
+            checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
         )
         
         logger.info("✅ Initialization successful!")
@@ -223,7 +223,7 @@ def test_rl_metrics_collection():
         rl_forecaster = RLIntegratedForecaster(
             forecaster=None,
             rl_mode="heuristic",
-            checkpoint_dir=Path("checkpoints/rl")
+            checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
         )
         
         # Create mock predictions
@@ -280,7 +280,7 @@ def test_rl_action_execution():
         rl_forecaster = RLIntegratedForecaster(
             forecaster=None,
             rl_mode="heuristic",
-            checkpoint_dir=Path("checkpoints/rl")
+            checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
         )
         
         # Test all 8 actions
@@ -317,7 +317,7 @@ def test_rl_online_learning():
         rl_forecaster = RLIntegratedForecaster(
             forecaster=None,
             rl_mode="rl",  # Use RL mode
-            checkpoint_dir=Path("checkpoints/rl")
+            checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
         )
         
         weather_df = create_mock_weather_data(duration_days=1)
