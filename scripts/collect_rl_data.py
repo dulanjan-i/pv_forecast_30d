@@ -174,7 +174,7 @@ def collect_transitions(
             # Extract transition
             transition = {
                 'sample_idx': sample_idx,
-                'timestamp': datetime.now().isoformat(),
+                'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
                 'forecast_start': forecast_start.isoformat() if hasattr(forecast_start, 'isoformat') else str(forecast_start),
                 'action': action,
                 'action_name': info['action_name'],
