@@ -327,7 +327,7 @@ def main() -> None:
 
     # Reproducibility: persist the exact CLI config used for this run
     hparams = vars(args).copy()
-    hparams["timestamp_utc"] = datetime.utcnow().isoformat()
+    hparams["timestamp_utc"] = pd.Timestamp.now(tz='UTC').isoformat()
     hparams["script"] = str(Path(__file__).resolve())
     hparams["repo_root"] = str(REPO_ROOT)
 
