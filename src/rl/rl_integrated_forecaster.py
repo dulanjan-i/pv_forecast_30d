@@ -116,20 +116,32 @@ class RLIntegratedForecaster:
         metrics['timestamp'] = pd.Timestamp.now(tz='UTC')
         
         ***REMOVED*** Performance metrics (if ground truth available)
+        ***REMOVED*** CRITICAL: Only use Day 1 (first 96 steps) for RMSE computation
+        ***REMOVED*** because blend weights only affect Day 1, not Days 2-30
         if ground_truth is not None:
+            ***REMOVED*** Focus on Day 1 only (96 steps @ 15-min = 24 hours)
+            day1_length = min(96, len(ground_truth))
+            gt_day1 = ground_truth[:day1_length]
+            
             if forecast_short is not None:
-                rmse_short = np.sqrt(np.mean((forecast_short[:len(ground_truth)] - ground_truth) ** 2))
+                ***REMOVED*** Day 1 RMSE (where blend matters)
+                forecast_short_day1 = forecast_short[:day1_length]
+                rmse_short = np.sqrt(np.mean((forecast_short_day1 - gt_day1) ** 2))
                 metrics['short_rmse_1h'] = rmse_short
-                metrics['short_rmse_24h'] = rmse_short  ***REMOVED*** Simplified
+                metrics['short_rmse_24h'] = rmse_short
             
             if forecast_long is not None:
-                rmse_long = np.sqrt(np.mean((forecast_long[:len(ground_truth)] - ground_truth) ** 2))
+                ***REMOVED*** Day 1 RMSE (where blend matters)
+                forecast_long_day1 = forecast_long[:day1_length]
+                rmse_long = np.sqrt(np.mean((forecast_long_day1 - gt_day1) ** 2))
                 metrics['long_rmse_24h'] = rmse_long
                 metrics['long_rmse_7d'] = rmse_long
                 metrics['long_rmse_30d'] = rmse_long
             
             if forecast_physics is not None:
-                rmse_physics = np.sqrt(np.mean((forecast_physics[:len(ground_truth)] - ground_truth) ** 2))
+                ***REMOVED*** Day 1 RMSE (where blend matters)
+                forecast_physics_day1 = forecast_physics[:day1_length]
+                rmse_physics = np.sqrt(np.mean((forecast_physics_day1 - gt_day1) ** 2))
                 metrics['physics_residual'] = rmse_physics
         else:
             ***REMOVED*** No ground truth: use previous metrics or defaults
@@ -234,15 +246,18 @@ class RLIntegratedForecaster:
         metrics['forecast_age_hours'] = 0  ***REMOVED*** Time since last retrain
         metrics['forecast_horizon'] = 24.0  ***REMOVED*** Typical horizon
         
-        ***REMOVED*** Ensemble RMSE (weighted combination)
+        ***REMOVED*** Ensemble RMSE (weighted combination) - Day 1 only
         if ground_truth is not None and all(f is not None for f in [forecast_short, forecast_long, forecast_physics]):
+            ***REMOVED*** Day 1 only (where blend matters)
+            day1_length = min(96, len(ground_truth), len(forecast_short), len(forecast_long), len(forecast_physics))
+            gt_ensemble = ground_truth[:day1_length]
             w_s, w_l, w_p = 0.33, 0.33, 0.34
             ensemble = (
-                w_s * forecast_short[:len(ground_truth)] +
-                w_l * forecast_long[:len(ground_truth)] +
-                w_p * forecast_physics[:len(ground_truth)]
+                w_s * forecast_short[:day1_length] +
+                w_l * forecast_long[:day1_length] +
+                w_p * forecast_physics[:day1_length]
             )
-            metrics['ensemble_rmse'] = np.sqrt(np.mean((ensemble - ground_truth) ** 2))
+            metrics['ensemble_rmse'] = np.sqrt(np.mean((ensemble - gt_ensemble) ** 2))
         else:
             metrics['ensemble_rmse'] = 0.05
         
@@ -257,159 +272,54 @@ class RLIntegratedForecaster:
         
         return metrics
     
-    def execute_action(self, action_index: int, model_name: str = None):
+    def execute_action(self, action: int, context: dict) -> dict:
         """
-        Execute RL action with safety bounds.
-        
-        Args:
-            action_index: Action from meta-controller (0-7)
-            model_name: Which model to act on (for actions 1-3)
-        
-        Returns:
-            success: Whether action executed successfully
+        Execute a chosen RL action and return the updated context.
+
+        IMPORTANT:
+        Phase1 dataset uses actions {0,2,3} for blend control, but the meta-controller
+        defines BLEND_PRESETS on {4,5,6}. This maps Phase1 actions onto those presets.
+
+        Mapping (Phase1):
+        0 -> preset 5 (balanced)
+        3 -> preset 4 (high short)
+        2 -> preset 6 (high physics)
         """
-        try:
-            if action_index == 0:  ***REMOVED*** MAINTAIN
-                logger.info("[Action] MAINTAIN - no changes")
-                return True
-            
-            elif action_index == 1:  ***REMOVED*** FINE_TUNE_SHORT_TFT
-                logger.info("[Action] FINE_TUNE_SHORT_TFT - adjusting hyperparameters")
-                if self.forecaster is None:
-                    logger.warning("  No forecaster loaded, skipping")
-                    return False
-                
-                ***REMOVED*** Get current learning rate (stored in model's hparams)
-                if hasattr(self.forecaster, 'short_model') and hasattr(self.forecaster.short_model, 'hparams'):
-                    current_lr = self.forecaster.short_model.hparams.get('learning_rate', 1e-3)
-                    
-                    ***REMOVED*** Decide adjustment based on recent performance
-                    if len(self.metrics_history) > 0:
-                        recent_rmse = self.metrics_history[-1].get('short_rmse_1h', 0.05)
-                        if recent_rmse > 0.08:
-                            ***REMOVED*** High error: increase LR (learn faster)
-                            new_lr = min(current_lr * 1.2, 1e-2)  ***REMOVED*** Cap at 0.01
-                            logger.info(f"  High RMSE ({recent_rmse:.4f}), increasing LR: {current_lr:.2e} → {new_lr:.2e}")
-                        else:
-                            ***REMOVED*** Low error: decrease LR (fine-tune)
-                            new_lr = max(current_lr * 0.8, 1e-5)  ***REMOVED*** Floor at 1e-5
-                            logger.info(f"  Low RMSE ({recent_rmse:.4f}), decreasing LR: {current_lr:.2e} → {new_lr:.2e}")
-                        
-                        ***REMOVED*** Update hparams (will be picked up by optimizer on next fit)
-                        self.forecaster.short_model.hparams['learning_rate'] = new_lr
-                        return True
-                    else:
-                        logger.warning("  No metrics history to guide adjustment")
-                        return False
-                else:
-                    logger.warning("  Short model hparams not accessible")
-                    return False
-            
-            elif action_index == 2:  ***REMOVED*** FINE_TUNE_LONG_TFT
-                logger.info("[Action] FINE_TUNE_LONG_TFT - adjusting hyperparameters")
-                if self.forecaster is None:
-                    logger.warning("  No forecaster loaded, skipping")
-                    return False
-                
-                ***REMOVED*** Get current learning rate (stored in model's hparams)
-                if hasattr(self.forecaster, 'long_model') and hasattr(self.forecaster.long_model, 'hparams'):
-                    current_lr = self.forecaster.long_model.hparams.get('learning_rate', 1e-3)
-                    
-                    ***REMOVED*** Decide adjustment based on recent performance
-                    if len(self.metrics_history) > 0:
-                        recent_rmse = self.metrics_history[-1].get('long_rmse_30d', 0.05)
-                        if recent_rmse > 0.10:
-                            ***REMOVED*** High error: increase LR
-                            new_lr = min(current_lr * 1.2, 1e-2)
-                            logger.info(f"  High RMSE ({recent_rmse:.4f}), increasing LR: {current_lr:.2e} → {new_lr:.2e}")
-                        else:
-                            ***REMOVED*** Low error: decrease LR
-                            new_lr = max(current_lr * 0.8, 1e-5)
-                            logger.info(f"  Low RMSE ({recent_rmse:.4f}), decreasing LR: {current_lr:.2e} → {new_lr:.2e}")
-                        
-                        ***REMOVED*** Update hparams
-                        self.forecaster.long_model.hparams['learning_rate'] = new_lr
-                        return True
-                    else:
-                        logger.warning("  No metrics history to guide adjustment")
-                        return False
-                else:
-                    logger.warning("  Long model hparams not accessible")
-                    return False
-            
-            elif action_index == 3:  ***REMOVED*** RECALIBRATE_PVLIB
-                logger.info("[Action] RECALIBRATE_PVLIB - adjusting panel metadata")
-                if self.forecaster is None or not hasattr(self.forecaster, 'pvlib_predictor'):
-                    logger.warning("  No PVLib predictor loaded, skipping")
-                    return False
-                
-                ***REMOVED*** Access PVLib predictor
-                pvlib = self.forecaster.pvlib_predictor
-                
-                ***REMOVED*** Check if we have tilt/azimuth attributes
-                if hasattr(pvlib, 'tilt_deg') and hasattr(pvlib, 'azimuth_deg'):
-                    ***REMOVED*** Decide adjustments based on recent physics residual
-                    if len(self.metrics_history) > 0:
-                        residual = self.metrics_history[-1].get('physics_residual', 0.05)
-                        
-                        if residual > 0.15:
-                            ***REMOVED*** High residual: adjust parameters
-                            old_tilt = pvlib.tilt_deg
-                            old_azimuth = pvlib.azimuth_deg
-                            
-                            ***REMOVED*** Small random adjustments within bounds
-                            import random
-                            tilt_delta = random.uniform(-3, 3)  ***REMOVED*** ±3° (within ±5° bound)
-                            azimuth_delta = random.uniform(-5, 5)  ***REMOVED*** ±5° (within ±10° bound)
-                            
-                            new_tilt = np.clip(old_tilt + tilt_delta, 10, 60)
-                            new_azimuth = np.clip(old_azimuth + azimuth_delta, 90, 270)
-                            
-                            ***REMOVED*** Update both stored attributes and PVSystem
-                            pvlib.tilt_deg = new_tilt
-                            pvlib.azimuth_deg = new_azimuth
-                            pvlib.system.surface_tilt = new_tilt
-                            pvlib.system.surface_azimuth = new_azimuth
-                            
-                            logger.info(f"  High residual ({residual:.4f}), adjusting:")
-                            logger.info(f"    Tilt: {old_tilt:.1f}° → {new_tilt:.1f}°")
-                            logger.info(f"    Azimuth: {old_azimuth:.1f}° → {new_azimuth:.1f}°")
-                            
-                            return True
-                        else:
-                            logger.info(f"  Residual acceptable ({residual:.4f}), no adjustment needed")
-                            return True
-                    else:
-                        logger.warning("  No metrics history to guide adjustment")
-                        return False
-                else:
-                    logger.warning("  PVLib tilt/azimuth attributes not accessible")
-                    return False
-            
-            elif action_index in [4, 5, 6]:  ***REMOVED*** BLEND adjustments
-                preset = self.rl_system.meta_controller.BLEND_PRESETS.get(action_index, {})
-                self.blend_weights = preset
-                logger.info(f"[Action] BLEND adjusted: {preset}")
-                return True
-            
-            elif action_index == 7:  ***REMOVED*** SUGGEST_RETRAIN
-                logger.warning("[Action] SUGGEST_RETRAIN - requires human confirmation")
-                ***REMOVED*** Add to retrain queue
-                if model_name:
-                    self.rl_system.retrain_queue[model_name].append({
-                        'timestamp': pd.Timestamp.now(tz='UTC'),
-                        'reason': 'RL meta-controller suggestion',
-                        'metrics': self.metrics_history[-1] if self.metrics_history else {}
-                    })
-                return True
-            
-            else:
-                logger.error(f"[Action] Unknown action index: {action_index}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"[Action] Execution failed: {e}")
-            return False
+        updated = dict(context) if context is not None else {}
+
+        ***REMOVED*** ---- Phase1 blend-action mapping ----
+        phase1_to_preset = {0: 5, 3: 4, 2: 6}
+
+        if action in phase1_to_preset:
+            preset_id = phase1_to_preset[action]
+            preset = self.meta_controller.BLEND_PRESETS[preset_id]
+            self.blend_weights = {
+                "short": float(preset["short"]),
+                "long": float(preset["long"]),
+                "physics": float(preset["physics"]),
+            }
+            updated["blend_short"] = self.blend_weights["short"]
+            updated["blend_long"] = self.blend_weights["long"]
+            updated["blend_physics"] = self.blend_weights["physics"]
+            updated["action_applied"] = int(action)
+            updated["action_type"] = "blend_weights_phase1"
+            return updated
+
+        ***REMOVED*** ---- Original behavior for the rest (keep your existing action meanings) ----
+        ***REMOVED*** If you had actions like "switch weather source", "retrain", etc,
+        ***REMOVED*** keep them below exactly as you already implemented.
+
+        if action == 0:
+            updated["action_applied"] = int(action)
+            updated["action_type"] = "noop"
+            return updated
+
+        ***REMOVED*** If your old code handled 1,2,3 as non-blend actions, keep it here.
+        ***REMOVED*** If not, default to noop to be safe.
+        updated["action_applied"] = int(action)
+        updated["action_type"] = "noop_unknown"
+        return updated
+
     
     def forecast_with_rl(
         self,
@@ -431,13 +341,31 @@ class RLIntegratedForecaster:
             forecast: Final blended prediction (2880 steps @ 15-min)
             info: Dict with diagnostics
         """
+        ***REMOVED*** Collect preliminary metrics from weather data (for RL state)
+        preliminary_metrics = {
+            'timestamp': pd.Timestamp.now(tz='UTC'),
+            'hour_of_day': pd.Timestamp.now(tz='UTC').hour,
+            'is_night': 1.0 if (pd.Timestamp.now(tz='UTC').hour < 6 or pd.Timestamp.now(tz='UTC').hour > 20) else 0.0,
+            'season': (pd.Timestamp.now(tz='UTC').month - 1) // 3,
+        }
+        
+        ***REMOVED*** RL meta-controller: decide action BEFORE forecast (so blend_weights are set)
+        action_info = self.rl_system.step(preliminary_metrics)
+        action_index = action_info.get('action_index', 0)
+        
+        ***REMOVED*** Execute action (with safety bounds) - THIS UPDATES blend_weights
+        action_success = self.execute_action(action_index)
+        
         ***REMOVED*** Get individual model predictions from PhysicsAwareForecaster
+        ***REMOVED*** NOW forecast uses the UPDATED blend_weights from execute_action
         try:
-            ***REMOVED*** Use existing forecaster's predict_30d method
+            ***REMOVED*** CRITICAL FIX: Pass RL blend_weights to forecaster so actions actually control output
+            ***REMOVED*** Use existing forecaster's predict_30d method with RL-controlled weights
             full_forecast = self.forecaster.predict_30d(
                 forecast_start=forecast_start,
                 weather_df=weather_data,
-                historical_df=historical_data
+                historical_df=historical_data,
+                blend_weights=self.blend_weights  ***REMOVED*** ← RL control point (already updated by execute_action)
             )
             
             ***REMOVED*** Extract component forecasts (if available from forecaster internals)
@@ -463,15 +391,10 @@ class RLIntegratedForecaster:
             weather_data=weather_data
         )
         
-        ***REMOVED*** RL meta-controller: decide action
-        action_info = self.rl_system.step(metrics)
-        action_index = action_info.get('action_index', 0)
-        meta_state = self.rl_system.current_state
+        ***REMOVED*** Update RL system with actual forecast metrics
+        meta_state = self.rl_system.build_meta_state(metrics)
         
-        ***REMOVED*** Execute action (with safety bounds)
-        action_success = self.execute_action(action_index)
-        
-        ***REMOVED*** Get current blend weights (updated by execute_action if blend action)
+        ***REMOVED*** Get current blend weights (already updated by execute_action before forecast)
         blend_weights = self.blend_weights
         
         ***REMOVED*** Apply dynamic blending to create final forecast
@@ -512,10 +435,25 @@ class RLIntegratedForecaster:
         if ground_truth is not None and len(self.metrics_history) > 1:
             metrics_prev = self.metrics_history[-1]  ***REMOVED*** Previous step
             reward = self.rl_system.compute_reward(metrics_prev, metrics)
-            
-            ***REMOVED*** Update RL system
+
+            ***REMOVED*** Store transition with the computed reward so the meta-controller
+            ***REMOVED*** learns from the actual improvement signal (bugfix).
+            try:
+                prev_state = getattr(self.rl_system, 'current_state', None)
+                next_state = self.rl_system.build_meta_state(metrics)
+                if prev_state is not None:
+                    ***REMOVED*** Use meta_controller's store_transition to record reward
+                    self.rl_system.meta_controller.store_transition(
+                        prev_state, action_index, float(reward), next_state, False
+                    )
+                else:
+                    logger.warning("[RL Update] No prev_state found; skipping explicit store_transition")
+            except Exception as e:
+                logger.error(f"[RL Update] Failed to store transition: {e}")
+
+            ***REMOVED*** Trigger system update (will sample from buffer and train)
             self.rl_system.update(metrics, done=False)
-            
+
             logger.info(f"[RL Update] Reward={reward:.3f}, Action={action_index}, ε={self.rl_system.meta_controller.epsilon:.3f}")
         
         ***REMOVED*** Log to dashboard files

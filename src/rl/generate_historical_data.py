@@ -58,22 +58,30 @@ def compute_rmse(forecast: np.ndarray, ground_truth: np.ndarray, horizon: int) -
 
 def run_forecast_and_compute_metrics(
     forecaster: PhysicsAwareForecaster,
-    window_data: pd.DataFrame,
+    historical_data: pd.DataFrame,
+    forecast_window: pd.DataFrame,
     ground_truth: np.ndarray,
     forecast_start: pd.Timestamp
 ) -> Dict:
     """
     Run forecast and compute all RL state metrics.
     
+    Args:
+        historical_data: Data BEFORE forecast_start (for encoder context)
+        forecast_window: Data FROM forecast_start onward (for ground truth)
+        ground_truth: True power values for the forecast period
+        forecast_start: Start timestamp for forecast
+    
     Returns:
         metrics dict with RMSE values, residuals, etc.
     """
     try:
         ***REMOVED*** Run forecast (2880 steps = 30 days @ 15min)
+        ***REMOVED*** Use forecast_window as weather (future weather), historical_data as history
         forecast = forecaster.predict_30d(
             forecast_start=forecast_start,
-            weather_df=window_data,
-            historical_df=window_data  ***REMOVED*** Use window as historical context
+            weather_df=forecast_window,  ***REMOVED*** Future weather for forecast period
+            historical_df=historical_data  ***REMOVED*** Past data for encoder context
         )
         
         ***REMOVED*** Convert to numpy if needed
@@ -292,27 +300,34 @@ def generate_rl_transitions(
     """
     transitions = []
     
-    ***REMOVED*** Window size: 30 days = 2880 steps @ 15min
-    window_size = 2880
+    ***REMOVED*** Window sizes
+    history_size = 168 * 4  ***REMOVED*** 168 hours = 7 days @ 15min (for long-head encoder)
+    forecast_size = 2880  ***REMOVED*** 30 days @ 15min (forecast period)
     stride = 96 * stride_days  ***REMOVED*** 1 day stride
     
+    total_window = history_size + forecast_size
+    
     logger.info(f"Generating {num_samples} transitions with {stride_days}-day stride")
-    logger.info(f"Window size: {window_size} steps (30 days @ 15min)")
+    logger.info(f"History window: {history_size} steps (7 days @ 15min)")
+    logger.info(f"Forecast window: {forecast_size} steps (30 days @ 15min)")
     
     pbar = tqdm(total=num_samples, desc="Generating RL data")
     
-    for i in range(0, len(test_data) - window_size, stride):
+    for i in range(history_size, len(test_data) - forecast_size, stride):
         if len(transitions) >= num_samples:
             break
         
-        ***REMOVED*** Extract window
-        window = test_data.iloc[i:i+window_size].copy()
-        forecast_start = window['timestamp_utc'].iloc[0]
-        ground_truth = window['power_norm'].values
+        ***REMOVED*** Extract historical context (7 days before forecast_start)
+        historical_data = test_data.iloc[i-history_size:i].copy()
+        
+        ***REMOVED*** Extract forecast window (30 days from forecast_start)
+        forecast_window = test_data.iloc[i:i+forecast_size].copy()
+        forecast_start = forecast_window['timestamp_utc'].iloc[0]
+        ground_truth = forecast_window['power_norm'].values
         
         ***REMOVED*** Run forecast and compute metrics
         metrics = run_forecast_and_compute_metrics(
-            forecaster, window, ground_truth, forecast_start
+            forecaster, historical_data, forecast_window, ground_truth, forecast_start
         )
         
         ***REMOVED*** Build context
@@ -322,9 +337,9 @@ def generate_rl_transitions(
             'blend_short': 0.33,
             'blend_long': 0.33,
             'blend_physics': 0.34,
-            'actions_since_retrain': i // stride,
-            'cloud_cover': float(window['cloud_cover'].iloc[0]) if 'cloud_cover' in window else 0.5,
-            'temperature': float(window['temperature_2m'].iloc[0]) if 'temperature_2m' in window else 20.0,
+            'actions_since_retrain': (i - history_size) // stride,
+            'cloud_cover': float(forecast_window['cloud_cover'].iloc[0]) if 'cloud_cover' in forecast_window else 0.5,
+            'temperature': float(forecast_window['temperature_2m'].iloc[0]) if 'temperature_2m' in forecast_window else 20.0,
         }
         
         ***REMOVED*** Build state
@@ -334,13 +349,15 @@ def generate_rl_transitions(
         action, action_name = simulate_heuristic_action(state)
         
         ***REMOVED*** For next_state, look ahead 1 day if available
-        if i + stride + window_size < len(test_data):
-            next_window = test_data.iloc[i+stride:i+stride+window_size].copy()
+        next_idx = i + stride
+        if next_idx - history_size >= 0 and next_idx + forecast_size <= len(test_data):
+            next_historical = test_data.iloc[next_idx-history_size:next_idx].copy()
+            next_window = test_data.iloc[next_idx:next_idx+forecast_size].copy()
             next_forecast_start = next_window['timestamp_utc'].iloc[0]
             next_ground_truth = next_window['power_norm'].values
             
             next_metrics = run_forecast_and_compute_metrics(
-                forecaster, next_window, next_ground_truth, next_forecast_start
+                forecaster, next_historical, next_window, next_ground_truth, next_forecast_start
             )
             
             next_context = context.copy()
