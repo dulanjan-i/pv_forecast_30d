@@ -43,17 +43,27 @@ logger = logging.getLogger(__name__)
 class Phase1Pipeline:
     """Production inference pipeline with dynamic encoder updates."""
     
-    def __init__(self, weather_source='historical'):
+    def __init__(self, weather_source='historical', start_date=None, end_date=None, stride_days: int = 7):
+        self.stride_days = int(stride_days)
+        if self.stride_days < 1:
+            raise ValueError("stride_days must be >= 1")
+
         """
         Initialize pipeline.
         
         Args:
             weather_source: 'historical' (ERA5 archive) or 'api' (real-time forecast)
+            start_date: Forecast start date (default: 2023-12-01 for Phase 1)
+            end_date: Forecast end date (default: 2024-12-31 for Phase 1)
         """
         self.base_dir = Path("/home/dwijenayake/pv_forecast_30d")
         self.phase1_dir = self.base_dir / "data/processed/test_phase1_dec2023_dec2024"
         self.test_dir = self.base_dir / "data/processed/plant_level/plant_03"
         self.weather_source = weather_source
+        
+        # Set forecast date range
+        self.start_date = pd.Timestamp(start_date, tz='UTC') if start_date else pd.Timestamp("2023-12-01", tz='UTC')
+        self.end_date = pd.Timestamp(end_date, tz='UTC') if end_date else pd.Timestamp("2024-12-31", tz='UTC')
         
         # Initialize weather client
         self.weather_client = WeatherClient()
@@ -70,10 +80,13 @@ class Phase1Pipeline:
         self.azimuth = self.metadata['azimuth_deg']
     
     def step1_fetch_weather(self):
-        """Fetch weather Dec 1, 2023 → Dec 31, 2024 (13 months) using ERA5 OR real-time API."""
+        """Fetch weather with 7-day warmup before start_date (for encoder context) using ERA5 OR real-time API."""
         logger.info("\n" + "="*70)
         logger.info(f"STEP 1: FETCHING WEATHER (source: {self.weather_source})")
         logger.info("="*70)
+        
+        # Include 7-day warmup for encoder context
+        warmup_start = self.start_date - timedelta(days=7)
         
         if self.weather_source == 'api':
             # Real-time forecast from API
@@ -116,10 +129,10 @@ class Phase1Pipeline:
             # Historical ERA5 archive (Phase 1 validation mode)
             logger.info("Using: OpenMeteo Historical Archive (ERA5)")
             
-            start_date = "2023-12-01"
-            end_date = "2024-12-31"
+            start_date = warmup_start.strftime("%Y-%m-%d")
+            end_date = self.end_date.strftime("%Y-%m-%d")
             
-            logger.info(f"Period: {start_date} → {end_date}")
+            logger.info(f"Period: {start_date} → {end_date} (includes 7-day warmup)")
             logger.info(f"Location: {self.lat}°N, {self.lon}°E")
         
             import openmeteo_requests
@@ -192,6 +205,10 @@ class Phase1Pipeline:
                     chunk_df = pd.DataFrame(hourly_data)
                     all_data.append(chunk_df)
                     logger.info(f"  ✓ Fetched {len(chunk_df)} steps @ hourly")
+                    
+                    # Advance to next chunk
+                    current += timedelta(days=days_to_fetch)
+                    chunk_idx += 1
                     
                 except Exception as e:
                     logger.error(f"  ✗ Failed: {e}")
@@ -358,28 +375,93 @@ class Phase1Pipeline:
         return weather_15min, weather_hourly
     
     def step3_extract_encoder_context(self):
-        """Extract encoder context from test.parquet @ 15min resolution."""
+        """Extract encoder context from test.parquet @ 15min resolution OR from weather if test unavailable."""
         logger.info("\n" + "="*70)
-        logger.info("STEP 3: EXTRACTING ENCODER CONTEXT FROM TEST SET")
+        logger.info("STEP 3: EXTRACTING ENCODER CONTEXT")
         logger.info("="*70)
         
-        # Load test data @ 15min
-        test_15min = pd.read_parquet(self.test_dir / "15min_pca32/test.parquet")
+        test_path = self.test_dir / "15min_pca32/test.parquet"
         
-        logger.info(f"Test data loaded:")
-        logger.info(f"  15min: {test_15min.timestamp_utc.min()} → {test_15min.timestamp_utc.max()}")
+        # Check if test set exists AND covers the required date range
+        use_test_set = False
+        if test_path.exists():
+            test_15min = pd.read_parquet(test_path)
+            test_end = pd.Timestamp(test_15min.timestamp_utc.max())
+            required_start = pd.Timestamp(self.start_date) - timedelta(days=7)
+            
+            logger.info(f"Test set found: {test_15min.timestamp_utc.min()} → {test_end}")
+            logger.info(f"Required encoder start: {required_start}")
+            
+            # Only use test set if it extends to at least 7 days before start_date
+            if test_end >= required_start:
+                logger.info("✓ Test set covers required encoder period")
+                use_test_set = True
+                encoder_short = test_15min.tail(96).copy()
+                encoder_long_15min = test_15min.tail(672).copy()
+            else:
+                logger.warning(f"✗ Test set ends too early ({test_end} < {required_start})")
         
-        # Short-head: Last 24 hours (96 steps @ 15min)
-        encoder_short = test_15min.tail(96).copy()
+        if not use_test_set:
+            # Prefer Phase 1 predictions (15-min) if available for bootstrapping
+            pred_path = self.phase1_dir / "predictions_phase1.parquet"
+            used_phase1_preds = False
+            if pred_path.exists():
+                try:
+                    p1 = pd.read_parquet(pred_path)
+                    # Normalize column names
+                    if 'timestamp' in p1.columns and 'timestamp_utc' not in p1.columns:
+                        p1 = p1.rename(columns={'timestamp': 'timestamp_utc'})
+                    if 'predicted_power_norm' in p1.columns and 'power_norm' not in p1.columns:
+                        p1['power_norm'] = p1['predicted_power_norm']
+                    p1 = p1.sort_values('timestamp_utc').reset_index(drop=True)
+                    pred_end = pd.Timestamp(p1.timestamp_utc.max())
+                    required_start = pd.Timestamp(self.start_date) - timedelta(days=7)
+                    if pred_end >= required_start and len(p1) >= 672:
+                        logger.info(f"Using Phase 1 predictions for encoder context: {pred_path}")
+                        encoder_long_15min = p1.tail(672).copy()
+                        # Ensure required schema
+                        if 'plant_id' not in encoder_long_15min.columns:
+                            encoder_long_15min['plant_id'] = 'plant_03'
+                        used_phase1_preds = True
+                        encoder_short = encoder_long_15min.tail(96).copy()
+                except Exception:
+                    logger.warning(f"Failed to read Phase 1 predictions: {pred_path} - falling back to weather")
+
+            if not used_phase1_preds:
+                # Test set not available or Phase1 preds insufficient - use weather data from 7 days before start_date
+                logger.warning(f"Test set not found: {test_path}")
+                logger.info("Creating encoder context from weather data (bootstrap mode)")
+
+                # Load preprocessed weather
+                weather_path = self.phase1_dir / "weather_with_pvlib_15min.parquet"
+                weather_15min = pd.read_parquet(weather_path)
+
+                # Extract last 7 days before start_date (672 steps @ 15min)
+                encoder_end = pd.Timestamp(self.start_date)
+                encoder_start = encoder_end - timedelta(days=7)
+
+                encoder_long_15min = weather_15min[
+                    (weather_15min.timestamp_utc >= encoder_start) &
+                    (weather_15min.timestamp_utc < encoder_end)
+                ].copy()
+
+                if len(encoder_long_15min) == 0:
+                    raise ValueError(f"No weather data found for encoder window: {encoder_start} → {encoder_end}")
+
+                logger.info(f"Extracted {len(encoder_long_15min)} steps from weather data")
+                logger.info(f"  From: {encoder_long_15min.timestamp_utc.min()}")
+                logger.info(f"  To: {encoder_long_15min.timestamp_utc.max()}")
+
+                # Short-head: Last 24 hours
+                encoder_short = encoder_long_15min.tail(96).copy()
+        
+        # Save outputs
         output_short = self.phase1_dir / "encoder_context_short.parquet"
         encoder_short.to_parquet(output_short, index=False)
         logger.info(f"\n✓ Short-head encoder (24h @ 15min):")
         logger.info(f"   {encoder_short.timestamp_utc.min()} → {encoder_short.timestamp_utc.max()}")
         logger.info(f"   Saved: {output_short}")
         
-        # Long-head equivalent: Last 7 days @ 15min (168h × 4 = 672 steps)
-        # This will be resampled to hourly (168 steps) by forecaster
-        encoder_long_15min = test_15min.tail(672).copy()
         output_long_15min = self.phase1_dir / "encoder_context_long_15min.parquet"
         encoder_long_15min.to_parquet(output_long_15min, index=False)
         logger.info(f"\n✓ Long-head encoder (7d @ 15min, will be resampled to hourly):")
@@ -396,60 +478,88 @@ class Phase1Pipeline:
         initial_encoder_long: pd.DataFrame,
         forecaster: PhysicsAwareForecaster
     ):
-        """Run rolling 30-day forecasts with DYNAMIC encoder updates."""
+        """Run rolling 30-day forecasts with dynamic encoder updates (shift + append)."""
         logger.info("\n" + "="*70)
         logger.info("STEP 4: RUNNING ROLLING INFERENCE (DYNAMIC ANCHORING)")
         logger.info("="*70)
-        
-        forecast_start_date = pd.Timestamp("2023-12-01", tz='UTC')
-        forecast_end_date = pd.Timestamp("2024-12-31", tz='UTC')
-        stride_days = 7
-        
-        logger.info(f"Start: {forecast_start_date}")
-        logger.info(f"End: {forecast_end_date}")
+
+        forecast_start_date = self.start_date
+        forecast_end_date = self.end_date
+        stride_days = int(self.stride_days)
+        steps_adv = stride_days * 96  # 15-min steps to advance
+
+        if steps_adv > 672:
+            raise ValueError(f"stride_days too large for encoder update: steps_adv={steps_adv} > 672")
+
+        # latest valid forecast_start such that a full 30d (2880 x 15min) window exists
+        max_ts = pd.to_datetime(weather_15min["timestamp_utc"], utc=True).max()
+        latest_start = max_ts - pd.Timedelta(minutes=15 * 2879)  # need 2880 steps inclusive
+        latest_start = pd.Timestamp(latest_start).floor("D").tz_convert("UTC") if latest_start.tzinfo else pd.Timestamp(latest_start, tz="UTC")
+
+        forecast_end_limit = min(forecast_end_date, latest_start)
+
+        logger.info(f"Start:  {forecast_start_date}")
+        logger.info(f"End:    {forecast_end_date}")
         logger.info(f"Stride: {stride_days} days")
-        logger.info(f"Strategy: DYNAMIC (use predicted power as encoder)\n")
-        
+        logger.info(f"Max possible forecast_start given weather coverage: {latest_start}")
+        logger.info(f"Will run until: {forecast_end_limit}")
+
+        def ensure_plant_onehot(df: pd.DataFrame) -> pd.DataFrame:
+            cols = ['plant_01', 'plant_02', 'plant_03', 'plant_05', 'plant_06']
+            for c in cols:
+                if c not in df.columns:
+                    df[c] = 0.0
+            df['plant_03'] = 1.0
+            return df
+
         # Initialize encoder context
-        current_encoder_short = initial_encoder_short.copy()
-        current_encoder_long = initial_encoder_long.copy()  # This is 672 @ 15min
-        
+        current_encoder_short = ensure_plant_onehot(initial_encoder_short.copy())
+        current_encoder_long = ensure_plant_onehot(initial_encoder_long.copy())  # 672 @ 15min
+
         all_predictions = []
         current_forecast_start = forecast_start_date
         forecast_idx = 0
-        
-        pbar = tqdm(desc="Rolling forecasts", unit="forecast")
-        
-        while current_forecast_start <= forecast_end_date:
+
+        total = int(((forecast_end_limit - forecast_start_date).days // stride_days) + 1) if forecast_end_limit >= forecast_start_date else 0
+        pbar = tqdm(total=total, desc="Rolling forecasts", unit="forecast")
+
+        while current_forecast_start <= forecast_end_limit:
             forecast_idx += 1
-            
+
             try:
-                # Run 30-day forecast
                 logger.info(f"\n[Forecast {forecast_idx}] Starting: {current_forecast_start}")
-                
-                # Extract weather for 30 days @ 15min (forecaster will resample internally)
+
                 forecast_end = current_forecast_start + timedelta(days=30)
+
+                # 30d window at 15min: [start, start+30d)
                 weather_window_15min = weather_15min[
                     (weather_15min['timestamp_utc'] >= current_forecast_start) &
                     (weather_15min['timestamp_utc'] < forecast_end)
                 ].copy()
-                
+
                 if len(weather_window_15min) < 2880:
-                    logger.warning(f"  Not enough 15min weather ({len(weather_window_15min)} < 2880), stopping")
+                    logger.warning(f"Not enough 15min weather ({len(weather_window_15min)} < 2880) at {current_forecast_start}, stopping.")
                     break
-                
-                # Run forecast - pass 672 @ 15min encoder (will be resampled to 168 hourly)
-                # Forecaster detects 15min frequency and resamples to hourly for long-head
+
+                weather_window_15min = ensure_plant_onehot(weather_window_15min)
+
                 predictions = forecaster.predict_30d(
                     forecast_start=current_forecast_start,
-                    weather_df=weather_window_15min,  # 15min input (2880 steps)
-                    historical_df=current_encoder_long  # 672 @ 15min (→ 168 hourly)
+                    weather_df=weather_window_15min,
+                    historical_df=current_encoder_long
                 )
-                
+
                 if torch.is_tensor(predictions):
-                    predictions = predictions.cpu().numpy()
-                
-                # Save predictions
+                    predictions = predictions.detach().cpu().numpy()
+
+                predictions = np.asarray(predictions, dtype=np.float32)
+                if predictions.ndim != 1:
+                    predictions = predictions.reshape(-1)
+
+                logger.info(f"  ✓ Predicted {len(predictions)} steps")
+                logger.info(f"    Power range: [{float(np.min(predictions)):.3f}, {float(np.max(predictions)):.3f}]")
+
+                # Save predictions record
                 pred_record = {
                     'forecast_idx': forecast_idx,
                     'forecast_start': current_forecast_start,
@@ -458,69 +568,38 @@ class Phase1Pipeline:
                     'predicted_power': predictions
                 }
                 all_predictions.append(pred_record)
-                
-                logger.info(f"  ✓ Predicted {len(predictions)} steps")
-                logger.info(f"    Power range: [{predictions.min():.3f}, {predictions.max():.3f}]")
-                
-                # UPDATE ENCODER CONTEXT for next forecast (DYNAMIC!)
-                # Need last 7 days BEFORE the next forecast_start as encoder
-                days_to_advance = stride_days
-                steps_to_advance_15min = days_to_advance * 96  # 15min steps
-                
-                # Next forecast starts at current_forecast_start + stride_days
-                next_forecast_start_idx = steps_to_advance_15min
-                
-                if len(predictions) >= 672:  # Need at least 7 days of predictions
-                    # Short-head encoder: 24h immediately before next forecast
-                    # (predictions from days 6-7, i.e., indices 576-671 for stride=7)
-                    short_start_idx = max(0, next_forecast_start_idx - 96)
-                    short_end_idx = next_forecast_start_idx
-                    
-                    new_encoder_short_data = predictions[short_start_idx:short_end_idx]
-                    new_encoder_short_times = weather_window_15min['timestamp_utc'].iloc[short_start_idx:short_end_idx].values
-                    
-                    current_encoder_short = weather_window_15min.iloc[short_start_idx:short_end_idx].copy()
-                    current_encoder_short['power_norm'] = new_encoder_short_data
-                    
-                    # Add deprecated plant_XX columns (zeros, for schema compatibility)
-                    for col in ['plant_01', 'plant_02', 'plant_03', 'plant_05', 'plant_06']:
-                        if col not in current_encoder_short.columns:
-                            current_encoder_short[col] = 0.0
-                    
-                    logger.info(f"  ↻ Updated short-head encoder: {pd.Timestamp(new_encoder_short_times[0])} → {pd.Timestamp(new_encoder_short_times[-1])}")
-                    
-                    # Long-head encoder: 7 days (672 steps) immediately before next forecast
-                    # (predictions from days 0-7, i.e., indices 0-671 for stride=7)
-                    long_start_idx = max(0, next_forecast_start_idx - 672)
-                    long_end_idx = next_forecast_start_idx
-                    
-                    new_encoder_long_data = predictions[long_start_idx:long_end_idx]
-                    new_encoder_long_times = weather_window_15min['timestamp_utc'].iloc[long_start_idx:long_end_idx].values
-                    
-                    current_encoder_long = weather_window_15min.iloc[long_start_idx:long_end_idx].copy()
-                    current_encoder_long['power_norm'] = new_encoder_long_data
-                    
-                    # Add deprecated plant_XX columns
-                    for col in ['plant_01', 'plant_02', 'plant_03', 'plant_05', 'plant_06']:
-                        if col not in current_encoder_long.columns:
-                            current_encoder_long[col] = 0.0
-                    
-                    logger.info(f"  ↻ Updated long-head encoder: {pd.Timestamp(new_encoder_long_times[0])} → {pd.Timestamp(new_encoder_long_times[-1])}")
-                
-                # Move to next forecast window
+
+                # ---- encoder update: shift existing 672 by steps_adv, append steps_adv predictions ----
+                append_df = weather_window_15min.iloc[:steps_adv].copy()
+                append_df["power_norm"] = predictions[:steps_adv]
+                append_df = ensure_plant_onehot(append_df)
+
+                kept = current_encoder_long.iloc[steps_adv:].copy()
+                current_encoder_long = pd.concat([kept, append_df], ignore_index=True)
+
+                if len(current_encoder_long) != 672:
+                    logger.warning(f"Encoder long length became {len(current_encoder_long)} (expected 672). Forcing tail.")
+                    current_encoder_long = current_encoder_long.tail(672).reset_index(drop=True)
+
+                current_encoder_short = current_encoder_long.tail(96).reset_index(drop=True)
+
+                # advance
                 current_forecast_start += timedelta(days=stride_days)
                 pbar.update(1)
-                
+
             except Exception as e:
                 logger.error(f"  ✗ Forecast {forecast_idx} failed: {e}")
-                break
-        
+                # skip this start, try the next one
+                current_forecast_start += timedelta(days=stride_days)
+                pbar.update(1)
+                continue
+
+
         pbar.close()
-        
-        # Flatten predictions into time series
+
         logger.info(f"\n✅ Completed {len(all_predictions)} forecasts")
         logger.info("Flattening predictions...")
-        
+
         records = []
         for pred in all_predictions:
             for i, (ts, power) in enumerate(zip(pred['timestamps'], pred['predicted_power'])):
@@ -532,23 +611,21 @@ class Phase1Pipeline:
                     'hours_ahead': i * 0.25,
                     'predicted_power_norm': float(power)
                 })
-        
+
         predictions_df = pd.DataFrame(records)
-        
+
         output_path = self.phase1_dir / "predictions_phase1.parquet"
         predictions_df.to_parquet(output_path, index=False)
-        
+
         logger.info(f"✓ Saved predictions: {output_path}")
         logger.info(f"  Total timesteps: {len(predictions_df):,}")
-        
-        # Only show date range if predictions exist
         if len(predictions_df) > 0 and 'timestamp_utc' in predictions_df.columns:
             logger.info(f"  Date range: {predictions_df.timestamp_utc.min()} → {predictions_df.timestamp_utc.max()}")
         else:
             logger.warning("  No predictions generated - all forecasts failed!")
-        
+
         return predictions_df
-    
+   
     def run(self):
         """Execute full Phase 1 pipeline."""
         logger.info("\n" + "="*70)
@@ -598,12 +675,41 @@ class Phase1Pipeline:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description='MiRACLE Inference Pipeline')
-    parser.add_argument('--weather-source', choices=['historical', 'api'], default='historical',
-                       help='Weather data source: historical (ERA5) or api (real-time forecast)')
+    parser.add_argument(
+        '--weather-source',
+        choices=['historical', 'api'],
+        default='historical',
+        help='Weather data source: historical (ERA5) or api (real-time forecast)'
+    )
+    parser.add_argument(
+        '--start-date',
+        type=str,
+        default='2023-12-01',
+        help='Forecast start date (YYYY-MM-DD)'
+    )
+    parser.add_argument(
+        '--end-date',
+        type=str,
+        default='2024-12-31',
+        help='Forecast end date (YYYY-MM-DD)'
+    )
+    parser.add_argument(
+        '--stride-days',
+        type=int,
+        default=7,
+        help='Stride between forecast starts in days (7=weekly, 1=daily)'
+    )
+
     args = parser.parse_args()
-    
-    pipeline = Phase1Pipeline(weather_source=args.weather_source)
+
+    pipeline = Phase1Pipeline(
+        weather_source=args.weather_source,
+        start_date=args.start_date,
+        end_date=args.end_date,
+        stride_days=args.stride_days,
+    )
     pipeline.run()
 
 

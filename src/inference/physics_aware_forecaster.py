@@ -156,6 +156,11 @@ class PhysicsAwareForecaster:
         self.plant_id = self.pvlib_predictor.plant_id
         print(f"[INFO] PVLib predictor ready for {self.plant_id}")
         
+        # Verify models are on GPU
+        if self.device.type == 'cuda':
+            print(f"[INFO] GPU: {torch.cuda.get_device_name(0)}")
+            print(f"[INFO] Models confirmed on GPU: {next(self.short_model.parameters()).device}")
+        
         # Initialize RL meta-controller
         self.rl_controller = RLMetaController(mode="heuristic")
         
@@ -165,6 +170,36 @@ class PhysicsAwareForecaster:
         
         print("[INFO] PhysicsAwareForecaster initialized successfully")
     
+    def _ensure_encoder_power_norm(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Ensure encoder has finite power_norm. If missing, derive from PVLib."""
+        df = df.copy()
+
+        cap_kw = float(self.plant_metadata.get("installed_capacity_kw", 0.0) or 0.0)
+
+        if "power_norm" not in df.columns:
+            df["power_norm"] = np.nan
+
+        df["power_norm"] = pd.to_numeric(df["power_norm"], errors="coerce")
+        df.loc[~np.isfinite(df["power_norm"]), "power_norm"] = np.nan
+
+        # If missing, derive from pvlib_ac_kw (preferred) or pvlib_dc_kw
+        if df["power_norm"].isna().any():
+            fill = None
+
+            if cap_kw > 0 and "pvlib_ac_kw" in df.columns:
+                pv = pd.to_numeric(df["pvlib_ac_kw"], errors="coerce")
+                fill = (pv / cap_kw).clip(0.0, 1.5)
+
+            elif cap_kw > 0 and "pvlib_dc_kw" in df.columns:
+                pv = pd.to_numeric(df["pvlib_dc_kw"], errors="coerce")
+                fill = (pv / cap_kw).clip(0.0, 1.5)
+
+            if fill is not None:
+                df["power_norm"] = df["power_norm"].fillna(fill)
+
+        # Final fallback
+        df["power_norm"] = df["power_norm"].fillna(0.0)
+        return df
 
     
     def predict_30d(
@@ -173,7 +208,8 @@ class PhysicsAwareForecaster:
         weather_df: Optional[pd.DataFrame] = None,
         historical_df: Optional[pd.DataFrame] = None,
         use_live_weather: bool = False,
-        return_components: bool = False
+        return_components: bool = False,
+        blend_weights: Optional[Dict[str, float]] = None
     ) -> np.ndarray | Dict[str, np.ndarray]:
         """
         Generate 30-day physics-aware forecast with hierarchical refinement.
@@ -194,6 +230,9 @@ class PhysicsAwareForecaster:
                 Same schema as training data (all features + target)
             use_live_weather: If True, fetch real-time weather from OpenMeteo API
                 Overrides weather_df parameter
+            blend_weights: Optional dict with keys 'short', 'long', 'physics' for Day 1 blending
+                If None, uses default adaptive weights from blend_hierarchical
+                If provided, uses these fixed weights for Day 1 blend (RL control point)
             return_components: If True, return dict with all intermediate predictions
         
         Returns:
@@ -275,7 +314,10 @@ class PhysicsAwareForecaster:
             historical_df = pd.read_parquet(self.short_train_parquet)
             # Trim to last N rows for encoder context (96 + buffer)
             historical_df = historical_df.iloc[-200:].copy()
-        
+    
+        # HARDEN: encoder must have power_norm for TFT (bootstrap from PVLib if missing)
+        historical_df = self._ensure_encoder_power_norm(historical_df)
+
         print("       Architecture: Long-head (strategic) + 30× Short-head (tactical) + Physics")
         
         # Resample to hourly for long-head (if input is 15min)
@@ -286,14 +328,60 @@ class PhysicsAwareForecaster:
             
             if df_freq in ['15T', '15min']:
                 print("       Resampling to hourly for long-head...")
-                
+                # If provided weather_df is shorter than 30 days (2880 steps @15min),
+                # extend by repeating the last day to ensure long-head decoder has
+                # a full 30-day horizon when resampled to hourly (720 steps).
+                if len(weather_df) < 2880:
+                    steps_needed = 2880 - len(weather_df)
+                    last_day = weather_df.iloc[-96:].copy()
+                    repeats = (steps_needed + 95) // 96
+                    for i in range(repeats):
+                        repeated = last_day.copy()
+                        repeated['timestamp_utc'] = repeated['timestamp_utc'] + pd.Timedelta(days=i+1)
+                        weather_df = pd.concat([weather_df, repeated], ignore_index=True)
+                    weather_df = weather_df.iloc[:2880]
+                    print(f"       Weather extended to {len(weather_df)} steps by repeating last day for long-head")
+
                 # Separate numeric and non-numeric columns for EACH dataframe independently
                 hist_numeric_cols = historical_df.select_dtypes(include=[np.number]).columns.tolist()
                 hist_cat_cols = [c for c in historical_df.columns if c not in hist_numeric_cols + ['timestamp_utc']]
                 
                 weather_numeric_cols = weather_df.select_dtypes(include=[np.number]).columns.tolist()
                 weather_cat_cols = [c for c in weather_df.columns if c not in weather_numeric_cols + ['timestamp_utc']]
-                
+                # ---------- HARDEN: power_norm must be finite for TFT ----------
+                historical_df = historical_df.copy()
+
+                if "power_norm" not in historical_df.columns:
+                    historical_df["power_norm"] = np.nan
+
+                # coerce to numeric and kill inf
+                historical_df["power_norm"] = pd.to_numeric(historical_df["power_norm"], errors="coerce")
+                historical_df.loc[~np.isfinite(historical_df["power_norm"]), "power_norm"] = np.nan
+
+                if historical_df["power_norm"].isna().any():
+                    cap_kw = None
+                    try:
+                        # adjust these names to whatever you store in your forecaster
+                        # common: self.plant_config or self.plant_metadata dict
+                        if hasattr(self, "plant_config") and isinstance(self.plant_config, dict):
+                            cap_kw = float(self.plant_config.get("installed_capacity_kw"))
+                        elif hasattr(self, "plant_metadata") and isinstance(self.plant_metadata, dict):
+                            cap_kw = float(self.plant_metadata.get("installed_capacity_kw"))
+                    except Exception:
+                        cap_kw = None
+
+                    fill = None
+                    if cap_kw and cap_kw > 0 and "pvlib_ac_kw" in historical_df.columns:
+                        pv = pd.to_numeric(historical_df["pvlib_ac_kw"], errors="coerce")
+                        fill = (pv / cap_kw).clip(0.0, 1.5)
+
+                    if fill is not None:
+                        historical_df["power_norm"] = historical_df["power_norm"].fillna(fill)
+
+                    # final fallback
+                    historical_df["power_norm"] = historical_df["power_norm"].fillna(0.0)
+                # -------------------------------------------------------------
+
                 # Resample numeric columns (mean aggregation) for each dataframe
                 hourly_hist = historical_df[['timestamp_utc'] + hist_numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
                 hourly_weather = weather_df[['timestamp_utc'] + weather_numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
@@ -377,15 +465,48 @@ class PhysicsAwareForecaster:
             pvlib_slice = pvlib_15min[day_start_idx:day_end_idx]
             
             # Hierarchical 3-way blend: short + long + physics
-            day_forecast = blend_hierarchical(
-                short_pred=short_day_pred,
-                long_upsampled=long_slice,
-                pvlib_baseline=pvlib_slice,
-                alpha_short=weights['alpha_short'],
-                alpha_long=weights['alpha_long'],
-                alpha_ml=weights['alpha_ml'],
-                constraints=True
-            )
+            # Use RL blend_weights for Day 1, adaptive weights for Days 2-30
+            if day == 0 and blend_weights is not None:
+                # Day 1: Use RL-controlled blend weights (where RL has leverage)
+                # blend_weights = {'short': 0.2, 'long': 0.2, 'physics': 0.6}
+                # Normalize short/long within ML component, physics controls ML vs PVLib split
+                w_short = blend_weights['short']
+                w_long = blend_weights['long']
+                w_physics = blend_weights['physics']
+                
+                # ML weight = short + long, Physics weight = physics
+                w_ml = w_short + w_long
+                
+                # Normalize short/long within ML component (must sum to 1.0)
+                if w_ml > 0:
+                    alpha_short_norm = w_short / w_ml
+                    alpha_long_norm = w_long / w_ml
+                else:
+                    # Edge case: 100% physics, use equal ML split as fallback
+                    alpha_short_norm = 0.5
+                    alpha_long_norm = 0.5
+                    w_ml = 0.0
+                
+                day_forecast = blend_hierarchical(
+                    short_pred=short_day_pred,
+                    long_upsampled=long_slice,
+                    pvlib_baseline=pvlib_slice,
+                    alpha_short=alpha_short_norm,  # Within ML: how much short vs long
+                    alpha_long=alpha_long_norm,
+                    alpha_ml=w_ml,  # ML vs physics split
+                    constraints=True
+                )
+            else:
+                # Days 2-30: Use adaptive weights (RL doesn't control these)
+                day_forecast = blend_hierarchical(
+                    short_pred=short_day_pred,
+                    long_upsampled=long_slice,
+                    pvlib_baseline=pvlib_slice,
+                    alpha_short=weights['alpha_short'],
+                    alpha_long=weights['alpha_long'],
+                    alpha_ml=weights['alpha_ml'],
+                    constraints=True
+                )
             
             forecast_15min[day_start_idx:day_end_idx] = day_forecast
             
