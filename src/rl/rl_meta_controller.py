@@ -47,6 +47,10 @@ class RLConfig:
     target_update_freq: int = 1  # Soft target update frequency (every step for smooth weather)
     tau: float = 0.005  # Soft update coefficient (0.5% per step)
     
+    # Regularization (anti-overfitting)
+    dropout_rate: float = 0.4  # Dropout probability (aggressive to prevent memorization)
+    weight_decay: float = 1e-3  # L2 regularization (strong penalty)
+    
     # Replay buffer
     buffer_capacity: int = 10000
     prioritized_replay: bool = True
@@ -143,17 +147,20 @@ class DQN(nn.Module):
     """
     Deep Q-Network for action-value approximation.
     
-    Architecture: 3-layer MLP with ReLU activations.
+    Architecture: 3-layer MLP with ReLU activations + Dropout.
+    Reduced capacity (64) and dropout (0.4) to prevent overfitting.
     """
     
-    def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 128):
+    def __init__(self, state_dim: int, action_dim: int, hidden_dim: int = 64, dropout: float = 0.4):
         super(DQN, self).__init__()
         
         self.network = nn.Sequential(
             nn.Linear(state_dim, hidden_dim),
             nn.ReLU(),
+            nn.Dropout(dropout),
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
+            nn.Dropout(dropout),
             nn.Linear(hidden_dim, action_dim)
         )
     
@@ -389,15 +396,18 @@ class MetaController:
         # DDQN with 8 discrete actions
         self.action_dim = 8
         
-        # Q-networks (policy + target for DDQN)
-        self.policy_net = DQN(state_dim, self.action_dim, hidden_dim=256)
-        self.target_net = DQN(state_dim, self.action_dim, hidden_dim=256)
+        # Q-networks (policy + target for DDQN) - reduced capacity (64) with dropout (0.4)
+        self.policy_net = DQN(state_dim, self.action_dim, 
+                             hidden_dim=64, dropout=self.config.dropout_rate)
+        self.target_net = DQN(state_dim, self.action_dim, 
+                             hidden_dim=64, dropout=self.config.dropout_rate)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
         
-        # Optimizer
+        # Optimizer with weight decay (L2 regularization)
         self.optimizer = optim.Adam(self.policy_net.parameters(),
-                                     lr=self.config.learning_rate)
+                                     lr=self.config.learning_rate,
+                                     weight_decay=self.config.weight_decay)
         
         # Replay buffer
         self.replay_buffer = PrioritizedReplayBuffer(
