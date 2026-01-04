@@ -1,0 +1,11 @@
+{
+  "data_path": "data/rl_transitions/training_batch_001.parquet",
+  "n_transitions": 100,
+  "state_dim": 35,
+  "n_actions": 8,
+  "epochs": 1,
+  "batch_size": 64,
+  "final_loss": 153.31741333007812,
+  "final_avg_q": -0.04449877887964249,
+  "total_steps": 1
+}

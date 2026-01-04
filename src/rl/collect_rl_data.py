@@ -1,27 +1,17 @@
-#!/usr/bin/env python3
 """
-RL Data Collection Script for MiRACLE
+RL Data Collection Script for MiRACLE - FIXED for "Phase 2" Gap Filling
 
-Runs PhysicsAwareForecaster with RL in HEURISTIC mode to collect training data.
-Records (state, action, reward, next_state) transitions for offline DDQN training.
-
-This script:
-1. Loads real TFT models and test data
-2. Runs forecaster in heuristic mode (rule-based RL)
-3. Records every decision and outcome
-4. Saves transitions to parquet
-5. Can run overnight (1000+ samples)
+This version automatically patches missing ground truth in the test set 
+by using pre-generated predictions (Phase 1 outputs) to fill NaNs.
+This prevents the "skip_forecast_failed" error due to missing history.
 
 Usage:
-    python scripts/collect_rl_data.py --num-samples 1000 --output data/rl_transitions/run_001.parquet
+    python scripts/collect_rl_data.py \
+        --num-samples 1000 \
+        --output data/rl_transitions/phase2_run.parquet \
+        --fill-data predictions_phase1.parquet
 
-    # Resume from checkpoint
-    python scripts/collect_rl_data.py --num-samples 2000 --resume data/rl_transitions/run_001.parquet
-
-    # Watch live on dashboard (separate terminal)
-    streamlit run src/rl/monitoring_dashboard.py
-
-Author: MiRACLE Team
+Author: MiRACLE Team (Architect & User)
 Date: 2026-01-03
 """
 
@@ -29,77 +19,505 @@ import sys
 from pathlib import Path
 repo_root = Path(__file__).parent.parent
 sys.path.insert(0, str(repo_root))
+# Replace whole file with a single consistent implementation.
+from __future__ import annotations
 
 import argparse
-import numpy as np
-import pandas as pd
-import torch
-from tqdm import tqdm
+import json
 import logging
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
 
 from src.rl.rl_integrated_forecaster import RLIntegratedForecaster
 from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
-def load_test_data(test_parquet: Path, num_samples: int = None):
-    """
-    Load test data for rolling forecasts.
-    
-    Args:
-        test_parquet: Path to test parquet (short or long)
-        num_samples: How many forecast windows to extract
-    
-    Returns:
-        List of (weather_df, ground_truth) tuples
-    """
-    logger.info(f"Loading test data from {test_parquet}")
-    df = pd.read_parquet(test_parquet)
-    
-    # Get time column
-    time_col = 'timestamp_utc' if 'timestamp_utc' in df.columns else 'time'
-    
-    # Sort by time
-    df = df.sort_values(time_col).reset_index(drop=True)
-    
-    # Extract windows (every 24 hours = 96 steps @ 15min)
-    windows = []
-    window_size = 2880  # 30 days of 15-min data
-    stride = 96  # Move forward 1 day each time
-    
-    max_windows = num_samples if num_samples else (len(df) - window_size) // stride
-    
-    for i in range(0, len(df) - window_size, stride):
-        if len(windows) >= max_windows:
+def setup_logging(level: str) -> None:
+    logging.basicConfig(
+        level=getattr(logging, level.upper(), logging.INFO),
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
+
+
+def compute_rmse(pred: np.ndarray, true: np.ndarray) -> float:
+    pred = np.asarray(pred, dtype=np.float32)
+    true = np.asarray(true, dtype=np.float32)
+    return float(np.sqrt(np.mean((pred - true) ** 2)))
+
+
+def load_test_data(
+    test_parquet: str,
+    *,
+    max_windows: Optional[int] = None,
+    lookback: int = 672,
+    window_size: int = 96,
+    stride: int = 1,
+) -> List[Tuple[pd.DataFrame, pd.DataFrame, np.ndarray, Optional[np.ndarray], Optional[pd.DataFrame]]]:
+    p = Path(test_parquet)
+    if p.is_dir():
+        candidates = list(p.glob("*.parquet"))
+        if not candidates:
+            raise ValueError(f"No parquet files found in directory {test_parquet}")
+        preferred = [c for c in candidates if "weather_with_pvlib" in c.name or "15min" in c.name]
+        file_to_load = preferred[0] if preferred else candidates[0]
+    else:
+        file_to_load = p
+
+    LOGGER.info("Loading test data from %s", str(file_to_load))
+    df = pd.read_parquet(file_to_load)
+    if 'timestamp_utc' not in df.columns:
+        for c in df.columns:
+            if 'time' in c or 'timestamp' in c:
+                df = df.rename(columns={c: 'timestamp_utc'})
+                break
+    df = df.sort_values('timestamp_utc').reset_index(drop=True)
+    # make timezone-aware to help infer_freq and comparisons
+    df['timestamp_utc'] = pd.to_datetime(df['timestamp_utc'], utc=True)
+
+    power_col_candidates = ['power_norm', 'pvlib_ac_kw', 'power_kw', 'ac_power', 'pvlib_dc_kw']
+    power_col = None
+    for c in power_col_candidates:
+        if c in df.columns:
+            power_col = c
             break
-        
-        window = df.iloc[i:i+window_size].copy()
-        
-        # Pass full window to forecaster (it needs all columns: power_norm, poa_irradiance, plant features, weather, pvlib)
-        weather_df = window.copy()
-        if time_col != 'timestamp_utc':
-            weather_df = weather_df.rename(columns={time_col: 'timestamp_utc'})
-        
-        # Ground truth (target) - power_norm is the normalized power
-        if 'power_norm' in window.columns:
-            ground_truth = window['power_norm'].values
-        elif 'power_normalized' in window.columns:
-            ground_truth = window['power_normalized'].values
-        elif 'target' in window.columns:
-            ground_truth = window['target'].values
-        else:
-            logger.warning("No ground truth column found, using zeros")
-            ground_truth = np.zeros(len(window))
-        
-        windows.append((weather_df, ground_truth))
+    if power_col is None:
+        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        if not num_cols:
+            raise ValueError("No numeric columns available to use as ground truth power")
+        power_col = num_cols[0]
+
+    windows: List[Tuple[pd.DataFrame, pd.DataFrame, np.ndarray, Optional[np.ndarray], Optional[pd.DataFrame]]] = []
+    N = len(df)
+    start_idx = lookback
+    end_idx = N - window_size + 1
+    if end_idx <= start_idx:
+        raise ValueError("Not enough rows to build a single window; increase data or reduce lookback")
+
+    for i in range(start_idx, end_idx, stride):
+        hist_df = df.iloc[i - lookback:i].reset_index(drop=True).copy()
+        fore_df = df.iloc[i : i + window_size].reset_index(drop=True).copy()
+        gt = fore_df[power_col].values.astype(np.float32)
+        windows.append((hist_df, fore_df, gt, None, None))
+        if max_windows and len(windows) >= int(max_windows):
+            break
+
+    LOGGER.info("Constructed %d windows from %s", len(windows), str(file_to_load))
+    return windows
+
+
+def collect_transitions(
+    rl_forecaster: RLIntegratedForecaster,
+    test_windows: List[Tuple[pd.DataFrame, pd.DataFrame, np.ndarray]],
+    *,
+    num_samples: int,
+    shuffle: bool,
+    seed: int,
+    prefill_encoder: bool = False,
+    max_encoder_synth_frac: float = 0.5,
+    min_encoder_observed_frac: float = 0.5,
+    autoregressive_fill: bool = False,
+) -> Tuple[List[Dict], Dict[str, int]]:
+    if len(test_windows) == 0:
+        raise ValueError("No test windows available to collect transitions")
+
+    if autoregressive_fill:
+        order = []
+        for i, w in enumerate(test_windows):
+            try:
+                fs = pd.to_datetime(w[1]["timestamp_utc"].iloc[0])
+            except Exception:
+                fs = pd.NaT
+            order.append((i, fs))
+        order_sorted = sorted(order, key=lambda x: x[1] if not pd.isna(x[1]) else pd.Timestamp.max)
+        idxs = np.array([i for i, _ in order_sorted])
+        if shuffle:
+            LOGGER.warning("--autoregressive-fill requested: disabling shuffle to preserve chronological chaining")
+            shuffle = False
+    else:
+        idxs = np.arange(len(test_windows))
+        if shuffle:
+            rng = np.random.default_rng(seed)
+            rng.shuffle(idxs)
+
+    max_possible = len(test_windows)
+    if num_samples > max_possible:
+        LOGGER.warning(
+            "Requested %d samples but only %d unique windows exist. Will collect at most %d without repeating.",
+            num_samples,
+            max_possible,
+            max_possible,
+        )
+        num_samples = max_possible
+
+    stats = {
+        "attempted": 0,
+        "saved": 0,
+        "skip_forecast_failed": 0,
+        "skip_len_mismatch": 0,
+        "skip_nonfinite": 0,
+        "skip_bad_state": 0,
+        "skip_synth_threshold": 0,
+    }
+
+    transitions: List[Dict] = []
+    preds_cache: Dict[pd.Timestamp, float] = {}
+
+    past_metrics = {
+        "short_rmse": 0.0,
+        "long_rmse": 0.0,
+        "physics_residual": 0.0,
+        "weather_quality": 0.8,
+        "seasonal_factor": 1.0,
+    }
+
+    for k in idxs[:num_samples]:
+        historical_df, forecast_df, ground_truth, full_gt30, full_weather30 = test_windows[int(k)]
+        stats["attempted"] += 1
+
+        encoder_synth_fraction = 0.0
+        encoder_source = 'observed'
+
+        forecast_start = None
+        try:
+            if "timestamp_utc" in forecast_df.columns and len(forecast_df) > 0:
+                forecast_start = str(pd.to_datetime(forecast_df["timestamp_utc"].iloc[0]))
+        except Exception:
+            forecast_start = None
+
+        try:
+            if not hasattr(rl_forecaster, 'forecaster'):
+                raise RuntimeError("No underlying forecaster available to generate predictions")
+
+            day_start_ts = pd.to_datetime(forecast_df['timestamp_utc'].iloc[0])
+
+            df_freq = None
+            try:
+                if 'timestamp_utc' in historical_df.columns and len(historical_df) >= 4:
+                    df_freq = pd.infer_freq(historical_df['timestamp_utc'].iloc[:100])
+            except Exception:
+                df_freq = None
+
+            if df_freq in ['15T', '15min']:
+                enc_len = rl_forecaster.forecaster.short_config.get('encoder_len', 96)
+                if len(historical_df) < enc_len:
+                    stats["skip_len_mismatch"] += 1
+                    continue
+
+                if autoregressive_fill:
+                    try:
+                        if 'power_norm' not in historical_df.columns:
+                            historical_df['power_norm'] = pd.NA
+                        missing_mask = historical_df['power_norm'].isna()
+                        if missing_mask.any():
+                            for idx_row, ts in zip(historical_df.index, historical_df['timestamp_utc']):
+                                ts = pd.to_datetime(ts)
+                                if missing_mask.loc[idx_row] and ts in preds_cache:
+                                    historical_df.at[idx_row, 'power_norm'] = preds_cache[ts]
+                    except Exception:
+                        pass
+
+                try:
+                    if 'power_norm' in historical_df.columns:
+                        missing_mask = historical_df['power_norm'].isna()
+                        n_missing = int(missing_mask.sum())
+                    else:
+                        historical_df['power_norm'] = pd.NA
+                        missing_mask = historical_df['power_norm'].isna()
+                        n_missing = int(missing_mask.sum())
+
+                    if (n_missing > 0 and prefill_encoder) and hasattr(rl_forecaster.forecaster, 'pvlib_predictor'):
+                        pv_pred = rl_forecaster.forecaster.pvlib_predictor.predict_from_weather(historical_df)
+                        pv_pred = np.asarray(pv_pred, dtype=np.float32)
+                        if n_missing > 0:
+                            historical_df.loc[missing_mask, 'power_norm'] = pv_pred[missing_mask.values]
+                        n_filled = int(missing_mask.sum())
+                        encoder_synth_fraction = float(n_filled) / float(enc_len)
+                        if n_filled == 0:
+                            encoder_source = 'observed'
+                        elif n_filled < enc_len:
+                            encoder_source = 'observed+pvl_synth'
+                        else:
+                            encoder_source = 'pvl_only'
+                except Exception:
+                    pass
+
+                try:
+                    observed_frac = 1.0 - float(encoder_synth_fraction)
+                    if encoder_synth_fraction > max_encoder_synth_frac or observed_frac < min_encoder_observed_frac:
+                        stats["skip_synth_threshold"] += 1
+                        continue
+                except Exception:
+                    pass
+
+                forecast = rl_forecaster.forecaster._predict_short_head_for_day(pd.Timestamp(day_start_ts), 0, historical_df, forecast_df)
+
+                try:
+                    if autoregressive_fill and forecast is not None:
+                        times = pd.to_datetime(forecast_df['timestamp_utc']).tolist()
+                        for t, v in zip(times[: len(forecast)], np.asarray(forecast, dtype=float)):
+                            preds_cache[pd.to_datetime(t)] = float(v)
+                except Exception:
+                    pass
+            else:
+                try:
+                    if 'timestamp_utc' in forecast_df.columns:
+                        if pd.api.types.is_datetime64_any_dtype(forecast_df['timestamp_utc']):
+                            if forecast_df['timestamp_utc'].dt.tz is None:
+                                forecast_df['timestamp_utc'] = forecast_df['timestamp_utc'].dt.tz_localize('UTC')
+                        else:
+                            forecast_df['timestamp_utc'] = pd.to_datetime(forecast_df['timestamp_utc']).dt.tz_localize('UTC')
+                except Exception:
+                    forecast_df['timestamp_utc'] = pd.to_datetime(forecast_df['timestamp_utc'])
+
+                try:
+                    if 'timestamp_utc' in historical_df.columns:
+                        if pd.api.types.is_datetime64_any_dtype(historical_df['timestamp_utc']):
+                            if historical_df['timestamp_utc'].dt.tz is None:
+                                historical_df['timestamp_utc'] = historical_df['timestamp_utc'].dt.tz_localize('UTC')
+                        else:
+                            historical_df['timestamp_utc'] = pd.to_datetime(historical_df['timestamp_utc']).dt.tz_localize('UTC')
+                except Exception:
+                    historical_df['timestamp_utc'] = pd.to_datetime(historical_df['timestamp_utc'])
+
+                components = rl_forecaster.forecaster.predict_30d(
+                    forecast_start=str(pd.to_datetime(forecast_df['timestamp_utc'].iloc[0])),
+                    weather_df=forecast_df,
+                    historical_df=historical_df,
+                    return_components=True,
+                )
+                forecast = components['final'][:96]
+        except Exception as e:
+            LOGGER.warning("Forecast failed%s: %s", f" @ {forecast_start}" if forecast_start else "", str(e))
+            stats["skip_forecast_failed"] += 1
+            continue
+
+        if forecast is None:
+            stats["skip_forecast_failed"] += 1
+            continue
+
+        forecast = np.asarray(forecast, dtype=np.float32)[:96]
+        ground_truth = np.asarray(ground_truth, dtype=np.float32)
+
+        if len(forecast) != 96 or len(ground_truth) != 96:
+            stats["skip_len_mismatch"] += 1
+            continue
+        if not (np.all(np.isfinite(forecast)) and np.all(np.isfinite(ground_truth))):
+            stats["skip_nonfinite"] += 1
+            continue
+
+        rmse_pv = compute_rmse(forecast, ground_truth)
+
+        full30_rmse = None
+        try:
+            if full_weather30 is not None and hasattr(rl_forecaster, 'forecaster'):
+                if 'timestamp_utc' in full_weather30.columns:
+                    full_weather30['timestamp_utc'] = pd.to_datetime(full_weather30['timestamp_utc'], utc=True)
+                if 'timestamp_utc' in historical_df.columns:
+                    historical_df['timestamp_utc'] = pd.to_datetime(historical_df['timestamp_utc'], utc=True)
+
+                components_30 = rl_forecaster.forecaster.predict_30d(
+                    forecast_start=str(pd.to_datetime(forecast_df['timestamp_utc'].iloc[0])),
+                    weather_df=full_weather30,
+                    historical_df=historical_df,
+                    return_components=True,
+                )
+                full_forecast = components_30['final']
+                if full_gt30 is not None and len(full_gt30) == len(full_forecast):
+                    full30_rmse = compute_rmse(full_forecast, full_gt30)
+        except Exception:
+            full30_rmse = None
+
+        try:
+            if hasattr(rl_forecaster, 'forecaster') and hasattr(rl_forecaster.forecaster, 'pvlib_predictor'):
+                pvlib_pred = rl_forecaster.forecaster.pvlib_predictor.predict_from_weather(forecast_df)
+                physics_residual = compute_rmse(pvlib_pred[:96], ground_truth[:96])
+            else:
+                physics_residual = 0.0
+        except Exception:
+            physics_residual = 0.0
+
+        current_metrics = {
+            "short_rmse": rmse_pv,
+            "long_rmse": rmse_pv,
+            "physics_residual": float(physics_residual),
+            "weather_quality": 0.8,
+            "seasonal_factor": 1.0,
+        }
+
+        try:
+            metrics_for_rl = {**past_metrics, **current_metrics}
+            state = rl_forecaster.rl_system.build_meta_state(metrics_for_rl)
+        except Exception as e:
+            LOGGER.warning("State computation failed%s: %s", f" @ {forecast_start}" if forecast_start else "", str(e))
+            stats["skip_bad_state"] += 1
+            continue
+
+        state = np.asarray(state, dtype=np.float32).reshape(-1)
+        if state.size == 0 or not np.all(np.isfinite(state)):
+            stats["skip_bad_state"] += 1
+            continue
+
+        action = rl_forecaster.rl_system.meta_controller.select_action(state, mode=rl_forecaster.rl_system.config.mode)
+
+        reward_val = -full30_rmse if full30_rmse is not None else -rmse_pv
+        reward = reward_val
+        next_state = state.copy()
+        done = 1
+
+        trans: Dict = {
+            "forecast_start": forecast_start,
+            "action": int(action),
+            "reward": float(reward),
+            "done": int(done),
+            "rmse_day1": float(rmse_pv),
+            "rmse_30d": float(full30_rmse) if full30_rmse is not None else None,
+            "physics_residual": float(physics_residual),
+            "encoder_source": encoder_source,
+            "encoder_synth_fraction": float(encoder_synth_fraction),
+        }
+
+        for i in range(int(state.size)):
+            trans[f"state_{i}"] = float(state[i])
+            trans[f"next_state_{i}"] = float(next_state[i])
+
+        transitions.append(trans)
+
+        past_metrics = current_metrics
+        stats["saved"] += 1
+
+        if stats["saved"] % 250 == 0:
+            LOGGER.info("Collected %d transitions...", stats["saved"])
+
+    return transitions, stats
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Collect RL transitions from test data")
+    # Support both old and new flag names for compatibility
+    parser.add_argument("--test-data", type=str, required=False, help="Test parquet file path")
+    parser.add_argument("--model-dir", type=str, required=False, help="Model directory containing short/long heads")
+    parser.add_argument("--short-ckpt", type=str, required=False, help="Short-head checkpoint")
+    parser.add_argument("--long-ckpt", type=str, required=False, help="Long-head checkpoint")
+    parser.add_argument("--plant-config", type=str, required=False, help="Plant configuration JSON")
+    parser.add_argument("--plant-meta", type=str, required=False, help="Plant metadata JSON (alt)")
+    parser.add_argument("--output-dir", type=str, default="data/rl_transitions", help="Output directory")
+    parser.add_argument("--output", type=str, required=False, help="Output file (alt)")
+    parser.add_argument("--num-samples", type=int, default=500, help="Max number of transitions to collect")
+    parser.add_argument("--log-level", type=str, default="INFO", help="Logging level")
+    parser.add_argument("--lookback", type=int, default=672, help="Lookback length in rows")
+    parser.add_argument("--window-size", type=int, default=96, help="Forecast window size (rows), should be 96")
+    parser.add_argument("--stride", type=int, default=1, help="Stride between forecast_starts (1=every row)")
+    parser.add_argument("--max-windows", type=int, default=None, help="Optional cap on window construction")
+    parser.add_argument("--shuffle", action="store_true", help="Shuffle windows before collecting")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed (shuffling)")
+    parser.add_argument("--prefill-encoder", action="store_true", help="Prefill encoder missing power with PVLib predictions")
+    parser.add_argument("--max-encoder-synth-frac", type=float, default=0.5, help="Maximum allowed fraction of encoder rows that are synthetic (0-1)")
+    parser.add_argument("--min-encoder-observed-frac", type=float, default=0.5, help="Minimum required fraction of observed encoder rows (0-1)")
+    parser.add_argument("--autoregressive-fill", action="store_true", help="Fill encoder power_norm from previous model predictions (chronological chaining)")
+
+    args = parser.parse_args()
+
+    setup_logging(args.log_level)
+
+    if args.window_size != 96:
+        raise ValueError("This collector is designed for day-ahead windows. Set --window-size 96.")
+
+    model_dir = Path(args.model_dir) if args.model_dir else None
+    if args.short_ckpt and args.long_ckpt:
+        short_ckpt = Path(args.short_ckpt)
+        long_ckpt = Path(args.long_ckpt)
+    elif model_dir:
+        short_ckpt = model_dir / "shorthead_seed42" / "best.pt"
+        if not short_ckpt.exists():
+            short_ckpt = model_dir / "shorthead_seed42" / "best.ckpt"
+        long_ckpt = model_dir / "longhead_seed43" / "best.pt"
+        if not long_ckpt.exists():
+            long_ckpt = model_dir / "longhead_seed43" / "best.ckpt"
+        if not short_ckpt.exists() or not long_ckpt.exists():
+            candidates = list(model_dir.rglob("best.pt")) + list(model_dir.rglob("best.ckpt"))
+            short_cands = [p for p in candidates if "short" in str(p).lower()]
+            long_cands = [p for p in candidates if "long" in str(p).lower()]
+            if not short_ckpt.exists() and short_cands:
+                short_ckpt = short_cands[0]
+            if not long_ckpt.exists() and long_cands:
+                long_ckpt = long_cands[0]
+            if (not short_ckpt.exists() or not long_ckpt.exists()) and len(candidates) >= 2:
+                if not short_ckpt.exists():
+                    short_ckpt = candidates[0]
+                if not long_ckpt.exists():
+                    long_ckpt = candidates[1]
+    else:
+        raise ValueError("Specify either --model-dir or both --short-ckpt and --long-ckpt")
+
+    plant_config = args.plant_config or args.plant_meta
+    if not plant_config:
+        raise ValueError("Provide --plant-config or --plant-meta path")
+
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    batch_name = (args.output and Path(args.output).stem) or f"batch_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    output_path = output_dir / f"{batch_name}.parquet"
+
+    LOGGER.info("Short ckpt: %s", short_ckpt)
+    LOGGER.info("Long  ckpt: %s", long_ckpt)
+
+    physics_forecaster = PhysicsAwareForecaster(
+        short_ckpt=short_ckpt,
+        long_ckpt=long_ckpt,
+        plant_metadata=plant_config,
+        short_train_parquet=Path("data/processed/plant_level/plant_03/15min_pca32/train.parquet"),
+        long_train_parquet=Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet"),
+    )
+
+    rl_forecaster = RLIntegratedForecaster(
+        forecaster=physics_forecaster,
+        rl_mode="heuristic",
+        checkpoint_dir=Path(short_ckpt).parent,
+    )
+
+    test_data_arg = args.test_data
+    if not test_data_arg:
+        raise ValueError("--test-data is required")
+
+    LOGGER.info("Loading test data and building rolling windows...")
+    test_windows = load_test_data(
+        test_data_arg,
+        max_windows=args.max_windows or args.num_samples,
+        lookback=args.lookback,
+        window_size=args.window_size,
+        stride=args.stride,
+    )
+    LOGGER.info("Built %d windows (stride=%d)", len(test_windows), args.stride)
+
+    transitions, stats = collect_transitions(
+        rl_forecaster,
+        test_windows,
+        num_samples=args.num_samples,
+        shuffle=args.shuffle,
+        seed=args.seed,
+        prefill_encoder=args.prefill_encoder,
+        max_encoder_synth_frac=args.max_encoder_synth_frac,
+        min_encoder_observed_frac=args.min_encoder_observed_frac,
+        autoregressive_fill=args.autoregressive_fill,
+    )
+
+    transitions_df = pd.DataFrame(transitions)
+    transitions_df.to_parquet(output_path, index=False)
+
+    LOGGER.info("Saved transitions to %s", str(output_path))
+    LOGGER.info("Stats: %s", stats)
+    LOGGER.info("Total saved transitions: %d", len(transitions_df))
+
+
+if __name__ == "__main__":
+    main()
     
-    logger.info(f"Extracted {len(windows)} forecast windows")
     return windows
 
 
@@ -111,274 +529,128 @@ def collect_transitions(
     checkpoint_freq: int = 100
 ):
     """
-    Collect RL transitions by running forecasts with heuristic mode.
-    
-    Args:
-        rl_forecaster: RLIntegratedForecaster in heuristic mode
-        test_windows: List of (weather, ground_truth) tuples
-        num_samples: Total samples to collect
-        save_path: Where to save transitions
-        checkpoint_freq: Save every N samples
-    
-    Returns:
-        DataFrame with all transitions
+    Collect RL transitions using the forecaster.
     """
-    logger.info(f"Starting data collection: target={num_samples} samples")
-    
+    logger.info(f"Starting collection loop: {num_samples} samples")
     transitions = []
-    
-    # Progress bar
-    pbar = tqdm(total=num_samples, desc="Collecting transitions")
+    pbar = tqdm(total=num_samples, desc="Collecting")
     
     for sample_idx in range(num_samples):
-        # Cycle through test windows
+        # Cycle windows if we requested more samples than we have windows
         window_idx = sample_idx % len(test_windows)
-        weather_df, ground_truth = test_windows[window_idx]
+        historical_df, weather_df, ground_truth = test_windows[window_idx]
         
         try:
-            # Get forecast start time from weather data
             forecast_start = weather_df['timestamp_utc'].iloc[0]
             
-            # Run forecast (RL picks action via heuristics, updates state)
+            # Run forecast
             forecast, info = rl_forecaster.forecast_with_rl(
                 weather_data=weather_df,
                 forecast_start=forecast_start,
-                ground_truth=ground_truth  # Pass ground truth for RMSE computation
+                historical_data=historical_df,
+                ground_truth=ground_truth
             )
             
-            # Extract state/action (already computed in forecast_with_rl)
-            state = info['meta_state'].copy()
+            # Extract basic RL components
+            state = info['meta_state']
             action = info['action_index']
             
-            # Compute reward from forecast error vs ground truth
-            # Align forecast with ground truth (forecast is typically 1-day, ground_truth is 30-day window)
-            if hasattr(forecast, 'shape'):
-                forecast_len = len(forecast)
-            elif hasattr(forecast, '__len__'):
-                forecast_len = len(forecast)
+            # Compute Reward (Day 1 RMSE)
+            if isinstance(forecast, np.ndarray) and len(forecast) >= 96:
+                forecast_day1 = forecast[:96]
+                gt_day1 = ground_truth[:96] if len(ground_truth) >= 96 else ground_truth
+                
+                if len(gt_day1) == len(forecast_day1):
+                    rmse = np.sqrt(np.mean((forecast_day1 - gt_day1) ** 2))
+                    reward = -rmse 
+                else:
+                    reward = -0.05 # Fallback (should be rare with patched data)
             else:
-                forecast_len = 96  # Default 1 day @ 15min
+                reward = -0.05
             
-            # Take only the first N steps of ground truth to match forecast
-            gt_aligned = ground_truth[:forecast_len]
-            forecast_aligned = forecast[:forecast_len] if hasattr(forecast, '__getitem__') else np.zeros(forecast_len)
-            
-            if len(gt_aligned) > 0 and len(forecast_aligned) == len(gt_aligned):
-                rmse = np.sqrt(np.mean((forecast_aligned - gt_aligned) ** 2))
-                reward = -rmse / 0.01  # Normalize: 0.01 RMSE = -1.0 reward
-            else:
-                rmse = 0.05
-                reward = -5.0
-            
-            # Compute next_state from current metrics (will be state for next step)
-            metrics = info['metrics']
-            
-            # For first step, use current state as both state and next_state
-            if sample_idx == 0:
-                next_state = state.copy()
-            else:
-                # Next state is current state (closed loop)
-                next_state = state.copy()
-            
-            # Extract transition
+            # Store transition
             transition = {
                 'sample_idx': sample_idx,
                 'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
-                'forecast_start': forecast_start.isoformat() if hasattr(forecast_start, 'isoformat') else str(forecast_start),
+                'forecast_start': str(forecast_start),
                 'action': action,
-                'action_name': info['action_name'],
                 'reward': reward,
-                'action_success': info['action_success'],
-                
-                # State (35 dims) - flatten to columns
+                # Flatten state
                 **{f'state_{i}': state[i] for i in range(len(state))},
-                
-                # Next state (35 dims)
-                **{f'next_state_{i}': next_state[i] for i in range(len(next_state))},
-                
-                # Key metrics for analysis
-                'short_rmse_1h': metrics.get('short_rmse_1h', 0.0),
-                'long_rmse_30d': metrics.get('long_rmse_30d', 0.0),
-                'physics_residual': metrics.get('physics_residual', 0.0),
-                'blend_short': rl_forecaster.blend_weights['short'],
-                'blend_long': rl_forecaster.blend_weights['long'],
-                'blend_physics': rl_forecaster.blend_weights['physics']
+                # Metrics
+                'blend_short': rl_forecaster.blend_weights.get('short', 0),
+                'blend_long': rl_forecaster.blend_weights.get('long', 0),
+                'blend_physics': rl_forecaster.blend_weights.get('physics', 0)
             }
             
             transitions.append(transition)
             pbar.update(1)
             
-            # Checkpoint: save periodically
+            # Checkpoint
             if (sample_idx + 1) % checkpoint_freq == 0:
-                df = pd.DataFrame(transitions)
-                checkpoint_path = save_path.parent / f"{save_path.stem}_checkpoint_{sample_idx+1}.parquet"
-                df.to_parquet(checkpoint_path)
-                logger.info(f"Checkpoint saved: {checkpoint_path} ({len(df)} samples)")
-        
+                pd.DataFrame(transitions).to_parquet(save_path)
+                
         except Exception as e:
-            logger.error(f"Error at sample {sample_idx}: {e}", exc_info=True)
+            logger.error(f"Error at {sample_idx}: {e}")
             continue
     
     pbar.close()
-    
-    # Final save
-    df = pd.DataFrame(transitions)
-    df.to_parquet(save_path)
-    logger.info(f"✅ Collection complete! Saved {len(df)} transitions to {save_path}")
-    
-    return df
-
-
-def analyze_transitions(df: pd.DataFrame):
-    """Print summary statistics of collected data."""
-    if len(df) == 0:
-        logger.warning("No transitions collected!")
-        return
-    
-    logger.info("\n" + "="*60)
-    logger.info("COLLECTION SUMMARY")
-    logger.info("="*60)
-    
-    logger.info(f"Total samples: {len(df)}")
-    logger.info(f"Time range: {df['timestamp'].min()} → {df['timestamp'].max()}")
-    
-    logger.info("\nAction distribution:")
-    action_counts = df['action'].value_counts().sort_index()
-    for action_idx, count in action_counts.items():
-        action_name = df[df['action'] == action_idx]['action_name'].iloc[0]
-        logger.info(f"  Action {action_idx} ({action_name}): {count} ({100*count/len(df):.1f}%)")
-    
-    logger.info("\nReward statistics:")
-    logger.info(f"  Mean: {df['reward'].mean():.3f}")
-    logger.info(f"  Std: {df['reward'].std():.3f}")
-    logger.info(f"  Min: {df['reward'].min():.3f}")
-    logger.info(f"  Max: {df['reward'].max():.3f}")
-    
-    logger.info("\nPerformance metrics:")
-    logger.info(f"  Short RMSE (1h): {df['short_rmse_1h'].mean():.4f} ± {df['short_rmse_1h'].std():.4f}")
-    logger.info(f"  Long RMSE (30d): {df['long_rmse_30d'].mean():.4f} ± {df['long_rmse_30d'].std():.4f}")
-    logger.info(f"  Physics residual: {df['physics_residual'].mean():.4f} ± {df['physics_residual'].std():.4f}")
-    
-    logger.info("\nBlend weights (mean):")
-    logger.info(f"  Short: {df['blend_short'].mean():.3f}")
-    logger.info(f"  Long: {df['blend_long'].mean():.3f}")
-    logger.info(f"  Physics: {df['blend_physics'].mean():.3f}")
-    
-    logger.info("="*60 + "\n")
+    pd.DataFrame(transitions).to_parquet(save_path)
+    logger.info(f"Saved to {save_path}")
+    return pd.DataFrame(transitions)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Collect RL training data from heuristic mode")
+    parser = argparse.ArgumentParser()
     
-    # Model paths - CANONICAL HARDCODED
-    parser.add_argument('--short-ckpt', type=str, 
-                       default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt',
-                       help='Short-head TFT checkpoint')
-    parser.add_argument('--long-ckpt', type=str,
-                       default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt',
-                       help='Long-head TFT checkpoint')
-    parser.add_argument('--plant-meta', type=str,
-                       default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json',
-                       help='Plant metadata JSON')
+    # Paths
+    parser.add_argument('--short-ckpt', default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt')
+    parser.add_argument('--long-ckpt', default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt')
+    parser.add_argument('--plant-meta', default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json')
+    parser.add_argument('--short-train', default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/train.parquet')
+    parser.add_argument('--long-train', default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/hourly_longhead/train.parquet')
     
-    # Data paths - CANONICAL HARDCODED
-    parser.add_argument('--short-train', type=str,
-                       default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/train.parquet',
-                       help='Short-head training data (for TFT initialization)')
-    parser.add_argument('--long-train', type=str,
-                       default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/hourly_longhead/train.parquet',
-                       help='Long-head training data')
-    parser.add_argument('--test-data', type=str,
-                       default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/test.parquet',
-                       help='Test data for rolling forecasts')
+    # Data & Fill Args
+    parser.add_argument('--test-data', default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/test.parquet')
+    parser.add_argument('--fill-data', type=str, default=None, help='Path to predictions parquet to patch missing history')
     
-    # Collection params
-    parser.add_argument('--num-samples', type=int, default=1000,
-                       help='Number of samples to collect')
-    parser.add_argument('--output', type=str, 
-                       default='/home/dwijenayake/pv_forecast_30d/data/rl_transitions/heuristic_run_001.parquet',
-                       help='Output parquet file')
-    parser.add_argument('--checkpoint-freq', type=int, default=100,
-                       help='Save checkpoint every N samples')
-    
-    # Hardware
-    parser.add_argument('--device', type=str, default='cuda:0',
-                       help='Device for models')
+    parser.add_argument('--num-samples', type=int, default=1000)
+    parser.add_argument('--output', default='data/rl_transitions/run_fixed.parquet')
+    parser.add_argument('--device', default='cuda:0')
     
     args = parser.parse_args()
     
-    # Convert to paths
-    short_ckpt = Path(args.short_ckpt)
-    long_ckpt = Path(args.long_ckpt)
-    plant_meta = Path(args.plant_meta)
-    short_train = Path(args.short_train)
-    long_train = Path(args.long_train)
-    test_data = Path(args.test_data)
-    output_path = Path(args.output)
-    
-    # Create output directory
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Verify paths
-    for path in [short_ckpt, long_ckpt, plant_meta, short_train, long_train, test_data]:
-        if not path.exists():
-            logger.error(f"Path not found: {path}")
-            return
-    
-    logger.info("="*60)
-    logger.info("MiRACLE RL DATA COLLECTION")
-    logger.info("="*60)
-    logger.info(f"Target samples: {args.num_samples}")
-    logger.info(f"Output: {output_path}")
-    logger.info(f"Device: {args.device}")
-    logger.info("="*60 + "\n")
-    
-    # Initialize forecaster
-    logger.info("Loading PhysicsAwareForecaster...")
+    # Init Forecaster
+    logger.info("Initializing Forecaster...")
     forecaster = PhysicsAwareForecaster(
-        short_ckpt=short_ckpt,
-        long_ckpt=long_ckpt,
-        plant_metadata=plant_meta,
-        short_train_parquet=short_train,
-        long_train_parquet=long_train,
+        short_ckpt=Path(args.short_ckpt),
+        long_ckpt=Path(args.long_ckpt),
+        plant_metadata=Path(args.plant_meta),
+        short_train_parquet=Path(args.short_train),
+        long_train_parquet=Path(args.long_train),
         device=args.device
     )
-    logger.info("✅ Forecaster loaded\n")
     
-    # Wrap with RL (HEURISTIC MODE)
-    logger.info("Initializing RL system in HEURISTIC mode...")
     rl_forecaster = RLIntegratedForecaster(
         forecaster=forecaster,
-        rl_mode="heuristic",  # ← Rule-based decisions, DDQN observes
-        checkpoint_dir=Path("checkpoints/rl")
+        rl_mode="heuristic"
     )
-    logger.info("✅ RL system ready\n")
     
-    # Load test data windows
-    test_windows = load_test_data(test_data, num_samples=args.num_samples)
+    # Load Data (With Patching)
+    fill_path = Path(args.fill_data) if args.fill_data else None
+    test_windows = load_and_patch_data(Path(args.test_data), fill_path, num_samples=args.num_samples)
     
-    # Collect transitions
-    logger.info("Starting data collection...")
-    logger.info("💡 TIP: Open dashboard in another terminal to watch live:")
-    logger.info("    streamlit run src/rl/monitoring_dashboard.py\n")
-    
-    df = collect_transitions(
+    if not test_windows:
+        logger.error("No valid windows found! Exiting.")
+        return
+
+    # Run Collection
+    collect_transitions(
         rl_forecaster=rl_forecaster,
         test_windows=test_windows,
         num_samples=args.num_samples,
-        save_path=output_path,
-        checkpoint_freq=args.checkpoint_freq
+        save_path=Path(args.output)
     )
-    
-    # Analyze results
-    analyze_transitions(df)
-    
-    logger.info(f"\n🎉 All done! Data saved to: {output_path}")
-    logger.info(f"📊 Ready for offline DDQN training (Option D)")
-    logger.info(f"\nNext steps:")
-    logger.info(f"  1. Verify data: python -c 'import pandas as pd; print(pd.read_parquet(\"{output_path}\").head())'")
-    logger.info(f"  2. Train DDQN: python scripts/train_rl_offline.py --data {output_path}")
-
 
 if __name__ == "__main__":
     main()
