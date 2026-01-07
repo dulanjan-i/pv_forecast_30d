@@ -1,0 +1,9 @@
+{
+  "created_utc": "2026-01-06T17:30:36.284245Z",
+  "git_commit": "072957b5157c39d20c760605c18878a67c62cafc",
+  "phase2_paths": {
+    "predictions": "freeze/v1_freeze_predefense/phase2_2025/processed/predictions_phase2.parquet",
+    "weather_15min": "freeze/v1_freeze_predefense/phase2_2025/processed/weather_with_pvlib_15min.parquet",
+    "weather_hourly": "freeze/v1_freeze_predefense/phase2_2025/processed/weather_with_pvlib_hourly.parquet"
+  }
+}

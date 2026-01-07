@@ -1,180 +1,247 @@
-#!/usr/bin/env python3
-"""
-Phase 2 wrapper: reuse Phase1 pipeline pieces to run 2025 forecasts
+# src/inference/phase2_inference_pipeline.py
+from __future__ import annotations
 
-This wrapper calls the key Phase1 steps (weather fetch + preprocess + rolling
-inference) but bootstraps encoder context from an existing Phase 1
-predictions file (15-min). It writes outputs to a separate Phase 2 folder.
-"""
 import argparse
+import json
+import logging
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-import shutil
+from typing import Any, Dict, Optional
+
+import numpy as np
 import pandas as pd
 
+# Allow running as a script: `python src/inference/phase2_inference_pipeline.py ...`
+# without "ModuleNotFoundError: No module named 'src'"
+if __package__ is None or __package__ == "":
+    repo_root = Path(__file__).resolve().parents[2]  # .../pv_forecast_30d
+    sys.path.insert(0, str(repo_root))
 
-def main():
-    parser = argparse.ArgumentParser(description='Phase 2 wrapper (bootstrap from Phase 1 tail)')
-    parser.add_argument('--start-date', type=str, default='2025-01-01')
-    parser.add_argument('--end-date', type=str, default='2025-12-31')
-    parser.add_argument('--weather-source', choices=['historical', 'api'], default='historical')
-    parser.add_argument('--phase1-preds', type=str,
-                        default='data/processed/test_phase1_dec2023_dec2024/predictions_phase1.parquet',
-                        help='Path to Phase 1 predictions parquet (15-min) to use as encoder bootstrap')
-    parser.add_argument('--out-dir', type=str, default='data/processed/test_phase2_2025', help='Output dir for Phase 2')
+from src.inference.physics_aware_forecaster import PhysicsAwareForecaster  # noqa: E402
+
+
+LOGGER = logging.getLogger("phase2_inference_pipeline")
+
+
+@dataclass
+class Paths:
+    phase_dir: Path
+    out_path: Path
+    plant_meta: Path
+    short_ckpt: Path
+    long_ckpt: Path
+    short_train: Path
+    long_train: Path
+    hist_encoder: Optional[Path]
+    weather_15min: Path
+
+
+def load_plant_meta(path: Path) -> Dict[str, Any]:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _as_utc_midnight(s: str) -> pd.Timestamp:
+    # Accept YYYY-MM-DD
+    t = pd.to_datetime(s, utc=True)
+    # Normalize to midnight UTC
+    return pd.Timestamp(year=t.year, month=t.month, day=t.day, tz="UTC")
+
+
+def _ensure_ts_utc(df: pd.DataFrame, col: str = "timestamp_utc") -> pd.DataFrame:
+    out = df.copy()
+    out[col] = pd.to_datetime(out[col], utc=True, errors="coerce")
+    out = out.dropna(subset=[col])
+    return out
+
+
+def _window_15min(weather_15m: pd.DataFrame, fs: pd.Timestamp) -> pd.DataFrame:
+    # 30 days at 15-min resolution = 2880 steps (30*24*4)
+    end = fs + pd.Timedelta(days=30) - pd.Timedelta(minutes=15)
+    w = weather_15m[(weather_15m["timestamp_utc"] >= fs) & (weather_15m["timestamp_utc"] <= end)]
+    return w
+
+
+def _hist_window(hist: pd.DataFrame, fs: pd.Timestamp, days: int = 7) -> pd.DataFrame:
+    start = fs - pd.Timedelta(days=days)
+    h = hist[(hist["timestamp_utc"] >= start) & (hist["timestamp_utc"] < fs)].copy()
+    if len(h) == 0:
+        # fallback: just take last 672 rows before fs (7 days * 24h * 4 = 672)
+        h2 = hist[hist["timestamp_utc"] < fs].tail(days * 24 * 4).copy()
+        return h2
+    return h
+
+
+def main() -> None:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
+
+    parser = argparse.ArgumentParser(description="Phase 2 daily rolling inference (typically 2025).")
+
+    parser.add_argument("--weather-source", choices=["historical", "api"], default="historical")
+    parser.add_argument("--start-date", type=str, default="2024-12-29")
+    parser.add_argument("--end-date", type=str, default="2025-12-31")
+    parser.add_argument("--stride-days", type=int, default=1)
+
+    parser.add_argument(
+        "--phase-dir",
+        type=str,
+        default="data/processed/test_phase2_2025",
+        help="Folder containing phase2 weather parquet(s) and where outputs can be written.",
+    )
+    parser.add_argument(
+        "--out",
+        type=str,
+        default="",
+        help="Output parquet path. If empty, writes <phase-dir>/predictions_phase2_daily.parquet",
+    )
+
+    # Model and metadata paths
+    parser.add_argument("--plant-meta", type=str, default="V1.0_FINAL_TFT/plant_metadata/plant_03.json")
+    parser.add_argument("--short-ckpt", type=str, required=True)
+    parser.add_argument("--long-ckpt", type=str, required=True)
+    parser.add_argument("--short-train", type=str, default="data/processed/plant_level/plant_03/15min_pca32/train.parquet")
+    parser.add_argument("--long-train", type=str, default="data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
+
+    # Encoder context (optional but recommended)
+    parser.add_argument(
+        "--hist-encoder",
+        type=str,
+        default="data/processed/plant_level/plant_03/hist_weather_gt_15min_utc.parquet",
+        help="15-min historical context parquet that includes the same features as training (usually includes power_norm).",
+    )
+
+    # Weather parquet (15-min with pvlib columns already present)
+    parser.add_argument(
+        "--weather-15min",
+        type=str,
+        default="",
+        help="15-min weather parquet with pvlib columns. If empty, uses <phase-dir>/weather_with_pvlib_15min.parquet",
+    )
+
     args = parser.parse_args()
 
-    base = Path(__file__).resolve().parents[2]
-    # Ensure project root is on sys.path so `src` package imports work
-    sys.path.insert(0, str(base))
-    phase1_preds = Path(args.phase1_preds)
-    out_dir = base / args.out_dir
-    out_dir.mkdir(parents=True, exist_ok=True)
+    phase_dir = Path(args.phase_dir)
+    phase_dir.mkdir(parents=True, exist_ok=True)
 
-    # If Phase1 preds exist, compute Phase2 start = last Phase1 timestep + 15min
-    p1_tmp = None
-    start_date_str = args.start_date
-    if phase1_preds.exists():
-        try:
-            p1_tmp = pd.read_parquet(phase1_preds)
-            if 'timestamp_utc' in p1_tmp.columns:
-                p1_tmp['timestamp_utc'] = pd.to_datetime(p1_tmp['timestamp_utc'], utc=True)
-            elif 'timestamp' in p1_tmp.columns:
-                p1_tmp = p1_tmp.rename(columns={'timestamp': 'timestamp_utc'})
-                p1_tmp['timestamp_utc'] = pd.to_datetime(p1_tmp['timestamp_utc'], utc=True)
-            last_ts = p1_tmp['timestamp_utc'].max()
-            start_date_computed = last_ts + pd.Timedelta(minutes=15)
-            start_date_str = start_date_computed.isoformat()
-            print(f"[INFO] Computed Phase2 start from Phase1 last timestep: {last_ts} -> {start_date_str}")
-        except Exception as e:
-            print(f"[WARN] Could not compute Phase2 start from Phase1 preds: {e}; using {args.start_date}")
+    out_path = Path(args.out) if args.out else (phase_dir / "predictions_phase2_daily.parquet")
+    weather_15min_path = Path(args.weather_15min) if args.weather_15min else (phase_dir / "weather_with_pvlib_15min.parquet")
 
-    # Import Phase1 pipeline class (we reuse its steps)
-    from src.inference.phase1_inference_pipeline import Phase1Pipeline
-    from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
-    import torch
+    paths = Paths(
+        phase_dir=phase_dir,
+        out_path=out_path,
+        plant_meta=Path(args.plant_meta),
+        short_ckpt=Path(args.short_ckpt),
+        long_ckpt=Path(args.long_ckpt),
+        short_train=Path(args.short_train),
+        long_train=Path(args.long_train),
+        hist_encoder=Path(args.hist_encoder) if args.hist_encoder else None,
+        weather_15min=weather_15min_path,
+    )
 
-    # Instantiate pipeline but redirect outputs to our Phase2 out dir
-    # instantiate pipeline with computed start_date (will ensure weather fetched to args.end_date)
-    pipeline = Phase1Pipeline(weather_source=args.weather_source, start_date=start_date_str, end_date=args.end_date)
-    pipeline.phase1_dir = out_dir
+    plant = load_plant_meta(paths.plant_meta)
+    plant_id = str(plant.get("plant_id", "plant_03"))
 
-    # Step 1: fetch weather (will save into out_dir)
-    weather_15min = pipeline.step1_fetch_weather()
+    LOGGER.info("plant_id: %s", plant_id)
+    LOGGER.info("phase_dir: %s", paths.phase_dir)
+    LOGGER.info("out_path: %s", paths.out_path)
+    LOGGER.info("weather_15min: %s", paths.weather_15min)
 
-    # Step 2: preprocess
-    weather_15min, weather_hourly = pipeline.step2_preprocess_weather(weather_15min)
+    if not paths.weather_15min.exists():
+        raise FileNotFoundError(f"Missing weather parquet: {paths.weather_15min}")
 
-    # Quick safety-fills: ensure no NaN/Inf remain in key weather fields that break TFT encoding
-    safe_fill_cols = ['cloud_cover', 'shortwave_radiation_instant', 'pvlib_poa_global', 'pvlib_ac_kw']
-    for col in safe_fill_cols:
-        if col in weather_15min.columns:
-            weather_15min[col] = weather_15min[col].fillna(0.0).replace([float('inf'), -float('inf')], 0.0)
-        if col in weather_hourly.columns:
-            weather_hourly[col] = weather_hourly[col].fillna(0.0).replace([float('inf'), -float('inf')], 0.0)
+    # Load weather
+    weather_15m = pd.read_parquet(paths.weather_15min)
+    weather_15m = _ensure_ts_utc(weather_15m, "timestamp_utc")
+    weather_15m = weather_15m.sort_values("timestamp_utc").drop_duplicates("timestamp_utc")
 
-    # Prepare encoder context from Phase1 predictions (preferred)
-    if phase1_preds.exists():
-        # reuse p1_tmp if we already loaded it above
-        if p1_tmp is not None:
-            p1 = p1_tmp
-        else:
-            p1 = pd.read_parquet(phase1_preds)
-        # Normalize timestamps: ensure tz-aware UTC for comparisons with weather (which is UTC)
-        if 'timestamp_utc' in p1.columns:
-            p1['timestamp_utc'] = pd.to_datetime(p1['timestamp_utc'], utc=True)
-        if 'timestamp' in p1.columns and 'timestamp_utc' not in p1.columns:
-            p1 = p1.rename(columns={'timestamp': 'timestamp_utc'})
-            p1['timestamp_utc'] = pd.to_datetime(p1['timestamp_utc'], utc=True)
-        if 'predicted_power_norm' in p1.columns and 'power_norm' not in p1.columns:
-            p1['power_norm'] = p1['predicted_power_norm']
-        p1 = p1.sort_values('timestamp_utc').reset_index(drop=True)
-        # Require Phase1 predictions to explicitly cover the 7-day encoder window
-        encoder_end = pd.Timestamp(start_date_str, tz='UTC')
-        encoder_start = encoder_end - pd.Timedelta(days=7)
-        # select rows from p1 that fall into the encoder window
-        p1_window = p1[(p1.timestamp_utc >= encoder_start) & (p1.timestamp_utc < encoder_end)].copy()
-        if len(p1_window) == 672:
-            # Merge Phase1 predicted power with the weather dataset so encoder has full feature set
-            if 'plant_id' not in p1_window.columns:
-                p1_window['plant_id'] = 'plant_03'
-            encoder_long_15min = p1_window.reset_index(drop=True).merge(
-                weather_15min,
-                on=['timestamp_utc', 'plant_id'],
-                how='left',
-                suffixes=('', '_w')
-            )
-            # Ensure power_norm from Phase1 preds takes precedence
-            if 'predicted_power_norm' in p1_window.columns and 'power_norm' not in encoder_long_15min.columns:
-                encoder_long_15min['power_norm'] = p1_window['predicted_power_norm'].values
-            # Safety fill any NaN/Inf from the merge for weather columns
-            for col in ['cloud_cover', 'shortwave_radiation_instant', 'pvlib_poa_global', 'pvlib_ac_kw']:
-                if col in encoder_long_15min.columns:
-                    encoder_long_15min[col] = encoder_long_15min[col].fillna(0.0).replace([float('inf'), -float('inf')], 0.0)
-            encoder_short = encoder_long_15min.tail(96).copy()
-            # Save for traceability
-            encoder_short.to_parquet(out_dir / 'encoder_context_short.parquet', index=False)
-            encoder_long_15min.to_parquet(out_dir / 'encoder_context_long_15min.parquet', index=False)
-        else:
-            # Phase1 preds insufficient — fall back to weather-derived encoder context
-            pred_end = p1.timestamp_utc.max()
-            print(f"[WARN] Phase1 predictions do not fully cover encoder window ({encoder_start} → {encoder_end}), have end={pred_end}, rows={len(p1)}; falling back to weather")
-            weather_path = out_dir / "weather_with_pvlib_15min.parquet"
-            if not weather_path.exists():
-                raise RuntimeError(f'Cannot build encoder context: weather file missing: {weather_path}')
-            weather_15min = pd.read_parquet(weather_path)
-            encoder_long_15min = weather_15min[
-                (weather_15min.timestamp_utc >= encoder_start) &
-                (weather_15min.timestamp_utc < encoder_end)
-            ].copy()
-            if len(encoder_long_15min) == 0:
-                raise RuntimeError(f'No weather found for encoder window: {encoder_start} → {encoder_end}')
-            # Create proxy power_norm from pvlib baseline if missing
-            if 'power_norm' not in encoder_long_15min.columns:
-                if 'pvlib_ac_kw' in encoder_long_15min.columns:
-                    cap = pipeline.metadata.get('installed_capacity_kw', 1.0)
-                    encoder_long_15min['power_norm'] = (encoder_long_15min['pvlib_ac_kw'] / cap).clip(0.0, 1.0)
-                else:
-                    encoder_long_15min['power_norm'] = 0.0
+    max_ts = weather_15m["timestamp_utc"].max()
+    min_ts = weather_15m["timestamp_utc"].min()
+    LOGGER.info("Weather coverage: %s -> %s (%d rows)", min_ts, max_ts, len(weather_15m))
 
-            encoder_long_15min['power_norm'] = encoder_long_15min['power_norm'].fillna(0.0).replace([float('inf'), -float('inf')], 0.0)
-            encoder_short = encoder_long_15min.tail(96).copy()
-            encoder_short.to_parquet(out_dir / 'encoder_context_short.parquet', index=False)
-            encoder_long_15min.to_parquet(out_dir / 'encoder_context_long_15min.parquet', index=False)
+    # Load historical encoder context if provided
+    hist_df = None
+    if paths.hist_encoder and paths.hist_encoder.exists():
+        hist_df = pd.read_parquet(paths.hist_encoder)
+        hist_df = _ensure_ts_utc(hist_df, "timestamp_utc")
+        hist_df = hist_df.sort_values("timestamp_utc").drop_duplicates("timestamp_utc")
+        LOGGER.info("Hist encoder coverage: %s -> %s (%d rows)", hist_df["timestamp_utc"].min(), hist_df["timestamp_utc"].max(), len(hist_df))
     else:
-        raise FileNotFoundError(f'Phase 1 predictions not found at: {phase1_preds}')
+        LOGGER.warning("hist-encoder missing or not provided, will fallback to training parquet inside forecaster.")
 
-    # Initialize forecaster (same as Phase1)
+    # Init forecaster once
     forecaster = PhysicsAwareForecaster(
-        short_ckpt=str(pipeline.base_dir / "V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt"),
-        long_ckpt=str(pipeline.base_dir / "V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt"),
-        plant_metadata=str(pipeline.base_dir / "V1.0_FINAL_TFT/plant_metadata/plant_03.json"),
-        short_train_parquet=str(pipeline.base_dir / "data/processed/plant_level/plant_03/15min_pca32/train.parquet"),
-        long_train_parquet=str(pipeline.base_dir / "data/processed/plant_level/plant_03/hourly_longhead/train.parquet"),
-        device='cuda' if torch.cuda.is_available() else 'cpu'
+        short_ckpt=paths.short_ckpt,
+        long_ckpt=paths.long_ckpt,
+        plant_metadata=paths.plant_meta,
+        short_train_parquet=paths.short_train,
+        long_train_parquet=paths.long_train,
     )
 
-    # Run rolling inference using the prepared encoder contexts
-    predictions_df = pipeline.step4_run_rolling_inference(
-        weather_15min=weather_15min,
-        weather_hourly=weather_hourly,
-        initial_encoder_short=encoder_short,
-        initial_encoder_long=encoder_long_15min,
-        forecaster=forecaster
-    )
+    start = _as_utc_midnight(args.start_date)
+    end = _as_utc_midnight(args.end_date)
+    stride = int(args.stride_days)
 
-    # Move/rename output file to a Phase2-appropriate name
-    saved = out_dir / 'predictions_phase1.parquet'
-    if saved.exists():
-        target = out_dir / 'predictions_phase2.parquet'
-        shutil.move(str(saved), str(target))
-        print(f'✓ Phase 2 predictions saved: {target}')
-    else:
-        # If the function returned a DataFrame but didn't save, save here
-        target = out_dir / 'predictions_phase2.parquet'
-        predictions_df.to_parquet(target, index=False)
-        print(f'✓ Phase 2 predictions written: {target}')
+    LOGGER.info("Start: %s", start)
+    LOGGER.info("End:   %s", end)
+    LOGGER.info("Stride: %d days", stride)
+
+    attempted = 0
+    skipped = 0
+    rows = []
+
+    fs = start
+    while fs <= end:
+        attempted += 1
+
+        w = _window_15min(weather_15m, fs)
+        if len(w) != 2880:
+            skipped += 1
+            fs = fs + pd.Timedelta(days=stride)
+            continue
+
+        h = None
+        if hist_df is not None:
+            h = _hist_window(hist_df, fs, days=7)
+
+        try:
+            out = forecaster.predict_30d(weather_df=w, historical_df=h, forecast_start=fs)
+            y = out["final"]
+            if y is None or len(y) != 2880:
+                skipped += 1
+                fs = fs + pd.Timedelta(days=stride)
+                continue
+
+            # Flatten to rows
+            base = fs
+            for step in range(2880):
+                ts = base + pd.Timedelta(minutes=15 * step)
+                rows.append(
+                    {
+                        "timestamp_utc": ts,
+                        "forecast_start": fs,
+                        "step_ahead": step,
+                        "hours_ahead": step * 0.25,
+                        "predicted_power_norm": float(y[step]),
+                    }
+                )
+        except Exception:
+            skipped += 1
+
+        fs = fs + pd.Timedelta(days=stride)
+
+    paths.out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_df = pd.DataFrame(rows)
+    out_df.to_parquet(paths.out_path, index=False)
+
+    LOGGER.info("WROTE: %s", paths.out_path)
+    LOGGER.info("forecast_starts attempted: %d", attempted)
+    LOGGER.info("skipped incomplete/failed: %d", skipped)
+    LOGGER.info("rows written: %d", len(out_df))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
