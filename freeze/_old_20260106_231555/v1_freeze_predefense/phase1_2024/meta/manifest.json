@@ -1,0 +1,12 @@
+{
+  "created_utc": "2026-01-06T17:24:50.280515Z",
+  "git_commit": "072957b5157c39d20c760605c18878a67c62cafc",
+  "phase1_paths": {
+    "predictions": "freeze/v1_freeze_predefense/phase1_2024/processed/predictions_phase1.parquet",
+    "weather_15min": "freeze/v1_freeze_predefense/phase1_2024/processed/weather_with_pvlib_15min.parquet",
+    "weather_hourly": "freeze/v1_freeze_predefense/phase1_2024/processed/weather_with_pvlib_hourly.parquet",
+    "ground_truth": "freeze/v1_freeze_predefense/phase1_2024/processed/ground_truth_from_sheet_15min_utc_capnorm.parquet",
+    "sarns_norm": "freeze/v1_freeze_predefense/phase1_2024/rl/p3_phase1_SARNS_CAPNORM_DAILY_NORM.parquet",
+    "ddqn_ckpt": "freeze/v1_freeze_predefense/phase1_2024/rl/ddqn_phase1_daily_norm.pt"
+  }
+}
