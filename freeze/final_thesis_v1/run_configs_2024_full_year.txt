@@ -1,0 +1,30 @@
+#RUN CONFIGS
+
+BASELINE RUN CONFIG
+
+PYTHONPATH=. python -m src.inference.phase1_inference_pipeline \
+  --weather-source historical \
+  --start-date 2024-01-01 \
+  --end-date 2024-12-02 \
+  --stride-days 1 \
+  --phase1-dir freeze/final_thesis_v1/phase1_2024daily_final \
+  --out freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet
+
+RL POLICY RUN CONFIG
+
+PYTHONPATH=. python -m src.inference.phase1_inference_with_policy \
+  --start-date 2024-01-01 \
+  --end-date 2024-12-02 \
+  --stride-days 1 \
+  --phase-dir freeze/final_thesis_v1/phase1_2024daily_final \
+  --out freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_policy_rerun.parquet \
+  --policy-ckpt freeze/final_thesis_v1/phase1_2024daily_final/rl/ddqn_phase1_daily_norm.pt \
+  --sarns-norm freeze/final_thesis_v1/phase1_2024daily_final/rl/sarns_norm_with_blends.parquet \
+  --plant-meta V1.0_FINAL_TFT/plant_metadata/plant_03.json \
+  --short-ckpt V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt \
+  --long-ckpt  V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt \
+  --short-train data/processed/plant_level/plant_03/15min_pca32/train.parquet \
+  --long-train  data/processed/plant_level/plant_03/hourly_longhead/train.parquet \
+  --hist-encoder data/processed/plant_level/plant_03/hist_weather_gt_15min_utc.parquet
+
+
