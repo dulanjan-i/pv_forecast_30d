@@ -808,7 +808,7 @@ class RLMetaControllerSystem:
         Returns:
             reward: Scalar reward signal
         """
-        ***REMOVED*** Component weights (from original paper)
+        ***REMOVED*** Component weights
         w1 = 1.0   ***REMOVED*** Accuracy
         w2 = 0.5   ***REMOVED*** Drift control
         w3 = 0.2   ***REMOVED*** Cost
