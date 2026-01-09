@@ -7,6 +7,15 @@
 
 ---
 
+## ✅ Canonical thesis results (freeze/ wins)
+
+For thesis headline performance numbers, **treat artifacts under `freeze/final_thesis_v1/` as canonical** (latest timestamps). In particular:
+
+- Multi-model 2024 backtest benchmark suite: `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/text/results.md`
+- RQ4 baseline vs policy evaluation: `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`
+
+Numbers reported elsewhere in `docs/` / `reports/` may be training-validation, integration-test, or historical metrics and must not be used as the headline system performance unless they match the `freeze/` outputs.
+
 ## 🎯 THESIS GOAL
 
 **Primary Goal**: Predict 30-day PV power output at 15-minute resolution using real-time weather API data for a utility-scale plant.
@@ -179,7 +188,7 @@
 
 [reports/VERIFICATION_SUMMARY_v1.md](../reports/VERIFICATION_SUMMARY_v1.md)
 
-**Phase 3 Results** (Line 40-60):
+**Phase 3 Results** (Line 40-60): 
 - Short-head warm start: **0.02666** (seed 42, epoch 42)
 - Long-head warm start: **0.02414** (seed 43, epoch 43)
 - Both significantly outperform cold-start baselines
@@ -506,7 +515,7 @@ forecast = forecaster.predict_30d(
 - 5 other actions: Defined but not yet deployed (future work)
 
 **Performance Impact**:
-- Day-1 RMSE improvement: 0.65% (0.127 → 0.126)
+- Canonical baseline-vs-policy metrics are reported under `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md` (night-filtered)
 - Stability: 60% baseline adherence (conservative governor)
 - Real-world value: €21,924/year for 7.36 MW plant
 - Evidence: [reports/RL_POLICY_AUDIT_THESIS_DEFENSE.md](../reports/RL_POLICY_AUDIT_THESIS_DEFENSE.md)
@@ -626,6 +635,8 @@ forecast = forecaster.predict_30d(
 - File: [reports/PLANT03_TFT_VALIDATION_METRICS.md](../reports/PLANT03_TFT_VALIDATION_METRICS.md)
 - Short-head: RMSE 0.087, MAE 0.049, R² 0.486
 - Long-head: RMSE 0.076, MAE 0.044, R² 0.376
+
+**Scope**: These 0.087 / 0.076 values are **model-level training evaluation metrics** (during TFT training). For thesis headline end-to-end inference performance, cite the canonical backtest outputs under `freeze/final_thesis_v1/`.
 
 **2. Transfer Learning Results**:
 - File: [reports/miracle_v1_results_CORRECTED.md](../reports/miracle_v1_results_CORRECTED.md)
@@ -755,7 +766,8 @@ forecast = forecaster.predict_30d(
 
 | Metric | Value |
 |--------|-------|
-| **Day-1 RMSE Improvement** | 0.65% (0.127 → 0.126) |
+| **Canonical RQ4 (overall RMSE)** | baseline 0.11713 vs policy 0.117161 (night-filtered) |
+| **Canonical RQ4 (0–24h bucket RMSE)** | baseline 0.118582 vs policy 0.119484 |
 | **Baseline Adherence** | 60% (stability-first) |
 | **Inference Time** | 400ms per decision |
 | **Training Transitions** | 314 SARNS samples |
@@ -776,7 +788,11 @@ forecast = forecaster.predict_30d(
 ## 🎓 THESIS CITATIONS
 
 ### For Goal Statement:
-> "MiRACLE is a Meta Intelligent Reinforcement-driven Adaptive Control framework for Learning-based Ensembles that predicts 30-day PV power output at 15-minute resolution (2,880 timesteps) using real-time weather API data for utility-scale plants. The system deployed on plant_03 (7.36 MW, Germany) achieves RMSE of 0.087 (short-head, 24h) and 0.076 (long-head, 30-day) on normalized power output."
+> "MiRACLE is a Meta Intelligent Reinforcement-driven Adaptive Control framework for Learning-based Ensembles that predicts 30-day PV power output at 15-minute resolution (2,880 timesteps) using real-time weather API data for utility-scale plants.
+>
+> Model-level training evaluation achieved RMSE of 0.087 (short-head, 24h) and 0.076 (long-head, 30-day) on normalized power output.
+>
+> Thesis headline end-to-end inference performance is reported from the canonical 2024 backtest artifacts under `freeze/final_thesis_v1/` (e.g., MiRACLE v1.0 Core RMSE 0.11713 in `benchmarks/thesis_formatted_v3`)."
 
 **Evidence**: 
 - [V1.0_FINAL_TFT/README.md](../V1.0_FINAL_TFT/README.md)
@@ -800,14 +816,20 @@ forecast = forecaster.predict_30d(
 - [PROGRESS_TRACKER.md](../PROGRESS_TRACKER.md)
 
 ### For RQ3 (Long-Horizon Stability):
-> "Multi-scale temporal modeling stabilizes 30-day forecasts through complementary short-term (tactical) and long-term (strategic) TFT heads. Long-head RMSE of 0.076 across 720-hour horizon demonstrates stable accuracy, with non-monotonic error reduction after Day 15 attributed to weather regime convergence. Physics anchoring (30% PVLib weight) prevents ML drift to implausible regions."
+> "Multi-scale temporal modeling stabilizes 30-day forecasts through complementary short-term (tactical) and long-term (strategic) TFT heads.
+>
+> Long-head RMSE of 0.076 across the 720-hour horizon is reported as a **model-level training evaluation metric** (see `reports/PLANT03_TFT_VALIDATION_METRICS.md`).
+>
+> Thesis headline system-level stability is reported using the canonical 2024 inference backtest outputs under `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/`."
 
 **Evidence**:
 - [reports/PLANT03_TFT_VALIDATION_METRICS.md](../reports/PLANT03_TFT_VALIDATION_METRICS.md)
 - [src/inference/physics_aware_forecaster.py](../src/inference/physics_aware_forecaster.py)
 
 ### For RQ4 (Self-Adaptive):
-> "DDQN meta-controller with 10-dimensional state space adaptively selects blend weights based on multi-objective reward (accuracy, stability, cost, retraining frequency). Deployed system achieves 0.65% Day-1 RMSE improvement while maintaining 60% baseline adherence for operational stability. Real-time weather API router supports 3 data sources (OpenMeteo Forecast, Ensemble, ECMWF) with intelligent fallback."
+> "DDQN meta-controller with 10-dimensional state space adaptively selects blend weights based on multi-objective reward (accuracy, stability, cost, retraining frequency).
+>
+> The canonical baseline-vs-policy results for the thesis are reported from `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md` (night-filtered)."
 
 **Evidence**:
 - [src/rl/rl_meta_controller.py](../src/rl/rl_meta_controller.py)

@@ -2,6 +2,13 @@
 🎯 GROUND TRUTH VALIDATION: Phase 1 vs Real Measurements (2024)
 ================================================================================
 
+NOTE (thesis canon): For thesis headline performance numbers, use the latest canonical evaluation artifacts under `freeze/final_thesis_v1/`.
+
+- Canonical multi-model 2024 backtest: `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/text/results.md`
+- Canonical baseline vs policy (RQ4): `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`
+
+This document is a separate ground-truth verification run with its own join/filtering rules and should be treated as historical unless its protocol is explicitly aligned to the canonical `freeze/` evaluation.
+
 📂 Loading ground truth data (15-min aligned)...
    Loaded: 35,136 timesteps (15-min resolution)
    Range: 2024-01-01 00:15:00 → 2025-01-01 00:00:00

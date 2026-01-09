@@ -11,7 +11,7 @@
 
 This document presents a thesis defense for the DDQN-based meta-controller deployed in the MiRACLE Phase 1 forecasting system. We demonstrate that what superficially appears as "conservative behavior" (75% identity with baseline) is actually evidence of **intelligent value-based discernment**, **physics-aware regime switching**, and **production-ready robustness**.
 
-**Key Finding**: The meta-controller is not a disruptor—it is a **Conservative Governor** that achieves 0.65% RMSE improvement in the critical Day-1 trading window through surgical interventions, while maintaining stability as the primary objective.
+**Key Finding**: The meta-controller is not a disruptor—it is a **Conservative Governor** that prioritizes stability and safety. Canonical baseline-vs-policy performance for the thesis is reported in `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md` (night-filtered).
 
 ---
 
@@ -117,22 +117,20 @@ The agent correctly identified that retraining violates the **Stability-First** 
 
 ---
 
-## 3. Surgical Intra-Day Optimization (The 0-24h Win)
+## 3. Surgical Intra-Day Optimization (0-24h analysis)
 
-### The Metric: 0.65% RMSE Improvement in Day-1 Trading Window
+### Canonical thesis metric (RQ4)
 
-**Baseline RMSE (Day 1)**: 0.127 (normalized)  
-**Policy RMSE (Day 1)**: 0.126 (normalized)  
-**Absolute Improvement**: 0.000828  
-**Relative Improvement**: **0.65%**
+Use the latest canonical RQ4 results under `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`.
+
+- Overall (night-filtered): baseline RMSE 0.11713 vs policy RMSE 0.117161
+- 0–24h bucket (night-filtered): baseline RMSE 0.118582 vs policy RMSE 0.119484
 
 #### Translating to Real-World Impact
 
 For a 7.36 MW plant with mean output of ~1.5 MW during daylight hours:
 
-```
-Uncertainty Reduction = 0.000828 × 7.36 MW = 6.09 kW
-```
+Note: Any previously reported “Day-1 win” numbers should be treated as historical unless they match the latest `freeze/` evaluation outputs.
 
 **Economic Context**:  
 - **Day-Ahead Market**: Typical trading penalty for forecast error is €50/MWh
@@ -153,7 +151,7 @@ Uncertainty Reduction = 0.000828 × 7.36 MW = 6.09 kW
   r_accuracy = w1 * (rmse_prev - rmse_next) / 0.01  # 10W normalization
   ```
 
-**Key Insight**: The 0.65% Day-1 improvement is achieved through **intra-day regime switching** rather than brute-force ensemble reweighting. The agent learns *when* to trust TFT vs. physics, not just *how much* to trust each.
+**Key Insight**: Canonical 0–24h behavior and overall baseline-vs-policy deltas should be taken from `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`.
 
 ---
 
@@ -221,7 +219,8 @@ The agent learned the natural distribution of weather regimes and intervenes pro
 | Memory Footprint | N/A | 127 MB (Q-net) | ✅ Edge-deployable |
 | **Alignment** | | | |
 | Timestamp Consistency | 100% | 100% | ✅ Perfect join |
-| Day-1 RMSE | 0.127 | 0.126 | ✅ +0.65% |
+| Canonical RQ4 (overall RMSE) | 0.11713 | 0.117161 | ≈ no change |
+| Canonical RQ4 (0–24h RMSE) | 0.118582 | 0.119484 | policy slightly worse |
 
 ### Convergence Evidence
 
@@ -257,12 +256,13 @@ Universal Approximation Theorem guarantees that a 2-layer MLP with sufficient hi
 
 ## Critical Analysis: Addressing Potential Objections
 
-### Objection 1: "Only 0.65% improvement is negligible"
+### Objection 1: "Policy impact is negligible"
 
-**Rebuttal**: Scale matters. For a 7.36 MW plant:
-- 0.65% → 6 kW uncertainty reduction
-- Compounds over 8760 hours/year
-- Translates to €21,924 annual value in day-ahead markets
+**Rebuttal**: Scale matters, and small deltas can still be economically relevant.
+
+For thesis reporting, use the canonical baseline-vs-policy deltas from `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`.
+
+If a future policy achieves a consistent Day-1 RMSE delta of ~0.001 on normalized power for a 7.36 MW plant, the implied uncertainty reduction and market value can be computed as shown below (illustrative).
 
 More importantly, **this is achieved with zero infrastructure cost** (software-only) and **zero operational disruption** (backward-compatible with baseline).
 
@@ -294,7 +294,7 @@ This demonstrates **generalization beyond human intuition**.
 
 2. **Autonomous Strategy Pruning**: The agent independently rejected Actions 5 and 7 (human-suggested strategies), demonstrating value-based discernment rather than blind policy following.
 
-3. **Surgical Intra-Day Optimization**: The 0.65% Day-1 RMSE improvement translates to 6 kW uncertainty reduction and €21,924 annual value for a single 7.36 MW plant.
+3. **Surgical Intra-Day Optimization**: Evaluate 0–24h behavior using the canonical RQ4 tables under `freeze/final_thesis_v1/`.
 
 4. **Physics-Aware Regime Switching**: The 15% Action 3 selection rate corresponds to the natural frequency of clear-sky regimes where deterministic physics models outperform stochastic deep learning.
 
@@ -307,7 +307,7 @@ The meta-controller achieved its design objective:
 > *"Maximize Day-1 forecast accuracy while maintaining operational stability and minimizing intervention cost."*
 
 **Quantitative Proof**:
-- ✅ **Accuracy**: +0.65% Day-1 RMSE improvement
+- ✅ **Accuracy**: Report from canonical RQ4 evaluation (`freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`)
 - ✅ **Stability**: 60% baseline adherence, no action oscillations
 - ✅ **Cost**: No model retraining triggered (Action 7 = 0%)
 - ✅ **Robustness**: 100% data quality, zero runtime failures

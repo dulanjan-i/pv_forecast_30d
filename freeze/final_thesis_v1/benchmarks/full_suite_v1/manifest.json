@@ -1,0 +1,29 @@
+{
+  "truth": "/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/phase1_2024daily_final/processed/ground_truth_15min_utc_capnorm.parquet",
+  "models": [
+    {
+      "name": "MiRACLE_v1_Core_Warm",
+      "path": "/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet"
+    },
+    {
+      "name": "PVLib_only",
+      "path": "/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/derived_only/pvlib_only.parquet"
+    },
+    {
+      "name": "Short_TFT_only",
+      "path": "/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/derived_only/short_only.parquet"
+    },
+    {
+      "name": "Long_TFT_only",
+      "path": "/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/derived_only/long_only.parquet"
+    },
+    {
+      "name": "MiRACLE_v1_Core_Cold",
+      "path": "/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/cold_hybrid_glued.parquet"
+    },
+    {
+      "name": "MiRACLE_v1_Meta_RL",
+      "path": "/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_policy_rerun.parquet"
+    }
+  ]
+}

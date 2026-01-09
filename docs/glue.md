@@ -1,5 +1,12 @@
 # Physics-Aware Dual-Head Glue Code Architecture
 
+## Scope note (thesis vs. training metrics)
+
+This document describes the **architecture and design intent** of the dual-head “physics glue” inference approach.
+
+- Values like **RMSE 0.087 (short-head)** and **RMSE 0.076 (long-head)** refer to **model-level training evaluation on sliding windows** (2023-era test-on-windows), not the end-to-end deployed-system backtest.
+- Thesis headline end-to-end metrics should be cited from the canonical 2024 backtest outputs under `freeze/final_thesis_v1/` (e.g., `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/text/results.md`).
+
 ## Overview Pipeline
 
 **INPUT:** Weather forecast (next 30 days)
@@ -81,17 +88,15 @@
 - Compute budget remaining
 
 ### Action (what RL controls):
-- α₁: Short-head blend weight, range [0.5, 1.0]
-- α₂: Long-head blend weight, range [0.3, 0.8]
-- quantile: Which quantile to use, range [0.25, 0.75]
+- **Implementation note:** the repository’s meta-controller is implemented as a **DDQN (Double DQN)** agent with a **discrete action space** (actions select among operational presets rather than continuous weights).
+- See: `src/rl/rl_meta_controller.py`.
 
 ### Reward:
 reward = -RMSE(forecast, actual) - λ × compute_cost
 
 ### Learning Algorithm:
-- Q-learning or DQN to optimize blend weights
-- Update policy every 24h based on actual outcomes
-- Store experiences in replay buffer
+- **DDQN (Double DQN)** with prioritized replay and soft target updates.
+- Policy evaluation artifacts (baseline vs policy) are generated under `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/`.
 
 ---
 
@@ -99,7 +104,7 @@ reward = -RMSE(forecast, actual) - λ × compute_cost
 
 | Aspect | Choice | Rationale |
 |--------|--------|-----------|
-| Day 1 source | Short head | Highest accuracy for near-term (RMSE 0.087) |
+| Day 1 source | Short head | Highest accuracy in model-level validation (RMSE 0.087; training evaluation) |
 | Days 2-30 source | Long head single call | 720-step model trained for full horizon |
 | Rolling windows? | **NO** | Long head covers 30 days natively |
 | Upsampling | PVLib-weighted distribution | Physics-informed intra-hour shape |
@@ -116,8 +121,10 @@ reward = -RMSE(forecast, actual) - λ × compute_cost
 - Long head: `experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best.ckpt`
 
 ### Validation Results:
-- Short head: RMSE 0.087 (test, 24h horizon, 4,606 windows)
-- Long head: RMSE 0.076 (test, 720h horizon, 313 windows)
+- **Model-level training evaluation (not thesis headline):**
+   - Short head: RMSE 0.087 (test, 24h horizon, 4,606 windows)
+   - Long head: RMSE 0.076 (test, 720h horizon, 313 windows)
+- For end-to-end 2024 backtest headline metrics, cite `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/`.
 - Long head error by day: Day 1 (0.079) → Day 15 (0.093) → Day 30 (0.059)
 - Both models use 21 known future covariates (weather + PVLib features)
 
