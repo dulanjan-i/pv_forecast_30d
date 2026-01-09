@@ -1,0 +1,11 @@
+{
+  "data_path": "data/rl_transitions/phase1_4797.parquet",
+  "n_transitions": 4797,
+  "state_dim": 35,
+  "n_actions": 8,
+  "epochs": 100,
+  "batch_size": 64,
+  "final_loss": 4.0956894829869765e-06,
+  "final_avg_q": -1.015939963830484,
+  "total_steps": 7400
+}
