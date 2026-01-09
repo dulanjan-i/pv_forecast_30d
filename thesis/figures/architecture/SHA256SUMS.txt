@@ -1,0 +1,10 @@
+# Checksums for rendered thesis architecture figures
+# Verify on Windows (PowerShell):
+#   certutil -hashfile miracle_high_level.png SHA256
+#   certutil -hashfile miracle_full_data_pipeline.png SHA256
+# Expected:
+#   f5351095211fd5e08d32df099c55742ecbcfa9dc2ce84085e12438f8a5be9035  miracle_high_level.png
+#   3753040d10a9ed9fd5311d84fb8007401ba328a166465e83d564a437bd76b2f6  miracle_full_data_pipeline.png
+
+f5351095211fd5e08d32df099c55742ecbcfa9dc2ce84085e12438f8a5be9035  miracle_high_level.png
+3753040d10a9ed9fd5311d84fb8007401ba328a166465e83d564a437bd76b2f6  miracle_full_data_pipeline.png

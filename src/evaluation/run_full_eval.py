@@ -1,3 +1,5 @@
+#src/evaluation/run_full_eval.py
+
 from __future__ import annotations
 
 import argparse
@@ -107,9 +109,9 @@ def bootstrap_mean_ci(deltas: np.ndarray, n_boot: int = 5000, seed: int = 42) ->
 # -----------------------------
 # Plotting
 # -----------------------------
-def save_fig(path: Path) -> None:
+def save_fig(path: Path, dpi: int = 200) -> None:
     plt.tight_layout()
-    plt.savefig(path.as_posix(), dpi=200)
+    plt.savefig(path.as_posix(), dpi=dpi, bbox_inches='tight')
     plt.close()
 
 
@@ -119,25 +121,33 @@ def plot_monthly_rmse(monthly: pd.DataFrame, out: Path) -> None:
     yb = monthly["RMSE_baseline"].values
     yp = monthly["RMSE_policy"].values
 
-    plt.figure()
-    plt.plot(x, yb, marker="o", label="baseline")
-    plt.plot(x, yp, marker="o", label="policy")
+    plt.figure(figsize=(10, 4))
+    # Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(x, yb, marker="o", label="MiRACLE v1.0 (Core)", color='#00AA00', linewidth=2.5, markersize=7, alpha=1.0)
+    # Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
+    plt.plot(x, yp, marker="s", label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', linewidth=1.5, markersize=5, alpha=0.9)
     plt.xticks(rotation=45, ha="right")
-    plt.xlabel("Month")
-    plt.ylabel("RMSE (power_norm)")
-    plt.legend()
-    save_fig(out)
+    plt.xlabel("Month", fontsize=11)
+    plt.ylabel("RMSE (power_norm)", fontsize=11)
+    plt.legend(fontsize=10, framealpha=0.9)
+    plt.grid(True, alpha=0.3, linestyle=':')
+    plt.tight_layout()
+    save_fig(out, dpi=300)
 
 
 def plot_error_hist(df: pd.DataFrame, out: Path, max_abs: float = 1.0) -> None:
     # histogram of absolute error
-    plt.figure()
-    plt.hist(df["abs_err_baseline"].clip(0, max_abs), bins=80, alpha=0.5, label="baseline")
-    plt.hist(df["abs_err_policy"].clip(0, max_abs), bins=80, alpha=0.5, label="policy")
-    plt.xlabel("Absolute error (clipped)")
-    plt.ylabel("Count")
-    plt.legend()
-    save_fig(out)
+    plt.figure(figsize=(8, 5))
+    # Policy first (behind, de-emphasized) = LIGHT BLUE
+    plt.hist(df["abs_err_policy"].clip(0, max_abs), bins=80, alpha=0.6, label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', edgecolor='black', linewidth=0.5)
+    # Baseline on top (HIGHLIGHTED) = BOLD GREEN
+    plt.hist(df["abs_err_baseline"].clip(0, max_abs), bins=80, alpha=0.7, label="MiRACLE v1.0 (Core)", color='#00AA00', edgecolor='black', linewidth=0.5)
+    plt.xlabel("Absolute error (clipped)", fontsize=11)
+    plt.ylabel("Count", fontsize=11)
+    plt.legend(fontsize=10, framealpha=0.9)
+    plt.grid(True, alpha=0.3, linestyle=':')
+    plt.tight_layout()
+    save_fig(out, dpi=300)
 
 
 def plot_cumulative_abs_error(df: pd.DataFrame, out: Path) -> None:
@@ -145,13 +155,17 @@ def plot_cumulative_abs_error(df: pd.DataFrame, out: Path) -> None:
     cum_b = np.cumsum(dd["abs_err_baseline"].values)
     cum_p = np.cumsum(dd["abs_err_policy"].values)
 
-    plt.figure()
-    plt.plot(dd["timestamp_utc"].values, cum_b, label="baseline")
-    plt.plot(dd["timestamp_utc"].values, cum_p, label="policy")
-    plt.xlabel("Time")
-    plt.ylabel("Cumulative absolute error")
-    plt.legend()
-    save_fig(out)
+    plt.figure(figsize=(10, 4))
+    # Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(dd["timestamp_utc"].values, cum_b, label="MiRACLE v1.0 (Core)", color='#00AA00', linewidth=2.5, alpha=1.0)
+    # Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
+    plt.plot(dd["timestamp_utc"].values, cum_p, label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', linewidth=1.5, alpha=0.9)
+    plt.xlabel("Time", fontsize=11)
+    plt.ylabel("Cumulative absolute error", fontsize=11)
+    plt.legend(fontsize=10, framealpha=0.9)
+    plt.grid(True, alpha=0.3, linestyle=':')
+    plt.tight_layout()
+    save_fig(out, dpi=300)
 
 
 def plot_daily_scatter(daily: pd.DataFrame, out: Path) -> None:
@@ -163,8 +177,8 @@ def plot_daily_scatter(daily: pd.DataFrame, out: Path) -> None:
     plt.scatter(x, y, s=12)
     lim = max(np.nanmax(x), np.nanmax(y))
     plt.plot([0, lim], [0, lim])
-    plt.xlabel("Daily MAE baseline")
-    plt.ylabel("Daily MAE policy")
+    plt.xlabel("Daily MAE MiRACLE v1.0 (Core)")
+    plt.ylabel("Daily MAE MiRACLE v1.0 (Meta-control)")
     save_fig(out)
 
 
@@ -198,14 +212,19 @@ def plot_case_study_stitched(
     dd = dd.sort_values(["timestamp_utc", "hours_ahead"])
     dd = dd.groupby("timestamp_utc", as_index=False).first()
 
-    plt.figure(figsize=(10, 4))
-    plt.plot(dd["timestamp_utc"].values, dd["y_true"].values, label="truth")
-    plt.plot(dd["timestamp_utc"].values, dd["y_baseline"].values, label="baseline")
-    plt.plot(dd["timestamp_utc"].values, dd["y_policy"].values, label="policy")
-    plt.xlabel("Time")
-    plt.ylabel("power_norm")
-    plt.legend()
-    save_fig(out)
+    plt.figure(figsize=(12, 5))
+    # Ground truth = LIGHT GREY (subtle reference)
+    plt.plot(dd["timestamp_utc"].values, dd["y_true"].values, label="Ground Truth", color='#888888', linewidth=1.5, alpha=0.7)
+    # Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(dd["timestamp_utc"].values, dd["y_baseline"].values, label="MiRACLE v1.0 (Core)", color='#00AA00', linewidth=2.5, alpha=1.0)
+    # Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
+    plt.plot(dd["timestamp_utc"].values, dd["y_policy"].values, label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', linewidth=1.5, alpha=0.9)
+    plt.xlabel("Time (UTC)", fontsize=11)
+    plt.ylabel("Power (normalized)", fontsize=11)
+    plt.legend(fontsize=10, framealpha=0.9)
+    plt.grid(True, alpha=0.3, linestyle=':')
+    plt.tight_layout()
+    save_fig(out, dpi=300)
 
 
 # -----------------------------

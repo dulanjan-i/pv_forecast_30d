@@ -1,0 +1,11 @@
+{
+  "data_path": "data/rl_transitions/combined_141.parquet",
+  "n_transitions": 141,
+  "state_dim": 35,
+  "n_actions": 8,
+  "epochs": 100,
+  "batch_size": 64,
+  "final_loss": 28.926457405090332,
+  "final_avg_q": -1.8476178050041199,
+  "total_steps": 200
+}
