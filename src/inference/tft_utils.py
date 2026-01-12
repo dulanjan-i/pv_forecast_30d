@@ -48,7 +48,22 @@ def load_tft_config(run_dir: Path) -> Dict[str, Any]:
     # Load run_config.json
     run_config_path = run_dir / "run_config.json"
     if not run_config_path.exists():
-        raise FileNotFoundError(f"run_config.json not found in {run_dir}")
+        # Attempt to find run_config.json inside immediate child directories
+        for child in run_dir.iterdir():
+            if child.is_dir():
+                cand = child / "run_config.json"
+                if cand.exists():
+                    run_config_path = cand
+                    run_dir = child
+                    break
+        else:
+            # As a last resort, try a recursive search (pick first match)
+            matches = list(run_dir.rglob("run_config.json"))
+            if matches:
+                run_config_path = matches[0]
+                run_dir = run_config_path.parent
+            else:
+                raise FileNotFoundError(f"run_config.json not found in {run_dir}")
     
     with open(run_config_path, 'r') as f:
         run_cfg = json.load(f)
@@ -63,7 +78,19 @@ def load_tft_config(run_dir: Path) -> Dict[str, Any]:
     # Load column_roles.json
     roles_path = run_dir / "column_roles.json"
     if not roles_path.exists():
-        raise FileNotFoundError(f"column_roles.json not found in {run_dir}")
+        # If column_roles.json missing in selected run_dir, search nearby (same strategy as run_config)
+        for child in run_dir.iterdir():
+            if child.is_dir():
+                cand = child / "column_roles.json"
+                if cand.exists():
+                    roles_path = cand
+                    break
+        else:
+            matches = list(run_dir.rglob("column_roles.json"))
+            if matches:
+                roles_path = matches[0]
+            else:
+                raise FileNotFoundError(f"column_roles.json not found in {run_dir}")
     
     with open(roles_path, 'r') as f:
         roles_raw = json.load(f)
@@ -450,6 +477,15 @@ def create_inference_dataframe(
     
     # Ensure proper time columns
     inference_df = ensure_time_columns(inference_df, roles)
+    # Defensive: coerce/clip/fill any non-finite target values across the
+    # combined inference dataframe so TimeSeriesDataSet validation cannot fail.
+    target_col = roles.get('target', 'power_norm')
+    inference_df[target_col] = pd.to_numeric(inference_df[target_col], errors="coerce")
+    # replace infinities with NaN, then fill
+    inference_df.loc[~np.isfinite(inference_df[target_col]), target_col] = np.nan
+    # Clip to reasonable physical bounds and fill any remaining NaNs with 0.0
+    inference_df[target_col] = inference_df[target_col].clip(lower=0.0, upper=1.5)
+    inference_df[target_col] = inference_df[target_col].fillna(0.0)
     
     return inference_df
 

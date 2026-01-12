@@ -106,10 +106,56 @@ class PhysicsAwareForecaster:
         
         print(f"[INFO] Initializing PhysicsAwareForecaster on {self.device}")
         
-        # Load TFT configs
+        # Resolve checkpoint files and corresponding run directories (robust to compact layouts)
+        def _resolve_ckpt_and_run_dir(p: Path):
+            p = Path(p)
+            # If exact file provided
+            if p.exists() and p.is_file():
+                # If file is inside a checkpoints/ folder, run_dir is parent.parent
+                if p.parent.name == 'checkpoints' and p.parent.parent.exists():
+                    return p, p.parent.parent
+                # Otherwise, assume parent is the run dir
+                return p, p.parent
+
+            # Try parent/checkpoints/<name>
+            cand = p.parent / 'checkpoints' / p.name
+            if cand.exists():
+                return cand, cand.parent.parent if cand.parent.name == 'checkpoints' and cand.parent.parent.exists() else cand.parent
+
+            # Try parent/checkpoints/best.* variants
+            for name in ('best.ckpt', 'best.pt', 'best_state_dict.pt'):
+                cand2 = p.parent / 'checkpoints' / name
+                if cand2.exists():
+                    return cand2, cand2.parent.parent
+
+            # If p points to a directory, search common checkpoint names inside
+            if p.exists() and p.is_dir():
+                for name in ('checkpoints/best.ckpt', 'checkpoints/best.pt', 'checkpoints/best_state_dict.pt', 'best.ckpt', 'best.pt'):
+                    cand3 = p / name
+                    if cand3.exists():
+                        return cand3, p
+
+            # Last resort: recursive search for best.ckpt under parent
+            matches = list(p.parent.rglob('best.ckpt')) if p.parent.exists() else []
+            if matches:
+                ck = matches[0]
+                run_dir = ck.parent.parent if ck.parent.name == 'checkpoints' and ck.parent.parent.exists() else ck.parent
+                return ck, run_dir
+
+            # If nothing found, return original paths (will raise later)
+            return p, p.parent
+
         print("[INFO] Loading TFT configurations...")
-        self.short_config = load_tft_config(self.short_ckpt.parent.parent)
-        self.long_config = load_tft_config(self.long_ckpt.parent.parent)
+        short_ckpt_file, short_run_dir = _resolve_ckpt_and_run_dir(self.short_ckpt)
+        long_ckpt_file, long_run_dir = _resolve_ckpt_and_run_dir(self.long_ckpt)
+
+        # Update stored ckpt paths to resolved files
+        self.short_ckpt = short_ckpt_file
+        self.long_ckpt = long_ckpt_file
+
+        # Load configs from discovered run directories
+        self.short_config = load_tft_config(short_run_dir)
+        self.long_config = load_tft_config(long_run_dir)
         
         # Load training datasets (for normalization inheritance)
         print("[INFO] Loading training datasets for normalization...")

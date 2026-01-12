@@ -99,20 +99,16 @@ Numbers reported elsewhere in `docs/` / `reports/` may be training-validation, i
 
 #### Validation Metrics:
 
-**Report**: [reports/PLANT03_TFT_VALIDATION_METRICS.md](../reports/PLANT03_TFT_VALIDATION_METRICS.md)
+- **Canonical (thesis headline)**: use the frozen benchmark under `freeze/final_thesis_v1/` as the single source of truth for thesis-level headline numbers. The integrated MiRACLE v1.0 system (freeze benchmark) reports:
 
-**Short-Head (24h horizon)**:
-- RMSE: 0.087
-- MAE: 0.049
-- R²: 0.486
+- RMSE (MiRACLE v1.0, freeze integrated benchmark): **0.11713** — see `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/text/results.md`.
 
-**Long-Head (30-day horizon)**:
-- RMSE: 0.076
-- MAE: 0.044
-- R²: 0.376
+- **Per-model validation (separate evaluation regime)**: the file `reports/PLANT03_TFT_VALIDATION_METRICS.md` reports per-model test metrics computed on `plant_03` under a model-level evaluation protocol (these are useful for ablation and per-component discussion but are NOT the thesis headline benchmark). Example values from that report:
 
-**Citation from report (line 133)**:
-> "Dual-head Temporal Fusion Transformer models achieved test set RMSE of 0.087 (short-head, 24h horizon) and 0.076 (long-head, 720h = 30-day horizon) on normalized power output for plant_03 in Germany."
+- Short-Head (24h horizon, per-model test): RMSE = 0.087, MAE = 0.049, R² = 0.486
+- Long-Head (30-day horizon, per-model test): RMSE = 0.076, MAE = 0.044, R² = 0.376
+
+_Note_: when quoting a single headline number in the thesis front matter or abstract, always cite the `freeze/final_thesis_v1/...` benchmark. Use the per-model numbers above only within method/result subsections that explicitly state the different evaluation regime.
 
 ---
 

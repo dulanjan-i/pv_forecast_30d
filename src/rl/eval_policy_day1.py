@@ -66,10 +66,16 @@ def main() -> None:
 
     # Explicit action -> blend weights
     # Keys MUST be: short, long, physics and must sum to 1.0
+    # Expanded action space (0-7) for full exploration
     action_to_weights: Dict[int, Dict[str, float]] = {
-        0: {"short": 0.60, "long": 0.20, "physics": 0.20},  # baseline
-        2: {"short": 0.45, "long": 0.15, "physics": 0.40},  # more physics
-        3: {"short": 0.75, "long": 0.15, "physics": 0.10},  # more short-head
+        0: {"short": 0.60, "long": 0.20, "physics": 0.20},  # baseline (ML-heavy, balanced)
+        1: {"short": 0.20, "long": 0.60, "physics": 0.20},  # long-head dominant
+        2: {"short": 0.45, "long": 0.25, "physics": 0.30},  # balanced with physics
+        3: {"short": 0.25, "long": 0.15, "physics": 0.60},  # physics-heavy
+        4: {"short": 0.00, "long": 0.00, "physics": 1.00},  # pure physics
+        5: {"short": 0.80, "long": 0.10, "physics": 0.10},  # short-head dominant
+        6: {"short": 0.10, "long": 0.80, "physics": 0.10},  # long-head aggressive
+        7: {"short": 0.33, "long": 0.33, "physics": 0.34},  # equal 3-way blend
     }
     # Validate sums
     for a, w in action_to_weights.items():

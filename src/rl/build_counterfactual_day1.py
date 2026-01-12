@@ -129,7 +129,14 @@ def slice_window(
     """
     Slice a fixed-length window starting at `start`.
     """
-    end = start + pd.Timedelta(steps, unit=freq)
+    # Interpret `freq` as a per-step timedelta (e.g., '15min' or 'h').
+    try:
+        per_step = pd.Timedelta(freq)
+    except Exception:
+        # Fallback: assume `freq` is a unit string usable by Timedelta
+        per_step = pd.Timedelta(1, unit=freq)
+
+    end = start + per_step * int(steps)
     out = df[(df["timestamp_utc"] >= start) & (df["timestamp_utc"] < end)].copy()
     return out
 
@@ -246,15 +253,13 @@ def main() -> None:
     # Build hourly historical for long head
     dfH_h = resample_hourly(dfH15, plant_id)
 
-    # Initialize forecaster
+    # Initialize forecaster (match PhysicsAwareForecaster signature)
     forecaster = PhysicsAwareForecaster(
-        plant_id=plant_id,
-        plant_meta_path=str(plant_meta),
-        short_ckpt_path=args.short_ckpt,
-        long_ckpt_path=args.long_ckpt,
+        short_ckpt=args.short_ckpt,
+        long_ckpt=args.long_ckpt,
+        plant_metadata=str(plant_meta),
         short_train_parquet=args.short_train_parquet,
         long_train_parquet=args.long_train_parquet,
-        rl_mode="heuristic",  # we are building counterfactuals offline
         device="cuda",
     )
 
@@ -272,6 +277,8 @@ def main() -> None:
             # Need at least: encoder windows + decoder windows
             # Short head: encoder 96 steps (1 day), decoder 96 steps (day1)
             enc15 = dfH15[dfH15["timestamp_utc"] < fs].tail(96).copy()
+            # Ensure encoder has power_norm filled (use forecaster helper after init)
+            enc15 = forecaster._ensure_encoder_power_norm(enc15)
             dec15_day1 = slice_window(dfW15, fs, steps=96, freq="15min")
 
             if len(enc15) < 96 or len(dec15_day1) < 96:
@@ -302,8 +309,12 @@ def main() -> None:
             pvlib_day1_norm = np.clip(pvlib_day1_norm, 0.0, 2.0)
 
             # Run component predictions once
-            short_pred = forecaster._predict_short_head_for_day(enc15, dec15_day1, day=0)
-            long_hourly = forecaster._predict_long_head(encH, decH_30d)  # 720
+            # NOTE: PhysicsAwareForecaster._predict_short_head_for_day signature is
+            # (day_start, day_idx, historical_df, weather_df)
+            # so pass the forecast start timestamp `fs`, day index 0, then
+            # the encoder/history and decoder/weather windows.
+            short_pred = forecaster._predict_short_head_for_day(fs, 0, enc15, dec15_day1)
+            long_hourly = forecaster._predict_long_head(fs, encH, decH_30d)  # 720
             long_hourly_day1 = np.asarray(long_hourly[:24], dtype=np.float32)
 
             long_day1_upsampled = upsample_with_pvlib_shape(

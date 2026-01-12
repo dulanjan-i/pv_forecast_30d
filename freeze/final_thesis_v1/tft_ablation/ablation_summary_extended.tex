@@ -1,0 +1,16 @@
+% Auto-generated from experiments/tft/runs/germany/ablations/ablation_summary_extended.csv
+\begin{table}[ht]
+\centering
+\caption{Ablation summary (extended)}
+\begin{tabular}{l l l l l l l l l l l l l l l l l l l l l l}
+\toprule
+mode & jobid\_task & node & gpu\_name & slurm\_state & slurm\_exitcode & wall\_clock\_elapsed & wall\_clock\_elapsed\_s & epoch0\_train\_loss & epoch0\_val\_loss & epoch0\_train\_it\_s & epoch0\_val\_it\_s & epoch0\_samples\_s & epoch0\_epoch\_time\_s & epoch0\_gpu\_gb & best\_val\_loss & best\_epoch & batch\_size & grad\_accum\_steps & num\_workers & prefetch\_factor & lr \\
+\midrule
+tft_only & 24449_1 &  & NVIDIA H100 PCIe &  &  &  &  & 0.0539 & 0.016 & 0.96 & 2.07 & 489.0 & 322.4 & 3.4 & 0.0126 & 11 &  &  &  &  &  \\
+tft_pvlib & 24449_3 &  & NVIDIA H100 PCIe &  &  &  &  & 0.0665 & 0.0178 & 0.63 & 1.06 & 321.0 & 506.0 & 4.6 & 0.0127 & 4 &  &  &  &  &  \\
+full & 24449_0 &  & NVIDIA H100 PCIe &  &  &  &  & 0.0532 & 0.017 & 0.28 & 0.6 & 142.0 & 1104.0 & 9.3 & 0.0135 & 7 &  &  &  &  &  \\
+tft_lstm & 24449_2 &  & NVIDIA H100 PCIe &  &  &  &  & 0.0906 & 0.0222 & 0.32 & 0.63 & 162.5 & 974.5 & 7.9 & 0.0187 & 7 &  &  &  &  &  \\
+\bottomrule
+\end{tabular}
+\label{tab:ablation_extended}
+\end{table}

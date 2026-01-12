@@ -1,0 +1,150 @@
+{
+  "source": "data/processed/plant_level/plant_03/hist_weather_gt_15min_utc.parquet",
+  "plant_id": "plant_03",
+  "variants": [
+    {
+      "date": "2024-01-02",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-01-02_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:00.079025Z"
+    },
+    {
+      "date": "2024-01-02",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-01-02_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:00.180391Z"
+    },
+    {
+      "date": "2024-01-02",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-01-02_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:00.281011Z"
+    },
+    {
+      "date": "2024-04-09",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-04-09_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:00.380907Z"
+    },
+    {
+      "date": "2024-04-09",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-04-09_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:00.485266Z"
+    },
+    {
+      "date": "2024-04-09",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-04-09_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:00.584490Z"
+    },
+    {
+      "date": "2024-05-31",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-05-31_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:00.683388Z"
+    },
+    {
+      "date": "2024-05-31",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-05-31_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:00.779204Z"
+    },
+    {
+      "date": "2024-05-31",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-05-31_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:00.877176Z"
+    },
+    {
+      "date": "2024-06-08",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-06-08_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:00.975025Z"
+    },
+    {
+      "date": "2024-06-08",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-06-08_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:01.077784Z"
+    },
+    {
+      "date": "2024-06-08",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-06-08_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:01.176728Z"
+    },
+    {
+      "date": "2024-08-04",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-08-04_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:01.278878Z"
+    },
+    {
+      "date": "2024-08-04",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-08-04_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:01.377797Z"
+    },
+    {
+      "date": "2024-08-04",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-08-04_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:01.477659Z"
+    },
+    {
+      "date": "2024-09-09",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-09-09_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:01.579127Z"
+    },
+    {
+      "date": "2024-09-09",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-09-09_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:01.680777Z"
+    },
+    {
+      "date": "2024-09-09",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-09-09_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:01.780140Z"
+    },
+    {
+      "date": "2024-10-18",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-10-18_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:01.877780Z"
+    },
+    {
+      "date": "2024-10-18",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-10-18_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:01.987586Z"
+    },
+    {
+      "date": "2024-10-18",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-10-18_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:02.080751Z"
+    },
+    {
+      "date": "2024-12-09",
+      "magnitude": 0.8,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-12-09_mag0.800.parquet",
+      "generated_at": "2026-01-10T17:26:02.178192Z"
+    },
+    {
+      "date": "2024-12-09",
+      "magnitude": 0.6,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-12-09_mag0.600.parquet",
+      "generated_at": "2026-01-10T17:26:02.279404Z"
+    },
+    {
+      "date": "2024-12-09",
+      "magnitude": 0.4,
+      "file": "experiments/rl/counterfactuals/plant_03/weather_variants/weather_perturb_2024-12-09_mag0.400.parquet",
+      "generated_at": "2026-01-10T17:26:02.379634Z"
+    }
+  ]
+}
