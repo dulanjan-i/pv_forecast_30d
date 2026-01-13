@@ -1,0 +1,41 @@
+% Reward functions used by the MiRACLE RL pipeline
+\section*{Reward definitions (code provenance)}
+
+% 1) Post-process / batch rewards (src/rl/compute_rewards.py)
+\begin{align*}
+R_t &= w_{s}\,(RMSE^{\text{short}}_{t} - RMSE^{\text{short}}_{t+1}) 
+      + w_{l}\,(RMSE^{\text{long}}_{t} - RMSE^{\text{long}}_{t+1}) \\
+    &\quad - w_{p}\,|\mathrm{phys}_{t+1}|\\
+    \text{with } w_{s}=1.0,\; w_{l}=0.5,\; w_{p}=0.2\quad\text{and final scale }/0.01.
+\end{align*}
+
+% 2) Transition-generation rewards (historical / simulated)
+\begin{align*}
+R &= w_{s}\,\frac{\Delta RMSE^{\text{short}}}{0.01} + w_{l}\,\frac{\Delta RMSE^{\text{long}}}{0.01} - w_{c}\,C(a)\\
+\text{with } w_{s}=1.0,\; w_{l}=0.5,\; w_{c}=0.2.
+\end{align*}
+Where $C(a)$ is an action cost term. Example mappings in code:
+\begin{itemize}
+  \item In \texttt{src/rl/generate_{historical,simulated}_data.py}: 
+    \{0:0.1,\;1:0.3,\;2:0.4,\;3:0.5,\;4:0.2,\;5:0.2,\;6:0.2,\;7:1.0\}.
+  \item In \texttt{src/rl/rl_meta_controller.py} (runtime ACTION_COSTS):
+    \{0:0.0,\;1:0.1,\;2:0.15,\;3:0.05,\;4:0.0,\;5:0.0,\;6:0.0,\;7:1.0\}.
+\end{itemize}
+
+% 3) Runtime / composite reward (Meta-controller: src/rl/rl_meta_controller.py)
+\begin{align*}
+R_t &= r_{\mathrm{accuracy}} + r_{\mathrm{drift}} + r_{\mathrm{cost}} + r_{\mathrm{retrain}} + \mathrm{bonus} \\
+r_{\mathrm{accuracy}} &= w_1\,\frac{RMSE_{t} - RMSE_{t+1}}{0.01} \quad (w_1=1.0)\\
+r_{\mathrm{drift}} &= -w_2\,\frac{\mathrm{drift}_{t+1} + \mathrm{mismatch}_{t+1}}{2} \quad (w_2=0.5)\\
+r_{\mathrm{cost}} &= -w_3\,C(a) \quad (w_3=0.2)\\
+r_{\mathrm{retrain}} &= -w_4\,\frac{\mathrm{retrain\_count}_{t+1}}{10} \quad (w_4=0.3)\\
+\mathrm{bonus} &= 0.1\;\text{if }\mathrm{api\_agreement}>0.9\text{ else }0
+\end{align*}
+
+% File references (for provenance):
+% - src/rl/compute_rewards.py
+% - src/rl/generate_historical_data.py
+% - src/rl/generate_simulated_data.py
+% - src/rl/rl_meta_controller.py
+
+% End of snippet

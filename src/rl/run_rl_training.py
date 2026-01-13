@@ -1,161 +1,224 @@
-#!/usr/bin/env python3
 """
-Offline DDQN Training Script (Thin Wrapper)
+Offline DDQN training runner (self-contained).
 
-This script is a thin wrapper around src.rl.training module.
-All core logic lives in src/rl/ for reusability.
+Uses transitions parquet with columns:
+- action, reward, done
+- state_0..state_{D-1}
+- next_state_0..next_state_{D-1}
 
-Usage:
-    PYTHONPATH=/home/dwijenayake/pv_forecast_30d python scripts/train_rl_offline.py \
-        --data data/rl_transitions/training_batch_001.parquet \
-        --epochs 50 \
-        --checkpoint-dir checkpoints/rl_meta_controller \
-        --device cuda
+Saves checkpoint that is compatible with your inference loader:
+- includes 'q_net' state_dict
+- also includes 'state_dict' alias for safety
+- includes 'config'
 """
+
+from __future__ import annotations
 
 import argparse
-import logging
-from pathlib import Path
 import json
-import matplotlib.pyplot as plt
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from typing import List, Tuple
 
-from src.rl.rl_meta_controller import MetaController, RLConfig
-from src.rl.training import (
-    load_transitions,
-    prepare_training_data,
-    train_offline,
-    save_checkpoint
-)
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from src.rl.training import load_transitions
 
 
-def plot_training_metrics(metrics: dict, output_dir: Path):
-    """Plot training curves."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-    
-    # Loss
-    axes[0].plot(metrics['losses'])
-    axes[0].set_xlabel('Epoch')
-    axes[0].set_ylabel('Loss')
-    axes[0].set_title('Training Loss')
-    axes[0].grid(True)
-    
-    # Q-values
-    axes[1].plot(metrics['avg_q_values'])
-    axes[1].set_xlabel('Epoch')
-    axes[1].set_ylabel('Avg Q-value')
-    axes[1].set_title('Average Q-values')
-    axes[1].grid(True)
-    
-    plt.tight_layout()
-    plt.savefig(output_dir / 'training_metrics.png', dpi=150)
-    logger.info(f"Training plots saved to {output_dir / 'training_metrics.png'}")
+# -----------------------------
+# Model
+# -----------------------------
+class DQNNetwork(nn.Module):
+    def __init__(self, state_dim: int, action_dim: int, hidden_sizes: List[int]):
+        super().__init__()
+        layers: List[nn.Module] = []
+        in_dim = int(state_dim)
+        for h in hidden_sizes:
+            layers.append(nn.Linear(in_dim, int(h)))
+            layers.append(nn.ReLU())
+            in_dim = int(h)
+        layers.append(nn.Linear(in_dim, int(action_dim)))
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Train DDQN meta-controller offline')
-    parser.add_argument('--data', type=str, required=True,
-                        help='Path to transition parquet file')
-    parser.add_argument('--epochs', type=int, default=30,
-                        help='Number of training epochs (reduced from 100 to prevent overfitting)')
-    parser.add_argument('--batch-size', type=int, default=64,
-                        help='Batch size for training')
-    parser.add_argument('--checkpoint-dir', type=str, default='checkpoints/rl_meta_controller',
-                        help='Directory to save checkpoints')
-    parser.add_argument('--device', type=str, default='cpu',
-                        help='Device for training (cpu or cuda)')
-    parser.add_argument('--learning-rate', type=float, default=1e-4,
-                        help='Learning rate')
-    parser.add_argument('--gamma', type=float, default=0.95,
-                        help='Discount factor')
-    
-    args = parser.parse_args()
-    
-    # Setup paths
-    data_path = Path(args.data)
-    checkpoint_dir = Path(args.checkpoint_dir)
-    checkpoint_dir.mkdir(parents=True, exist_ok=True)
-    
-    logger.info("=" * 80)
-    logger.info("DDQN OFFLINE TRAINING")
-    logger.info("=" * 80)
-    logger.info(f"Data: {data_path}")
-    logger.info(f"Epochs: {args.epochs}")
-    logger.info(f"Batch size: {args.batch_size}")
-    logger.info(f"Checkpoint dir: {checkpoint_dir}")
-    logger.info(f"Device: {args.device}")
-    logger.info("=" * 80)
-    
-    # Load and prepare data
-    df = load_transitions(data_path)
-    states, actions, rewards, next_states, dones = prepare_training_data(df)
-    
-    # Initialize MetaController
-    config = RLConfig(
-        learning_rate=args.learning_rate,
-        gamma=args.gamma,
-        batch_size=args.batch_size,
-        mode="rl"
+@dataclass
+class TrainConfig:
+    state_dim: int
+    action_dim: int
+    hidden_sizes: List[int]
+    gamma: float
+    lr: float
+    batch_size: int
+    epochs: int
+    target_update: int
+    seed: int
+    device: str
+
+
+def set_seed(seed: int) -> None:
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def ddqn_train(
+    states: np.ndarray,
+    actions: np.ndarray,
+    rewards: np.ndarray,
+    next_states: np.ndarray,
+    dones: np.ndarray,
+    cfg: TrainConfig,
+    outdir: Path,
+) -> Path:
+    device = torch.device(cfg.device)
+
+    q_net = DQNNetwork(cfg.state_dim, cfg.action_dim, cfg.hidden_sizes).to(device)
+    target_net = DQNNetwork(cfg.state_dim, cfg.action_dim, cfg.hidden_sizes).to(device)
+    target_net.load_state_dict(q_net.state_dict())
+    target_net.eval()
+
+    opt = optim.Adam(q_net.parameters(), lr=cfg.lr)
+    loss_fn = nn.SmoothL1Loss()
+
+    # tensors
+    S = torch.tensor(states, dtype=torch.float32, device=device)
+    A = torch.tensor(actions, dtype=torch.int64, device=device)
+    R = torch.tensor(rewards, dtype=torch.float32, device=device)
+    NS = torch.tensor(next_states, dtype=torch.float32, device=device)
+    D = torch.tensor(dones.astype(np.float32), dtype=torch.float32, device=device)
+
+    n = S.shape[0]
+    steps = 0
+
+    best_loss = float("inf")
+    best_ckpt = outdir / "ddqn_best.pt"
+
+    for epoch in range(cfg.epochs):
+        # shuffle indices
+        idx = torch.randperm(n, device=device)
+
+        epoch_losses = []
+
+        for start in range(0, n, cfg.batch_size):
+            batch_idx = idx[start : start + cfg.batch_size]
+            if batch_idx.numel() == 0:
+                continue
+
+            s = S[batch_idx]
+            a = A[batch_idx]
+            r = R[batch_idx]
+            ns = NS[batch_idx]
+            d = D[batch_idx]
+
+            # current Q(s,a)
+            q = q_net(s)  # (B, action_dim)
+            q_sa = q.gather(1, a.view(-1, 1)).squeeze(1)
+
+            # DDQN target:
+            # a* = argmax_a Q_online(ns,a)
+            with torch.no_grad():
+                q_next_online = q_net(ns)
+                a_star = torch.argmax(q_next_online, dim=1)  # (B,)
+                q_next_target = target_net(ns)
+                q_ns_astar = q_next_target.gather(1, a_star.view(-1, 1)).squeeze(1)
+                y = r + cfg.gamma * (1.0 - d) * q_ns_astar
+
+            loss = loss_fn(q_sa, y)
+
+            opt.zero_grad()
+            loss.backward()
+            nn.utils.clip_grad_norm_(q_net.parameters(), 5.0)
+            opt.step()
+
+            steps += 1
+            epoch_losses.append(float(loss.detach().cpu().item()))
+
+            if steps % cfg.target_update == 0:
+                target_net.load_state_dict(q_net.state_dict())
+
+        mean_loss = float(np.mean(epoch_losses)) if epoch_losses else float("inf")
+        print(f"[epoch {epoch+1:03d}/{cfg.epochs}] loss={mean_loss:.6f} steps={steps}")
+
+        if mean_loss < best_loss:
+            best_loss = mean_loss
+            ckpt = {
+                "q_net": q_net.state_dict(),
+                "target_net": target_net.state_dict(),
+                "state_dict": q_net.state_dict(),  # alias for inference loaders
+                "config": asdict(cfg),
+                "best_loss": best_loss,
+                "steps": steps,
+            }
+            torch.save(ckpt, best_ckpt)
+
+    # save final too
+    final_ckpt = outdir / "ddqn_final.pt"
+    torch.save(
+        {
+            "q_net": q_net.state_dict(),
+            "target_net": target_net.state_dict(),
+            "state_dict": q_net.state_dict(),
+            "config": asdict(cfg),
+            "best_loss": best_loss,
+            "steps": steps,
+        },
+        final_ckpt,
     )
-    
-    state_dim = states.shape[1]
-    n_actions = 8
-    
-    logger.info(f"Initializing MetaController (state_dim={state_dim}, n_actions={n_actions})")
-    controller = MetaController(state_dim=state_dim, config=config)
-    
-    # Train
-    metrics = train_offline(
-        controller=controller,
-        states=states,
-        actions=actions,
-        rewards=rewards,
-        next_states=next_states,
-        dones=dones,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        device=args.device
+
+    print("OK best_ckpt:", best_ckpt)
+    print("OK final_ckpt:", final_ckpt)
+    return best_ckpt
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data", required=True)
+    ap.add_argument("--outdir", required=True)
+    ap.add_argument("--state-dim", type=int, required=True)
+    ap.add_argument("--action-dim", type=int, required=True)
+    ap.add_argument("--hidden-sizes", type=int, nargs="+", default=[128, 64])
+    ap.add_argument("--gamma", type=float, default=0.95)
+    ap.add_argument("--lr", type=float, default=1e-3)
+    ap.add_argument("--batch-size", type=int, default=256)
+    ap.add_argument("--epochs", type=int, default=60)
+    ap.add_argument("--target-update", type=int, default=200)
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    args = ap.parse_args()
+
+    outdir = Path(args.outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    cfg = TrainConfig(
+        state_dim=args.state_dim,
+        action_dim=args.action_dim,
+        hidden_sizes=list(args.hidden_sizes),
+        gamma=float(args.gamma),
+        lr=float(args.lr),
+        batch_size=int(args.batch_size),
+        epochs=int(args.epochs),
+        target_update=int(args.target_update),
+        seed=int(args.seed),
+        device=str(args.device),
     )
-    
-    # Save checkpoint
-    metadata = {
-        'data_path': str(data_path),
-        'n_transitions': len(df),
-        'state_dim': state_dim,
-        'n_actions': n_actions,
-        'epochs': args.epochs,
-        'batch_size': args.batch_size,
-        'final_loss': metrics['losses'][-1] if metrics['losses'] else None,
-        'final_avg_q': metrics['avg_q_values'][-1] if metrics['avg_q_values'] else None,
-        'total_steps': controller.steps
-    }
-    
-    checkpoint_path = checkpoint_dir / 'ddqn_meta_controller.pt'
-    save_checkpoint(controller, checkpoint_path, metadata)
-    
-    # Save metadata as JSON
-    with open(checkpoint_dir / 'training_summary.json', 'w') as f:
-        json.dump(metadata, f, indent=2)
-    
-    # Plot metrics
-    plot_training_metrics(metrics, checkpoint_dir)
-    
-    logger.info("=" * 80)
-    logger.info("✅ TRAINING COMPLETE")
-    logger.info("=" * 80)
-    logger.info(f"Final Loss: {metadata['final_loss']:.4f}")
-    logger.info(f"Final Avg Q: {metadata['final_avg_q']:.4f}")
-    logger.info(f"Total Steps: {metadata['total_steps']}")
-    logger.info(f"Checkpoint: {checkpoint_path}")
-    logger.info("=" * 80)
+
+    set_seed(cfg.seed)
+
+    states, actions, rewards, next_states, dones = load_transitions(args.data, state_dim=cfg.state_dim)
+    print(f"[data] N={len(states)} state_dim={states.shape[1]} actions={len(set(actions.tolist()))}")
+    print(f"[data] reward mean={rewards.mean():.6f} std={rewards.std():.6f}")
+
+    # save config for provenance
+    (outdir / "train_config.json").write_text(json.dumps(asdict(cfg), indent=2))
+
+    ddqn_train(states, actions, rewards, next_states, dones, cfg, outdir)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

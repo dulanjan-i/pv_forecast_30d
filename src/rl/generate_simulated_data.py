@@ -15,6 +15,8 @@ from typing import Dict, List, Tuple
 import logging
 from tqdm import tqdm
 
+from src.rl.reward import compute_reward as canonical_compute_reward
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -172,23 +174,14 @@ def simulate_heuristic_action(state: np.ndarray) -> Tuple[int, str]:
 
 
 def compute_reward(state: np.ndarray, action: int, next_state: np.ndarray) -> float:
-    """Compute reward from RMSE improvement."""
-    w_short = 1.0
-    w_long = 0.5
-    w_cost = 0.2
-    
-    rmse_improve_short = (state[0] - next_state[0]) / 0.01
-    rmse_improve_long = (state[1] - next_state[1]) / 0.01
-    
-    action_costs = {0: 0.1, 1: 0.3, 2: 0.4, 3: 0.5, 4: 0.2, 5: 0.2, 6: 0.2, 7: 1.0}
-    
-    reward = (
-        w_short * rmse_improve_short +
-        w_long * rmse_improve_long -
-        w_cost * action_costs.get(action, 0.3)
-    )
-    
-    return float(reward)
+    """
+    Canonical reward wrapper.
+
+    This file must NOT define its own action_costs or alternate reward logic.
+    Single source of truth lives in src/rl/reward.py
+    """
+    return canonical_compute_reward(state=state, action=action, next_state=next_state)
+
 
 
 def generate_rl_transitions(

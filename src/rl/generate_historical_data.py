@@ -1,484 +1,262 @@
 """
-Generate RL training data from historical test set.
+Generate RL training transitions from a minimal, canonical offline environment.
 
-Strategy:
-1. Load historical test data (Oct-Nov 2023)
-2. Run PhysicsAwareForecaster in sliding windows (daily steps)
-3. Compute actual RMSE (short-term 1h, long-term 30d, physics residual)
-4. Build RL transitions: (state with real RMSE, action, reward, next_state)
-5. Save to parquet for DDQN training
+Environment signals per timestamp:
+- power_norm: ground truth
+- predicted_power_norm: baseline forecast output (MiRACLE v1.0 Core)
+- pvlib_power_norm: PVLib baseline converted to cap-normalized power
 
-This gives us realistic state distributions based on actual forecast performance.
+Action semantics in this minimal environment:
+- action 6 (BLEND_HIGH_PHYSICS): increase physics weight by lowering beta (ML weight)
+- all other actions: no-op on prediction in this minimal environment, only cost affects reward
+
+This is scientifically defensible IF you state it clearly:
+the offline RL study is restricted to "blend-weight meta-control" given frozen components.
+
+Output schema:
+forecast_start, action, reward, done, rmse_day1,
+blend_short, blend_long, blend_physics,
+state_0..state_34, next_state_0..next_state_34
 """
-import sys
-import numpy as np
-import pandas as pd
+
+from __future__ import annotations
+
+import argparse
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Tuple
-import logging
-from tqdm import tqdm
-import torch
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+import numpy as np
+import pandas as pd
 
-from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
-from src.rl.rl_meta_controller import RLMetaControllerSystem
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from src.rl.reward import compute_reward as canonical_compute_reward
 
 
-def load_test_data(test_path: str) -> pd.DataFrame:
-    """Load and prepare test data."""
-    logger.info(f"Loading test data from {test_path}")
-    df = pd.read_parquet(test_path)
-    
-    # Ensure timestamp is sorted
-    df = df.sort_values('timestamp_utc').reset_index(drop=True)
-    
-    logger.info(f"Loaded {len(df)} samples from {df['timestamp_utc'].min()} to {df['timestamp_utc'].max()}")
-    return df
+# -----------------------------
+# Metrics helpers
+# -----------------------------
+def rmse(y_hat: np.ndarray, y: np.ndarray) -> float:
+    y_hat = np.asarray(y_hat, dtype=np.float32)
+    y = np.asarray(y, dtype=np.float32)
+    m = np.isfinite(y_hat) & np.isfinite(y)
+    if m.sum() == 0:
+        return float("nan")
+    return float(np.sqrt(np.mean((y_hat[m] - y[m]) ** 2)))
 
 
-def compute_rmse(forecast: np.ndarray, ground_truth: np.ndarray, horizon: int) -> float:
-    """Compute RMSE over a specific horizon."""
-    if len(forecast) < horizon or len(ground_truth) < horizon:
-        return 0.05  # Default fallback
-    
-    forecast_h = forecast[:horizon]
-    gt_h = ground_truth[:horizon]
-    
-    rmse = np.sqrt(np.mean((forecast_h - gt_h) ** 2))
-    return float(rmse)
+def _ensure_datetime_utc(s: pd.Series) -> pd.Series:
+    ts = pd.to_datetime(s, utc=True, errors="coerce")
+    if ts.isna().any():
+        raise ValueError("Failed to parse timestamps to UTC. Check timestamp_utc column.")
+    return ts
 
 
-def run_forecast_and_compute_metrics(
-    forecaster: PhysicsAwareForecaster,
-    historical_data: pd.DataFrame,
-    forecast_window: pd.DataFrame,
-    ground_truth: np.ndarray,
-    forecast_start: pd.Timestamp
-) -> Dict:
+def _floor_day_utc(ts: pd.Series) -> pd.Series:
+    dt = pd.to_datetime(ts, utc=True)
+    return dt.dt.floor("D")
+
+
+# -----------------------------
+# Minimal blend mapping
+# -----------------------------
+@dataclass(frozen=True)
+class BlendParams:
+    beta: float  # ML vs physics. y = beta*baseline + (1-beta)*pvlib
+
+
+def action_to_params(action: int, base: BlendParams) -> BlendParams:
+    a = int(action)
+    if a == 6:
+        return BlendParams(beta=0.5)  # more physics
+    return base
+
+
+def params_to_weights(p: BlendParams) -> Tuple[float, float, float]:
+    # No short/long decomposition in minimal env.
+    # Keep fields for schema compatibility.
+    w_phys = 1.0 - p.beta
+    w_ml = p.beta
+    w_short = 0.0
+    w_long = float(w_ml)  # treat baseline forecast as "long/ML" for bookkeeping
+    return float(w_short), float(w_long), float(w_phys)
+
+
+# -----------------------------
+# State builder (35-dim)
+# -----------------------------
+def build_state_35(
+    short_rmse_1h: float,
+    long_rmse_30d: float,
+    physics_residual: float,
+    rmse_day1: float,
+    w_short: float,
+    w_long: float,
+    w_phys: float,
+    day_of_year: int,
+    month: int,
+) -> np.ndarray:
     """
-    Run forecast and compute all RL state metrics.
-    
-    Args:
-        historical_data: Data BEFORE forecast_start (for encoder context)
-        forecast_window: Data FROM forecast_start onward (for ground truth)
-        ground_truth: True power values for the forecast period
-        forecast_start: Start timestamp for forecast
-    
-    Returns:
-        metrics dict with RMSE values, residuals, etc.
+    Minimal but consistent 35-dim state.
+
+    Key indices (kept consistent with prior scripts):
+      state_0 = short_rmse_1h
+      state_1 = long_rmse_30d
+      state_2 = physics_residual
+      state_3 = rmse_day1
+      state_10..12 = blend_short/long/physics
+      state_16 = day_of_year
+      state_17 = month
     """
-    try:
-        # Run forecast (2880 steps = 30 days @ 15min)
-        # Use forecast_window as weather (future weather), historical_data as history
-        forecast = forecaster.predict_30d(
-            forecast_start=forecast_start,
-            weather_df=forecast_window,  # Future weather for forecast period
-            historical_df=historical_data  # Past data for encoder context
+    s = np.zeros(35, dtype=np.float32)
+
+    s[0] = float(short_rmse_1h)
+    s[1] = float(long_rmse_30d)
+    s[2] = float(physics_residual)
+    s[3] = float(rmse_day1)
+
+    # blend weights
+    s[10] = float(w_short)
+    s[11] = float(w_long)
+    s[12] = float(w_phys)
+
+    # time context
+    s[16] = float(day_of_year)
+    s[17] = float(month)
+
+    return s
+
+
+# -----------------------------
+# Main
+# -----------------------------
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Generate RL training data from historical test set (minimal env)")
+    ap.add_argument("--test-data", required=True, help="Parquet with timestamp_utc, power_norm, predicted_power_norm, pvlib_power_norm")
+    ap.add_argument("--num-samples", type=int, default=None, help="Optional cap on number of forecast_start days")
+    ap.add_argument("--stride-days", type=int, default=1, help="Days to stride forward for each sample")
+    ap.add_argument("--output", required=True, help="Output parquet file")
+
+    ap.add_argument("--base-beta", type=float, default=0.7, help="Base beta: ML vs physics")
+    ap.add_argument("--transitions-per-day", type=int, default=8, help="Transitions per day (default 8 = all actions)")
+
+    args = ap.parse_args()
+
+    in_path = Path(args.test_data)
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_parquet(in_path).copy()
+
+    required = ["timestamp_utc", "power_norm", "predicted_power_norm", "pvlib_power_norm", "forecast_start"]
+    for c in required:
+        if c not in df.columns:
+            raise ValueError(f"Missing required column: {c}. Found: {list(df.columns)[:30]}")
+
+    df["timestamp_utc"] = _ensure_datetime_utc(df["timestamp_utc"])
+    df = df.sort_values(["forecast_start", "timestamp_utc"]).reset_index(drop=True)
+
+    starts = pd.to_datetime(df["forecast_start"], utc=True, errors="coerce").dropna().drop_duplicates().tolist()
+    starts = starts[:: int(args.stride_days)]
+    if args.num_samples is not None:
+        starts = starts[: int(args.num_samples)]
+
+    base = BlendParams(beta=float(args.base_beta))
+    all_actions = [0, 1, 2, 3, 4, 5, 6, 7]
+
+    transitions: List[Dict] = []
+
+    for fs in starts:
+        w = df[df["forecast_start"] == fs]
+        if len(w) < 96:
+            continue
+
+        y = w["power_norm"].to_numpy(dtype=np.float32)
+        y_base = w["predicted_power_norm"].to_numpy(dtype=np.float32)
+        y_pv = w["pvlib_power_norm"].to_numpy(dtype=np.float32)
+
+        H = min(len(y), len(y_base), len(y_pv))
+        h1 = min(96, H)
+        h1h = min(4, h1)
+
+        # State based on BASE (no action)
+        p0 = base
+        wS0, wL0, wP0 = params_to_weights(p0)
+
+        y0 = (p0.beta * y_base[:H]) + ((1.0 - p0.beta) * y_pv[:H])
+
+        rmse_day1_0 = rmse(y0[:h1], y[:h1])
+        long_rmse_0 = rmse(y0[:H], y[:H])
+        short_rmse_1h_0 = rmse(y0[:h1h], y[:h1h]) if h1h > 0 else float("nan")
+        phys_res_0 = float(np.mean(np.abs(y0[:h1] - y_pv[:h1]))) if h1 > 0 else float("nan")
+
+        ts_fs = pd.Timestamp(fs)
+        doy = int(ts_fs.dayofyear)
+        mon = int(ts_fs.month)
+
+        state = build_state_35(
+            short_rmse_1h=short_rmse_1h_0,
+            long_rmse_30d=long_rmse_0,
+            physics_residual=phys_res_0,
+            rmse_day1=rmse_day1_0,
+            w_short=wS0,
+            w_long=wL0,
+            w_phys=wP0,
+            day_of_year=doy,
+            month=mon,
         )
-        
-        # Convert to numpy if needed
-        if torch.is_tensor(forecast):
-            forecast = forecast.cpu().numpy()
-        elif isinstance(forecast, pd.Series):
-            forecast = forecast.values
-        
-        # Compute RMSE at different horizons
-        # 1 hour = 4 steps @ 15min
-        rmse_1h = compute_rmse(forecast, ground_truth, horizon=4)
-        
-        # 6 hours = 24 steps
-        rmse_6h = compute_rmse(forecast, ground_truth, horizon=24)
-        
-        # 24 hours = 96 steps
-        rmse_24h = compute_rmse(forecast, ground_truth, horizon=96)
-        
-        # 7 days = 672 steps
-        rmse_7d = compute_rmse(forecast, ground_truth, horizon=672)
-        
-        # 30 days = 2880 steps
-        rmse_30d = compute_rmse(forecast, ground_truth, horizon=2880)
-        
-        # Physics residual (compare TFT blend vs PVLib)
-        # For now, use relative difference at 24h horizon
-        if 'pvlib_ac_kw' in window_data.columns and len(ground_truth) >= 96:
-            pvlib_baseline = window_data['pvlib_ac_kw'].values[:96]
-            physics_residual = np.mean(np.abs(ground_truth[:96] - pvlib_baseline))
-        else:
-            physics_residual = 0.02  # Default
-        
-        metrics = {
-            'short_rmse_1h': rmse_1h,
-            'short_rmse_6h': rmse_6h,
-            'short_rmse_24h': rmse_24h,
-            'long_rmse_7d': rmse_7d,
-            'long_rmse_30d': rmse_30d,
-            'physics_residual': physics_residual,
-            'forecast_length': len(forecast),
-            'success': True
-        }
-        
-        return metrics
-        
-    except Exception as e:
-        logger.warning(f"Forecast failed: {e}")
-        # Return default fallback metrics
-        return {
-            'short_rmse_1h': 0.05,
-            'short_rmse_6h': 0.06,
-            'short_rmse_24h': 0.08,
-            'long_rmse_7d': 0.10,
-            'long_rmse_30d': 0.12,
-            'physics_residual': 0.03,
-            'forecast_length': 0,
-            'success': False
-        }
 
-
-def build_rl_state(metrics: Dict, context: Dict) -> np.ndarray:
-    """
-    Build 35-dimensional RL state vector from metrics.
-    
-    State encoding (matching RLMetaControllerSystem.collect_metrics):
-        [0-4]:   RMSE (short_1h, short_6h, short_24h, long_7d, long_30d)
-        [5-6]:   Confidence scores
-        [7-9]:   Drift indicators
-        [10-14]: Blend weights & history
-        [15-19]: Temporal context (hour, day, season, etc.)
-        [20-24]: Weather features
-        [25-29]: Compute budget
-        [30-34]: Physics baseline quality
-    """
-    state = np.zeros(35, dtype=np.float32)
-    
-    # [0-4] RMSE components
-    state[0] = metrics['short_rmse_1h']
-    state[1] = metrics['long_rmse_30d']
-    state[2] = metrics['physics_residual']
-    state[3] = metrics.get('short_rmse_6h', 0.06)
-    state[4] = metrics.get('short_rmse_24h', 0.08)
-    
-    # [5-6] Confidence (inverse of RMSE)
-    state[5] = 1.0 - min(state[0] * 10, 0.9)  # short confidence
-    state[6] = 1.0 - min(state[1] * 10, 0.9)  # long confidence
-    
-    # [7-9] Drift (placeholder - would need historical comparison)
-    state[7] = 0.0  # data drift
-    state[8] = 0.0  # short-long mismatch
-    state[9] = context.get('forecast_success', 1.0)
-    
-    # [10-14] Blend weights (default equal blend initially)
-    state[10] = context.get('blend_short', 0.33)
-    state[11] = context.get('blend_long', 0.33)
-    state[12] = context.get('blend_physics', 0.34)
-    state[13] = context.get('actions_since_retrain', 0) / 100.0
-    state[14] = 0.0  # retrain count
-    
-    # [15-19] Temporal context
-    forecast_time = context.get('forecast_start')
-    if forecast_time:
-        state[15] = forecast_time.hour / 24.0
-        state[16] = 1.0 if (forecast_time.hour < 6 or forecast_time.hour > 20) else 0.0
-        state[17] = (forecast_time.month - 1) / 12.0  # season
-        state[18] = forecast_time.dayofweek / 7.0
-        state[19] = 1.0 if forecast_time.dayofweek >= 5 else 0.0  # weekend
-    
-    # [20-24] Weather (from context if available)
-    state[20] = context.get('cloud_cover', 0.5)
-    state[21] = context.get('ghi', 0.3)
-    state[22] = context.get('dni', 0.3)
-    state[23] = context.get('temperature', 0.5)
-    state[24] = 1.0  # weather quality
-    
-    # [25-29] Compute budget (normalized)
-    state[25] = 1.0  # budget remaining
-    state[26] = 0.5  # priority score
-    state[27] = 1.0  # API status
-    state[28] = 0.95  # API agreement
-    state[29] = 0.0  # cost accumulated
-    
-    # [30-34] Physics baseline
-    state[30] = 1.0 - min(metrics['physics_residual'] * 10, 0.9)
-    state[31] = 0.0  # pvlib calibration age
-    state[32] = context.get('solar_zenith', 0.5)
-    state[33] = context.get('clearsky_ghi', 0.5)
-    state[34] = 1.0  # pvlib confidence
-    
-    return state
-
-
-def simulate_heuristic_action(state: np.ndarray) -> Tuple[int, str]:
-    """
-    Simulate heuristic action based on state (mimics LocalAdvisors).
-    
-    Heuristic rules:
-    - If short RMSE high (>0.08) → FINE_TUNE_SHORT (1)
-    - If long RMSE high (>0.10) → FINE_TUNE_LONG (2)
-    - If physics residual high (>0.05) → RECALIBRATE_PVLIB (3)
-    - If both RMSE high → SUGGEST_RETRAIN (7)
-    - Otherwise → BLEND_HIGH_PHYSICS (6) or BLEND_MEDIUM (5)
-    """
-    short_rmse = state[0]
-    long_rmse = state[1]
-    physics_res = state[2]
-    
-    # Thresholds
-    if short_rmse > 0.10 and long_rmse > 0.12:
-        return 7, "SUGGEST_RETRAIN"
-    elif short_rmse > 0.08:
-        return 1, "FINE_TUNE_SHORT"
-    elif long_rmse > 0.10:
-        return 2, "FINE_TUNE_LONG"
-    elif physics_res > 0.05:
-        return 3, "RECALIBRATE_PVLIB"
-    elif physics_res < 0.03:
-        return 6, "BLEND_HIGH_PHYSICS"
-    else:
-        return 5, "BLEND_MEDIUM"
-
-
-def compute_reward(state: np.ndarray, action: int, next_state: np.ndarray) -> float:
-    """
-    Compute reward based on RMSE improvement.
-    
-    R = w1*(RMSE_improvement_short) + w2*(RMSE_improvement_long) - w3*action_cost
-    """
-    # Weights
-    w_short = 1.0
-    w_long = 0.5
-    w_cost = 0.2
-    
-    # RMSE improvement
-    rmse_improve_short = (state[0] - next_state[0]) / 0.01
-    rmse_improve_long = (state[1] - next_state[1]) / 0.01
-    
-    # Action costs (from RLMetaControllerSystem.ACTION_COSTS)
-    action_costs = {
-        0: 0.1,  # MAINTAIN
-        1: 0.3,  # FINE_TUNE_SHORT
-        2: 0.4,  # FINE_TUNE_LONG
-        3: 0.5,  # RECALIBRATE_PVLIB
-        4: 0.2,  # BLEND_SHORT
-        5: 0.2,  # BLEND_MEDIUM
-        6: 0.2,  # BLEND_HIGH_PHYSICS
-        7: 1.0,  # SUGGEST_RETRAIN
-    }
-    
-    reward = (
-        w_short * rmse_improve_short +
-        w_long * rmse_improve_long -
-        w_cost * action_costs.get(action, 0.3)
-    )
-    
-    return float(reward)
-
-
-def generate_rl_transitions(
-    test_data: pd.DataFrame,
-    forecaster: PhysicsAwareForecaster,
-    num_samples: int = 100,
-    stride_days: int = 1
-) -> List[Dict]:
-    """
-    Generate RL transitions by running forecaster on sliding windows.
-    
-    Args:
-        test_data: Historical test data with ground truth
-        forecaster: Initialized PhysicsAwareForecaster
-        num_samples: Number of transitions to generate
-        stride_days: Days to move forward for each sample (96 steps @ 15min)
-        
-    Returns:
-        List of transition dicts with (state, action, reward, next_state)
-    """
-    transitions = []
-    
-    # Window sizes
-    history_size = 168 * 4  # 168 hours = 7 days @ 15min (for long-head encoder)
-    forecast_size = 2880  # 30 days @ 15min (forecast period)
-    stride = 96 * stride_days  # 1 day stride
-    
-    total_window = history_size + forecast_size
-    
-    logger.info(f"Generating {num_samples} transitions with {stride_days}-day stride")
-    logger.info(f"History window: {history_size} steps (7 days @ 15min)")
-    logger.info(f"Forecast window: {forecast_size} steps (30 days @ 15min)")
-    
-    pbar = tqdm(total=num_samples, desc="Generating RL data")
-    
-    for i in range(history_size, len(test_data) - forecast_size, stride):
-        if len(transitions) >= num_samples:
-            break
-        
-        # Extract historical context (7 days before forecast_start)
-        historical_data = test_data.iloc[i-history_size:i].copy()
-        
-        # Extract forecast window (30 days from forecast_start)
-        forecast_window = test_data.iloc[i:i+forecast_size].copy()
-        forecast_start = forecast_window['timestamp_utc'].iloc[0]
-        ground_truth = forecast_window['power_norm'].values
-        
-        # Run forecast and compute metrics
-        metrics = run_forecast_and_compute_metrics(
-            forecaster, historical_data, forecast_window, ground_truth, forecast_start
+        actions_today = all_actions if int(args.transitions_per_day) >= 8 else list(
+            np.random.choice(all_actions, size=int(args.transitions_per_day), replace=True)
         )
-        
-        # Build context
-        context = {
-            'forecast_start': forecast_start,
-            'forecast_success': 1.0 if metrics['success'] else 0.0,
-            'blend_short': 0.33,
-            'blend_long': 0.33,
-            'blend_physics': 0.34,
-            'actions_since_retrain': (i - history_size) // stride,
-            'cloud_cover': float(forecast_window['cloud_cover'].iloc[0]) if 'cloud_cover' in forecast_window else 0.5,
-            'temperature': float(forecast_window['temperature_2m'].iloc[0]) if 'temperature_2m' in forecast_window else 20.0,
-        }
-        
-        # Build state
-        state = build_rl_state(metrics, context)
-        
-        # Simulate heuristic action
-        action, action_name = simulate_heuristic_action(state)
-        
-        # For next_state, look ahead 1 day if available
-        next_idx = i + stride
-        if next_idx - history_size >= 0 and next_idx + forecast_size <= len(test_data):
-            next_historical = test_data.iloc[next_idx-history_size:next_idx].copy()
-            next_window = test_data.iloc[next_idx:next_idx+forecast_size].copy()
-            next_forecast_start = next_window['timestamp_utc'].iloc[0]
-            next_ground_truth = next_window['power_norm'].values
-            
-            next_metrics = run_forecast_and_compute_metrics(
-                forecaster, next_historical, next_window, next_ground_truth, next_forecast_start
+
+        for a in actions_today:
+            p1 = action_to_params(a, base=base)
+            wS1, wL1, wP1 = params_to_weights(p1)
+
+            y1 = (p1.beta * y_base[:H]) + ((1.0 - p1.beta) * y_pv[:H])
+
+            rmse_day1_1 = rmse(y1[:h1], y[:h1])
+            long_rmse_1 = rmse(y1[:H], y[:H])
+            short_rmse_1h_1 = rmse(y1[:h1h], y[:h1h]) if h1h > 0 else float("nan")
+            phys_res_1 = float(np.mean(np.abs(y1[:h1] - y_pv[:h1]))) if h1 > 0 else float("nan")
+
+            next_state = build_state_35(
+                short_rmse_1h=short_rmse_1h_1,
+                long_rmse_30d=long_rmse_1,
+                physics_residual=phys_res_1,
+                rmse_day1=rmse_day1_1,
+                w_short=wS1,
+                w_long=wL1,
+                w_phys=wP1,
+                day_of_year=doy,
+                month=mon,
             )
-            
-            next_context = context.copy()
-            next_context['forecast_start'] = next_forecast_start
-            next_context['forecast_success'] = 1.0 if next_metrics['success'] else 0.0
-            
-            next_state = build_rl_state(next_metrics, next_context)
-        else:
-            # Last sample: next_state = current state
-            next_state = state.copy()
-        
-        # Compute reward
-        reward = compute_reward(state, action, next_state)
-        
-        # Build transition
-        transition = {
-            'sample_idx': len(transitions),
-            'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
-            'forecast_start': forecast_start.isoformat(),
-            'action': action,
-            'action_name': action_name,
-            'reward': reward,
-            'action_success': metrics['success'],
-            
-            # State (35 dims)
-            **{f'state_{j}': state[j] for j in range(len(state))},
-            
-            # Next state (35 dims)
-            **{f'next_state_{j}': next_state[j] for j in range(len(next_state))},
-            
-            # Key metrics for analysis
-            'short_rmse_1h': metrics['short_rmse_1h'],
-            'long_rmse_30d': metrics['long_rmse_30d'],
-            'physics_residual': metrics['physics_residual'],
-            'blend_short': context['blend_short'],
-            'blend_long': context['blend_long'],
-            'blend_physics': context['blend_physics']
-        }
-        
-        transitions.append(transition)
-        pbar.update(1)
-    
-    pbar.close()
-    
-    logger.info(f"Generated {len(transitions)} transitions")
-    return transitions
 
+            reward = float(canonical_compute_reward(state, int(a), next_state))
 
-def main():
-    import argparse
-    
-    parser = argparse.ArgumentParser(description="Generate RL training data from historical test set")
-    parser.add_argument('--test-data', type=str, 
-                       default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/test.parquet',
-                       help='Path to historical test data')
-    parser.add_argument('--num-samples', type=int, default=100,
-                       help='Number of RL transitions to generate')
-    parser.add_argument('--stride-days', type=int, default=1,
-                       help='Days to stride forward for each sample')
-    parser.add_argument('--output', type=str, 
-                       default='/home/dwijenayake/pv_forecast_30d/data/rl_transitions/historical_batch.parquet',
-                       help='Output parquet file')
-    
-    args = parser.parse_args()
-    
-    # Load test data
-    test_data = load_test_data(args.test_data)
-    
-    # Initialize forecaster with CANONICAL HARDCODED PATHS
-    logger.info("Initializing PhysicsAwareForecaster...")
-    forecaster = PhysicsAwareForecaster(
-        short_ckpt="/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt",
-        long_ckpt="/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt",
-        plant_metadata="/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json",
-        short_train_parquet="/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/train.parquet",
-        long_train_parquet="/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/hourly_longhead/train.parquet",
-        device='cuda' if torch.cuda.is_available() else 'cpu'
-    )
-    
-    # Generate transitions
-    transitions = generate_rl_transitions(
-        test_data=test_data,
-        forecaster=forecaster,
-        num_samples=args.num_samples,
-        stride_days=args.stride_days
-    )
-    
-    if len(transitions) == 0:
-        logger.error("No transitions generated!")
-        return
-    
-    # Convert to DataFrame and save
-    df = pd.DataFrame(transitions)
-    
-    # Print statistics
-    logger.info(f"\n{'='*60}")
-    logger.info(f"RL Training Data Summary")
-    logger.info(f"{'='*60}")
-    logger.info(f"Total transitions: {len(df)}")
-    logger.info(f"\nAction distribution:")
-    print(df['action_name'].value_counts())
-    logger.info(f"\nReward statistics:")
-    logger.info(f"  Mean: {df['reward'].mean():.4f}")
-    logger.info(f"  Std:  {df['reward'].std():.4f}")
-    logger.info(f"  Min:  {df['reward'].min():.4f}")
-    logger.info(f"  Max:  {df['reward'].max():.4f}")
-    logger.info(f"\nState variance (RMSE components):")
-    logger.info(f"  short_rmse_1h:  {df['short_rmse_1h'].mean():.4f} ± {df['short_rmse_1h'].std():.4f}")
-    logger.info(f"  long_rmse_30d:  {df['long_rmse_30d'].mean():.4f} ± {df['long_rmse_30d'].std():.4f}")
-    logger.info(f"  physics_residual: {df['physics_residual'].mean():.4f} ± {df['physics_residual'].std():.4f}")
-    
-    # Save
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(output_path, index=False)
-    
-    logger.info(f"\n✅ Saved {len(df)} transitions to {output_path}")
-    logger.info(f"   Size: {output_path.stat().st_size / 1024:.1f} KB")
-    logger.info(f"\nNext steps:")
-    logger.info(f"  1. Verify: python -c 'import pandas as pd; print(pd.read_parquet(\"{output_path}\").info())'")
-    logger.info(f"  2. Train DDQN: python scripts/train_rl_offline.py --data {output_path}")
+            transitions.append(
+                {
+                    "forecast_start": ts_fs.isoformat(),
+                    "action": int(a),
+                    "reward": reward,
+                    "done": False,
+                    "rmse_day1": float(rmse_day1_0),
+                    "blend_short": float(wS1),
+                    "blend_long": float(wL1),
+                    "blend_physics": float(wP1),
+                    **{f"state_{k}": float(state[k]) for k in range(35)},
+                    **{f"next_state_{k}": float(next_state[k]) for k in range(35)},
+                }
+            )
+
+    out_df = pd.DataFrame(transitions)
+    if len(out_df) == 0:
+        raise RuntimeError("No transitions generated. Check that each forecast_start has at least 96 rows.")
+
+    out_df.to_parquet(out_path, index=False)
+    print(f"OK wrote transitions: {out_path} rows={len(out_df)}")
+    print("action_counts:", out_df["action"].value_counts().sort_index().to_dict())
+    print("reward_desc:\n", out_df["reward"].describe())
 
 
 if __name__ == "__main__":
