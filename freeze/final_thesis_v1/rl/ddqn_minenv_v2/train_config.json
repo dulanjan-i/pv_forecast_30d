@@ -1,0 +1,15 @@
+{
+  "state_dim": 35,
+  "action_dim": 8,
+  "hidden_sizes": [
+    128,
+    64
+  ],
+  "gamma": 0.95,
+  "lr": 0.001,
+  "batch_size": 256,
+  "epochs": 60,
+  "target_update": 200,
+  "seed": 42,
+  "device": "cuda"
+}
