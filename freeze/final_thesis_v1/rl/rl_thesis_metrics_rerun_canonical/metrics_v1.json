@@ -1,0 +1,67 @@
+{
+  "tag": "v1",
+  "policy_ckpt": "freeze/final_thesis_v1/rl/ddqn_minenv_v1/ddqn_best.pt",
+  "sarns_parquet": "freeze/final_thesis_v1/phase1_2024daily_final/processed/p3_phase1_SARNS_MINENV_v1.parquet",
+  "num_forecasts": 336,
+  "action_counts_forecast": {
+    "5": 11,
+    "4": 5,
+    "2": 23,
+    "1": 1,
+    "0": 296
+  },
+  "action_counts_timestep": {
+    "5": 31680,
+    "4": 14400,
+    "2": 66240,
+    "1": 2880,
+    "0": 852480
+  },
+  "reward_mean_per_forecast": -0.6498058879330977,
+  "reward_std_per_forecast": 0.38209001851560004,
+  "reward_count": 335,
+  "checkpoint_meta": {
+    "best_loss": 0.06524740091779015,
+    "steps": 638,
+    "config": {
+      "state_dim": 35,
+      "action_dim": 8,
+      "hidden_sizes": [
+        128,
+        64
+      ],
+      "gamma": 0.95,
+      "lr": 0.001,
+      "batch_size": 256,
+      "epochs": 60,
+      "target_update": 200,
+      "seed": 42,
+      "device": "cuda"
+    }
+  },
+  "train_log_info": {
+    "train_log_lines": 64,
+    "train_log_tail": [
+      "[epoch 043/60] loss=0.070809 steps=473\n",
+      "[epoch 044/60] loss=0.074832 steps=484\n",
+      "[epoch 045/60] loss=0.069067 steps=495\n",
+      "[epoch 046/60] loss=0.071146 steps=506\n",
+      "[epoch 047/60] loss=0.072310 steps=517\n",
+      "[epoch 048/60] loss=0.077696 steps=528\n",
+      "[epoch 049/60] loss=0.074269 steps=539\n",
+      "[epoch 050/60] loss=0.077606 steps=550\n",
+      "[epoch 051/60] loss=0.065694 steps=561\n",
+      "[epoch 052/60] loss=0.069029 steps=572\n",
+      "[epoch 053/60] loss=0.079763 steps=583\n",
+      "[epoch 054/60] loss=0.066287 steps=594\n",
+      "[epoch 055/60] loss=0.098534 steps=605\n",
+      "[epoch 056/60] loss=0.105642 steps=616\n",
+      "[epoch 057/60] loss=0.075550 steps=627\n",
+      "[epoch 058/60] loss=0.065247 steps=638\n",
+      "[epoch 059/60] loss=0.069604 steps=649\n",
+      "[epoch 060/60] loss=0.069530 steps=660\n",
+      "OK best_ckpt: freeze/final_thesis_v1/rl/ddqn_minenv_v1/ddqn_best.pt\n",
+      "OK final_ckpt: freeze/final_thesis_v1/rl/ddqn_minenv_v1/ddqn_final.pt\n"
+    ]
+  }
+}
