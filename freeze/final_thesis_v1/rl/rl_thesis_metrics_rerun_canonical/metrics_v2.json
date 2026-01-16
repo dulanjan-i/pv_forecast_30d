@@ -1,0 +1,41 @@
+{
+  "tag": "v2",
+  "policy_ckpt": "freeze/final_thesis_v1/rl/ddqn_minenv_v2/ddqn_best.pt",
+  "sarns_parquet": "freeze/final_thesis_v1/phase1_2024daily_final/processed/p3_phase1_SARNS_MINENV_v2.parquet",
+  "num_forecasts": 336,
+  "action_counts_forecast": {
+    "6": 2,
+    "5": 150,
+    "4": 183,
+    "0": 1
+  },
+  "action_counts_timestep": {
+    "6": 5760,
+    "5": 432000,
+    "4": 527040,
+    "0": 2880
+  },
+  "reward_mean_per_forecast": -6.623963142153042,
+  "reward_std_per_forecast": 3.6349575844423265,
+  "reward_count": 335,
+  "checkpoint_meta": {
+    "best_loss": 2.848410953174938,
+    "steps": 660,
+    "config": {
+      "state_dim": 35,
+      "action_dim": 8,
+      "hidden_sizes": [
+        128,
+        64
+      ],
+      "gamma": 0.95,
+      "lr": 0.001,
+      "batch_size": 256,
+      "epochs": 60,
+      "target_update": 200,
+      "seed": 42,
+      "device": "cuda"
+    }
+  },
+  "train_log_info": {}
+}
