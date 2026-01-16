@@ -1,0 +1,38 @@
+[
+  {
+    "variant": "v1",
+    "policy_ckpt": "freeze/final_thesis_v1/rl/ddqn_minenv_v1/ddqn_best.pt",
+    "num_forecasts": 336,
+    "action_count_forecast_0": 296,
+    "action_count_forecast_1": 1,
+    "action_count_forecast_2": 23,
+    "action_count_forecast_3": 0,
+    "action_count_forecast_4": 5,
+    "action_count_forecast_5": 11,
+    "action_count_forecast_6": 0,
+    "action_count_forecast_7": 0,
+    "reward_mean_per_forecast": -0.6498058879330977,
+    "reward_std_per_forecast": 0.38209001851560004,
+    "reward_count": 335,
+    "best_loss": 0.06524740091779015,
+    "steps": 638
+  },
+  {
+    "variant": "v2",
+    "policy_ckpt": "freeze/final_thesis_v1/rl/ddqn_minenv_v2/ddqn_best.pt",
+    "num_forecasts": 336,
+    "action_count_forecast_0": 1,
+    "action_count_forecast_1": 0,
+    "action_count_forecast_2": 0,
+    "action_count_forecast_3": 0,
+    "action_count_forecast_4": 183,
+    "action_count_forecast_5": 150,
+    "action_count_forecast_6": 2,
+    "action_count_forecast_7": 0,
+    "reward_mean_per_forecast": -6.623963142153042,
+    "reward_std_per_forecast": 3.6349575844423265,
+    "reward_count": 335,
+    "best_loss": 2.848410953174938,
+    "steps": 660
+  }
+]
