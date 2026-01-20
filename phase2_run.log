@@ -1,0 +1,104 @@
+nohup: ignoring input
+2026-01-03 21:37:36,552 - INFO - 
+======================================================================
+2026-01-03 21:37:36,553 - INFO - STEP 1: FETCHING WEATHER (source: historical)
+2026-01-03 21:37:36,553 - INFO - ======================================================================
+2026-01-03 21:37:36,553 - INFO - Using: OpenMeteo Historical Archive (ERA5)
+2026-01-03 21:37:36,553 - INFO - Period: 2024-12-25 → 2025-12-31 (includes 7-day warmup)
+2026-01-03 21:37:36,553 - INFO - Location: 48.694644°N, 12.597587°E
+2026-01-03 21:37:36,556 - INFO - 
+[Chunk 1] 2024-12-25 → 2025-02-22
+2026-01-03 21:37:36,862 - INFO -   ✓ Fetched 1440 steps @ hourly
+2026-01-03 21:37:36,863 - INFO - 
+[Chunk 2] 2025-02-23 → 2025-04-23
+2026-01-03 21:37:36,942 - INFO -   ✓ Fetched 1440 steps @ hourly
+2026-01-03 21:37:36,943 - INFO - 
+[Chunk 3] 2025-04-24 → 2025-06-22
+2026-01-03 21:37:37,032 - INFO -   ✓ Fetched 1440 steps @ hourly
+2026-01-03 21:37:37,032 - INFO - 
+[Chunk 4] 2025-06-23 → 2025-08-21
+2026-01-03 21:37:37,119 - INFO -   ✓ Fetched 1440 steps @ hourly
+2026-01-03 21:37:37,119 - INFO - 
+[Chunk 5] 2025-08-22 → 2025-10-20
+2026-01-03 21:37:37,217 - INFO -   ✓ Fetched 1440 steps @ hourly
+2026-01-03 21:37:37,217 - INFO - 
+[Chunk 6] 2025-10-21 → 2025-12-19
+2026-01-03 21:37:37,304 - INFO -   ✓ Fetched 1440 steps @ hourly
+2026-01-03 21:37:37,304 - INFO - 
+[Chunk 7] 2025-12-20 → 2025-12-31
+2026-01-03 21:37:37,360 - INFO -   ✓ Fetched 288 steps @ hourly
+2026-01-03 21:37:37,367 - INFO - 
+Resampling 8928 hourly steps → 15min...
+2026-01-03 21:37:37,417 - INFO - Saving raw irradiance copies...
+2026-01-03 21:37:37,418 - INFO - Computing PVLib features...
+2026-01-03 21:37:37,689 - INFO - 
+✅ Weather fetched: 35,709 timesteps
+2026-01-03 21:37:37,689 - INFO -    Saved to: /home/dwijenayake/pv_forecast_30d/data/processed/test_phase2_2025/weather_raw_15min.parquet
+2026-01-03 21:37:37,689 - INFO -    Date range: 2024-12-25 00:00:00+00:00 → 2025-12-31 23:00:00+00:00
+2026-01-03 21:37:37,691 - INFO - 
+======================================================================
+2026-01-03 21:37:37,691 - INFO - STEP 2: PREPROCESSING WEATHER
+2026-01-03 21:37:37,691 - INFO - ======================================================================
+2026-01-03 21:37:37,691 - INFO - ✓ All 27 required columns present
+2026-01-03 21:37:37,791 - INFO - ✓ Saved 15min version: /home/dwijenayake/pv_forecast_30d/data/processed/test_phase2_2025/weather_with_pvlib_15min.parquet
+2026-01-03 21:37:37,791 - INFO - 
+Resampling to hourly for long-head...
+2026-01-03 21:37:37,854 - INFO - ✓ Saved hourly version: /home/dwijenayake/pv_forecast_30d/data/processed/test_phase2_2025/weather_with_pvlib_hourly.parquet
+2026-01-03 21:37:37,854 - INFO -   15min: 35,709 steps
+2026-01-03 21:37:37,854 - INFO -   Hourly: 8,928 steps
+/home/dwijenayake/.venvs/pvforecast/lib/python3.12/site-packages/lightning/pytorch/utilities/parsing.py:209: Attribute 'loss' is an instance of `nn.Module` and is already saved during checkpointing. It is recommended to ignore them using `self.save_hyperparameters(ignore=['loss'])`.
+/home/dwijenayake/.venvs/pvforecast/lib/python3.12/site-packages/lightning/pytorch/utilities/parsing.py:209: Attribute 'logging_metrics' is an instance of `nn.Module` and is already saved during checkpointing. It is recommended to ignore them using `self.save_hyperparameters(ignore=['logging_metrics'])`.
+/home/dwijenayake/pv_forecast_30d/src/inference/tft_utils.py:330: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  obj = torch.load(ckpt_path, map_location="cpu")
+2026-01-03 21:37:41,313 - INFO - 
+======================================================================
+2026-01-03 21:37:41,313 - INFO - STEP 4: RUNNING ROLLING INFERENCE (DYNAMIC ANCHORING)
+2026-01-03 21:37:41,313 - INFO - ======================================================================
+2026-01-03 21:37:41,313 - INFO - Start: 2025-01-01 00:00:00+00:00
+2026-01-03 21:37:41,313 - INFO - End: 2025-12-31 00:00:00+00:00
+2026-01-03 21:37:41,313 - INFO - Stride: 7 days
+2026-01-03 21:37:41,313 - INFO - Strategy: DYNAMIC (use predicted power as encoder)
+
+[INFO] Initializing PhysicsAwareForecaster on cuda
+[INFO] Loading TFT configurations...
+[INFO] Loading training datasets for normalization...
+       Short-head dataset: encoder=96, pred=96
+       Long-head dataset: encoder=168, pred=720
+[INFO] Loading TFT models...
+       Short-head model loaded from checkpoints
+       Long-head model loaded from checkpoints
+[INFO] PVLib predictor ready for plant_03
+[INFO] GPU: NVIDIA L4
+[INFO] Models confirmed on GPU: cuda:0
+[INFO] RL Meta-Controller initialized (mode=heuristic)
+[INFO] PhysicsAwareForecaster initialized successfully
+Rolling forecasts: 0forecast [00:00, ?forecast/s]2026-01-03 21:37:41,315 - INFO - 
+[Forecast 1] Starting: 2025-01-01 00:00:00+00:00
+/home/dwijenayake/pv_forecast_30d/src/inference/physics_aware_forecaster.py:303: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.
+  hourly_hist = historical_df[['timestamp_utc'] + hist_numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
+/home/dwijenayake/pv_forecast_30d/src/inference/physics_aware_forecaster.py:304: FutureWarning: 'H' is deprecated and will be removed in a future version, please use 'h' instead.
+  hourly_weather = weather_df[['timestamp_utc'] + weather_numeric_cols].set_index('timestamp_utc').resample('1H').mean().reset_index()
+2026-01-03 21:37:41,324 - ERROR -   ✗ Forecast 1 failed: Invalid comparison between dtype=datetime64[ns] and Timestamp
+Rolling forecasts: 0forecast [00:00, ?forecast/s]
+2026-01-03 21:37:41,324 - INFO - 
+✅ Completed 0 forecasts
+2026-01-03 21:37:41,324 - INFO - Flattening predictions...
+2026-01-03 21:37:41,326 - INFO - ✓ Saved predictions: /home/dwijenayake/pv_forecast_30d/data/processed/test_phase2_2025/predictions_phase1.parquet
+2026-01-03 21:37:41,326 - INFO -   Total timesteps: 0
+2026-01-03 21:37:41,326 - WARNING -   No predictions generated - all forecasts failed!
+
+[INFO] Hierarchical 30-day forecast starting 2025-01-01 00:00:00+00:00
+       Architecture: Long-head (strategic) + 30× Short-head (tactical) + Physics
+
+[PREP] Preparing data for multi-resolution inference...
+       Input frequency detected: 15min
+       Resampling to hourly for long-head...
+       Hourly shape: historical=(168, 8), weather=(720, 27)
+
+[STEP 1/4] Computing PVLib physics baseline (2880 steps @ 15-min)...
+          Weather window: 2880 steps (2025-01-01 00:00:00+00:00 → 2025-01-30 23:45:00+00:00)
+          Using pre-computed PVLib baseline (pvlib_ac_kw column)
+          PVLib shape: (2880,), range: [0.000, 0.650]
+
+[STEP 2/4] Running long-head TFT (strategic: 720 hours @ 1-hour)...
+✓ Phase 2 predictions saved: /home/dwijenayake/pv_forecast_30d/data/processed/test_phase2_2025/predictions_phase2.parquet
