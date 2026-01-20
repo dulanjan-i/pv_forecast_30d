@@ -1,0 +1,57 @@
+INFO:__main__:============================================================
+INFO:__main__:DDQN OFFLINE TRAINING
+INFO:__main__:============================================================
+INFO:__main__:Data: data/rl_transitions/training_batch_001.parquet
+INFO:__main__:Epochs: 50
+INFO:__main__:Batch size: 64
+INFO:__main__:Checkpoint dir: checkpoints/rl_meta_controller
+INFO:__main__:Device: cuda
+INFO:__main__:============================================================
+INFO:__main__:Loading transitions from data/rl_transitions/training_batch_001.parquet...
+INFO:__main__:Loaded 100 transitions
+INFO:__main__:Columns: ['sample_idx', 'timestamp', 'forecast_start', 'action', 'action_name', 'reward', 'action_success', 'state_0', 'state_1', 'state_2', 'state_3', 'state_4', 'state_5', 'state_6', 'state_7', 'state_8', 'state_9', 'state_10', 'state_11', 'state_12', 'state_13', 'state_14', 'state_15', 'state_16', 'state_17', 'state_18', 'state_19', 'state_20', 'state_21', 'state_22', 'state_23', 'state_24', 'state_25', 'state_26', 'state_27', 'state_28', 'state_29', 'state_30', 'state_31', 'state_32', 'state_33', 'state_34', 'next_state_0', 'next_state_1', 'next_state_2', 'next_state_3', 'next_state_4', 'next_state_5', 'next_state_6', 'next_state_7', 'next_state_8', 'next_state_9', 'next_state_10', 'next_state_11', 'next_state_12', 'next_state_13', 'next_state_14', 'next_state_15', 'next_state_16', 'next_state_17', 'next_state_18', 'next_state_19', 'next_state_20', 'next_state_21', 'next_state_22', 'next_state_23', 'next_state_24', 'next_state_25', 'next_state_26', 'next_state_27', 'next_state_28', 'next_state_29', 'next_state_30', 'next_state_31', 'next_state_32', 'next_state_33', 'next_state_34', 'short_rmse_1h', 'long_rmse_30d', 'physics_residual', 'blend_short', 'blend_long', 'blend_physics']
+INFO:__main__:State dimension: 35
+INFO:__main__:Training data shapes:
+INFO:__main__:  States: (100, 35)
+INFO:__main__:  Actions: (100,)
+INFO:__main__:  Rewards: (100,)
+INFO:__main__:  Next states: (100, 35)
+INFO:__main__:  Dones: (100,)
+INFO:__main__:Initializing MetaController with state_dim=35
+INFO:src.rl.rl_meta_controller:[MetaController] Initialized with 8 system actions (DDQN)
+INFO:__main__:Populating replay buffer...
+INFO:__main__:Replay buffer size: 100
+INFO:__main__:Training for 50 epochs...
+Training epochs:   0%|          | 0/50 [00:00<?, ?it/s]Training epochs:   2%|▏         | 1/50 [00:00<00:11,  4.39it/s]INFO:__main__:Epoch 10/50:
+INFO:__main__:  Loss: 84.1921
+INFO:__main__:  Avg Q-value: -0.0617
+INFO:__main__:  Epsilon: 0.9991
+INFO:__main__:  Steps: 10
+INFO:__main__:Epoch 20/50:
+INFO:__main__:  Loss: 137.2415
+INFO:__main__:  Avg Q-value: -0.0935
+INFO:__main__:  Epsilon: 0.9981
+INFO:__main__:  Steps: 20
+Training epochs:  40%|████      | 20/50 [00:00<00:00, 74.13it/s]INFO:__main__:Epoch 30/50:
+INFO:__main__:  Loss: 132.9291
+INFO:__main__:  Avg Q-value: -0.1310
+INFO:__main__:  Epsilon: 0.9971
+INFO:__main__:  Steps: 30
+Training epochs:  74%|███████▍  | 37/50 [00:00<00:00, 106.50it/s]INFO:__main__:Epoch 40/50:
+INFO:__main__:  Loss: 133.4160
+INFO:__main__:  Avg Q-value: -0.1744
+INFO:__main__:  Epsilon: 0.9961
+INFO:__main__:  Steps: 40
+INFO:__main__:Epoch 50/50:
+INFO:__main__:  Loss: 130.9331
+INFO:__main__:  Avg Q-value: -0.2102
+INFO:__main__:  Epsilon: 0.9951
+INFO:__main__:  Steps: 50
+Training epochs: 100%|██████████| 50/50 [00:00<00:00, 95.92it/s] 
+Traceback (most recent call last):
+  File "/home/dwijenayake/pv_forecast_30d/scripts/train_rl_offline.py", line 367, in <module>
+    main()
+  File "/home/dwijenayake/pv_forecast_30d/scripts/train_rl_offline.py", line 328, in main
+    controller.save(checkpoint_path)
+    ^^^^^^^^^^^^^^^
+AttributeError: 'MetaController' object has no attribute 'save'
