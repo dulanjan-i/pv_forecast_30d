@@ -1,39 +1,38 @@
-            ┌────────────────────────────┐
-            │   🟦 DATA INPUTS           │
-            │  • Historical Weather + PV │
-            │  • Real-Time Weather API   │
-            │  • PVLib Physical Model    │
-            └────────────┬───────────────┘
-                         │
-                         ▼
-            ┌────────────────────────────┐
-            │   🟩 LEARNERS              │
-            │  • LSTM Encoder (historical)│
-            │  • TFT (fusion + forecast) │
-            └────────────┬───────────────┘
-                         │
-                         ▼
-            ┌────────────────────────────┐
-            │   🟨 FEEDBACK SYSTEM        │
-            │  • RMSE / MAE / SHAP drift │
-            │  • Data alignment checks   │
-            │  • Model performance logs  │
-            └────────────┬───────────────┘
-                         │
-                         ▼
-            ┌────────────────────────────┐
-            │   🟧 RL META-CONTROLLER     │
-            │  • Reads feedback          │
-            │  • Decides actions:        │
-            │     – retrain / skip       │
-            │     – full vs incremental  │
-            │     – parameter adjust     │
-            └────────────┬───────────────┘
-                         │
-                         ▼
-            ┌────────────────────────────┐
-            │   🩷 OUTPUT + DATABASE      │
-            │  • Final PV forecast       │
-            │  • Stored predictions      │
-            │  • Rolling window updates  │
-            └────────────────────────────┘
+            ┌─────────────────────────────────────────┐
+            │          DATA SOURCES & PREP            │
+            │  • PV Telemetry, Weather, Plant Meta    │
+            │  • Time Align (UTC/DST) & Cap-Norm      │
+            │  • QC & Audit Logs                      │
+            │  • Canonical Parquets (15m, 1h)         │
+            └────────────────────┬────────────────────┘
+                                 │
+                                 ▼
+            ┌─────────────────────────────────────────┐
+            │      PHYSICS & DUAL-HEAD LEARNERS       │
+            │  • PVLib Features (POA, Temp, Clear)    │
+            │  • Short-Head TFT (96 steps @ 15-min)   │
+            │  • Long-Head TFT (720 steps @ 1h)       │
+            └────────────────────┬────────────────────┘
+                                 │
+                                 ▼
+            ┌─────────────────────────────────────────┐
+            │      META-CONTROLLER (OFFLINE RL)       │
+            │  • DDQN Policy Agent                    │
+            │  • Action: Selects Blend Preset         │
+            └────────────────────┬────────────────────┘
+                                 |
+                                 │ (Action dictates blending)
+                                 ▼
+            ┌─────────────────────────────────────────┐
+            │         HIERARCHICAL INFERENCE          │
+            │  • Upsample Long-Horizon (Diurnal)      │
+            │  • Ensemble Blending (Day-1 Boundary)   │
+            │  • Hard Constraints (Night Mask, Clamp) │
+            └────────────────────┬────────────────────┘
+                                 │
+                                 ▼
+            ┌─────────────────────────────────────────┐
+            │            SYSTEM OUTPUTS               │
+            │  • Forecast Trajectory (Unified 30-Day) │
+            │  • Diagnostics (Errors, Logs)           │
+            └─────────────────────────────────────────┘
