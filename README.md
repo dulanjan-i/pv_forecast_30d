@@ -9,12 +9,14 @@ This repository contains the advanced **dual-head Temporal Fusion Transformer (T
 ![MiRACLE Architecture](architecture%20diagrams/core_architecture.html)
 
 ## Abstract
-This thesis presents MiRACLE v1.0, a physics-informed hierarchical learning framework designed to solve the complex challenge of long-horizon (30-day ahead at 15-minute intervals) photovoltaic power forecasting. By utilizing a novel dual-head Temporal Fusion Transformer (TFT) architecture governed by a Double Deep Q-Network (DDQN) meta-controller, this framework forcefully fuses short-horizon ramp accuracy with long-horizon shape fidelity.
+As solar photovoltaics (PV) supply an increasing share of electricity, grid operators depend on highly reliable forecasts. However, pure data-driven models often produce physically impossible outputs, such as non-zero power at night or values exceeding plant capacity. 
+
+This repository introduces **MiRACLE v1.0** (Meta-Intelligent Reinforcement-driven Adaptive Control for Learning-based Ensembles), a hybrid time-series forecasting approach that integrates deep learning with physics-informed constraints. Evaluated under a strict, forward-looking blind test for a commercial German PV plant, MiRACLE forcefully fuses short-horizon ramp accuracy with long-horizon shape fidelity to deliver physically plausible 30-day forecasts at a 15-minute resolution. Furthermore, this research explores the limitations of adaptive blending via Reinforcement Learning (RL), highlighting the critical dangers of metric exploitation where standard error metrics (like RMSE) can be artificially improved by sacrificing real-world operational value.
 
 ## Key Features
 * **Dual-Head TFT Architecture**: Parallel independent instances structured to achieve cooperative fusion of outputs.
-* **DDQN Meta-Controller**: Dynamically adapts weighting parameters to changing environments and market conditions.
-* **Physics Glue & Constraints**: Integrates physical constraints directly into the learning pipeline to prevent operational anomalies.
+* **DDQN Meta-Controller**: An experimental offline Reinforcement Learning agent used to evaluate adaptive ensemble blending and expose the risks of metric exploitation in standard loss functions.
+* **Physics Glue & Constraints**: A deterministic hierarchical inference layer that reconciles the TFT outputs using a PVLib-derived reference shape, enforcing operational validity through night-time masking and capacity clamping.
 * **Robust Data Engineering**: Engineered to handle complex, messy, real-world data pipelines.
 
 ---
