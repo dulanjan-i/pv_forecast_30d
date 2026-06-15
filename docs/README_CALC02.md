@@ -20,11 +20,18 @@ Your `~/.venvs/pvforecast` environment is ready with:
 ## 🚀 Quick Start
 
 ```bash
+# SSH into calc02 and move into the repository first
+ssh <your-user>@calc02
+cd ~/pv_forecast_30d
+
 # Activate environment
 source ~/.venvs/pvforecast/bin/activate
 
 # Verify GPU access
 python -c "import torch; print(f'GPUs: {torch.cuda.device_count()}')"
+
+# Verify pretraining CLI wiring (safe smoke check)
+python src/training/pretrain_lstm.py --help
 
 # Run training
 python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107.yaml

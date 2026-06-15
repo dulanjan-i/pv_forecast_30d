@@ -57,9 +57,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 # Add project root to Python path
-project_root = Path(__file__).resolve().parents[2]
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 import pandas as pd
 import pytorch_lightning as pl
@@ -71,7 +71,33 @@ from src.features.sequence_generator import SimpleWindowDataset
 from src.models.lstm_encoder import LSTMEncoder, LSTMEncoderConfig
 
 
-def load_config(path: str) -> Dict[str, Any]:
+def _resolve_config_path(config_path: str) -> Path:
+    path = Path(config_path).expanduser()
+    if path.is_absolute():
+        return path
+    cwd_candidate = Path.cwd() / path
+    if cwd_candidate.exists():
+        return cwd_candidate
+    return REPO_ROOT / path
+
+
+def _resolve_runtime_path(path_like: Optional[str], config_dir: Path) -> Optional[Path]:
+    if path_like in (None, ""):
+        return None
+    path = Path(path_like).expanduser()
+    if path.is_absolute():
+        return path
+
+    repo_candidate = REPO_ROOT / path
+    config_candidate = config_dir / path
+    if repo_candidate.exists():
+        return repo_candidate
+    if config_candidate.exists():
+        return config_candidate
+    return repo_candidate
+
+
+def load_config(path: Path) -> Dict[str, Any]:
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
@@ -125,7 +151,9 @@ def build_dataloader(
 
 def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     # 1) Load config
-    cfg = load_config(config_path)
+    resolved_config_path = _resolve_config_path(config_path)
+    cfg = load_config(resolved_config_path)
+    config_dir = resolved_config_path.parent
 
     # Extract experiment tracking info
     exp_cfg = cfg.get("experiment", {})
@@ -135,15 +163,15 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     exp_name = exp_cfg.get("name", "pretrain")
     exp_tag = exp_cfg.get("tag", "default")
     output_dir = paths_cfg.get("output_dir", f"experiments/lstm/runs/{exp_tag}")
-    init_weights_path = paths_cfg.get("init_weights_path", None)  # ← Stage 2 support
-    encoder_save_path = save_cfg.get("encoder_path", None)  # ← Custom output path
+    init_weights_path = _resolve_runtime_path(paths_cfg.get("init_weights_path", None), config_dir)  # ← Stage 2 support
+    encoder_save_path = _resolve_runtime_path(save_cfg.get("encoder_path", None), config_dir)  # ← Custom output path
     
     data_cfg = cfg["data"]
     model_cfg = cfg["model"]
     train_cfg = cfg["training"]
 
-    train_path = Path(data_cfg["train_path"])
-    val_path = Path(data_cfg["val_path"])
+    train_path = _resolve_runtime_path(data_cfg["train_path"], config_dir)
+    val_path = _resolve_runtime_path(data_cfg["val_path"], config_dir)
 
     time_col = data_cfg["time_col"]
     id_col = data_cfg.get("id_col", None)
@@ -207,19 +235,20 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
 
     # 3.5) Load pretrained weights if specified (Stage 2 transfer learning)
     if init_weights_path:
-        init_path = Path(init_weights_path)
-        if init_path.exists():
-            print(f"[Pretrain] Loading pretrained weights from: {init_path}")
-            state_dict = torch.load(init_path, map_location="cpu")
+        if init_weights_path.exists():
+            print(f"[Pretrain] Loading pretrained weights from: {init_weights_path}")
+            state_dict = torch.load(init_weights_path, map_location="cpu")
             model.load_state_dict(state_dict, strict=True)
             print(f"[Pretrain] ✓ Loaded pretrained encoder (Stage 2 transfer learning)")
         else:
-            print(f"[Pretrain] WARNING: init_weights_path specified but not found: {init_path}")
+            print(f"[Pretrain] WARNING: init_weights_path specified but not found: {init_weights_path}")
             print(f"[Pretrain] Training from scratch instead.")
 
     # 4) Set up Logger
+    output_dir_path = _resolve_runtime_path(output_dir, config_dir)
+
     logger = pl.loggers.CSVLogger(
-        save_dir=output_dir,
+        save_dir=str(output_dir_path),
         name=exp_name,
     )
 
@@ -238,7 +267,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         max_epochs=max_epochs,
         accelerator=accelerator,
         devices=devices,
-        default_root_dir=output_dir,
+        default_root_dir=str(output_dir_path),
         logger=logger,
         gradient_clip_val=train_cfg.get("gradient_clip_val", 0.0),
         log_every_n_steps=50,
@@ -246,12 +275,12 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
 
     # 6) Train
     print(f"[Pretrain] Experiment: {exp_name} | Tag: {exp_tag}")
-    print(f"[Pretrain] Output dir: {output_dir}")
+    print(f"[Pretrain] Output dir: {output_dir_path}")
     print(f"[Pretrain] Training LSTMEncoder for {max_epochs} epochs on {train_path.name}")
     trainer.fit(model, train_loader, val_loader)
 
     # 7) Save checkpoints / encoder weights
-    ckpt_dir = Path(output_dir) / "checkpoints"
+    ckpt_dir = output_dir_path / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     # Use config-driven naming instead of hardcoded "farm2107"
@@ -260,7 +289,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     
     # If encoder_save_path is specified, use it; otherwise use default in checkpoints
     if encoder_save_path:
-        state_dict_path = Path(encoder_save_path)
+        state_dict_path = encoder_save_path
         state_dict_path.parent.mkdir(parents=True, exist_ok=True)
     else:
         state_dict_path = ckpt_dir / f"lstm_encoder_{exp_tag}_weights.pt"

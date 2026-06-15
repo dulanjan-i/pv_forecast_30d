@@ -33,6 +33,12 @@ See `requirements_calc02_frozen.txt` for complete list with exact versions.
 
 ## Quick Start
 
+### 0. SSH and enter the repo
+```bash
+ssh <your-user>@calc02
+cd ~/pv_forecast_30d
+```
+
 ### 1. Activate environment
 ```bash
 source ~/.venvs/pvforecast/bin/activate

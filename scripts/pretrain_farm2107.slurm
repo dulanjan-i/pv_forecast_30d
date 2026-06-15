@@ -32,22 +32,4 @@ print("current device:", torch.cuda.current_device() if torch.cuda.is_available(
 EOF
 
 # 5. Run the actual pretraining
-python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107.yaml#!/bin/bash
-#SBATCH --job-name=miracle_pretrain_2107
-#SBATCH --output=logs/slurm/pretrain_2107_%j.out
-#SBATCH --error=logs/slurm/pretrain_2107_%j.err
-
-#SBATCH --partition=paula
-#SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
-#SBATCH --time=12:00:00
-
-module purge
-module load Anaconda3/2024.02-1
-
-cd /work/vy17foce-miracle_pv/pv_forecast_30d
-
-conda run -p /work/vy17foce-miracle_pv/pvforecast_env \
-  python src/training/pretrain_lstm.py \
-    --config experiments/lstm/pretrain_farm2107.yaml
+python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107.yaml
