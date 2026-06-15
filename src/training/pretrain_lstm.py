@@ -54,7 +54,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 # Add project root to Python path
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -75,23 +75,33 @@ def _resolve_config_path(config_path: str) -> Path:
     """Resolve config path as absolute, CWD-relative, then repo-relative."""
     path = Path(config_path).expanduser()
     if path.is_absolute():
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {path}")
         return path
+
     cwd_candidate = Path.cwd() / path
     if cwd_candidate.exists():
         return cwd_candidate
-    return REPO_ROOT / path
+    repo_candidate = REPO_ROOT / path
+    if repo_candidate.exists():
+        return repo_candidate
+
+    raise FileNotFoundError(
+        f"Config file not found. Checked: {cwd_candidate} and {repo_candidate}"
+    )
 
 
-def _resolve_runtime_path(path_like: Optional[str], config_dir: Path) -> Optional[Path]:
+def _resolve_runtime_path(path_str: Optional[str], config_dir: Path) -> Optional[Path]:
     """
     Resolve runtime paths with precedence: absolute -> repo-relative -> config-relative.
 
     If no candidate exists yet, the function falls back to the repo-relative path so
-    downstream file checks fail with a deterministic, repository-rooted location.
+    downstream file checks fail with a deterministic, repository-rooted location
+    instead of a potentially varying working-directory path.
     """
-    if path_like is None:
+    if path_str is None:
         return None
-    path = Path(path_like).expanduser()
+    path = Path(path_str).expanduser()
     if path.is_absolute():
         return path
 
@@ -104,7 +114,8 @@ def _resolve_runtime_path(path_like: Optional[str], config_dir: Path) -> Optiona
     return repo_candidate
 
 
-def load_config(path: Path) -> Dict[str, Any]:
+def load_config(path: Union[str, Path]) -> Dict[str, Any]:
+    """Load YAML config from a pre-resolved path (str or Path)."""
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
@@ -179,8 +190,10 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
 
     train_path = _resolve_runtime_path(data_cfg["train_path"], config_dir)
     val_path = _resolve_runtime_path(data_cfg["val_path"], config_dir)
-    assert train_path is not None
-    assert val_path is not None
+    if train_path is None:
+        raise ValueError("train_path must be specified in config")
+    if val_path is None:
+        raise ValueError("val_path must be specified in config")
 
     time_col = data_cfg["time_col"]
     id_col = data_cfg.get("id_col", None)
