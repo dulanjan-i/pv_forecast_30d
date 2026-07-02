@@ -258,3 +258,36 @@ experiments/**/runs/
 !experiments/tft/run_bundles/**/*.pkl
 !experiments/tft/run_bundles/**/*.pcl
 .ecmwf_credentials.json
+
+# =============================================================================
+# NDA / Sensitive Data — local only, NEVER commit to remote
+# =============================================================================
+data/
+data.zip
+data.tar.gz
+
+# =============================================================================
+# Model checkpoints & large binary artifacts — use external storage
+# =============================================================================
+checkpoints/
+*.pt
+*.pth
+*.npy
+*.npy.gz
+
+# =============================================================================
+# Cache and system junk
+# =============================================================================
+.cache.sqlite
+*.sqlite
+.DS_Store
+**/.DS_Store
+
+# =============================================================================
+# Runtime output artifacts
+# =============================================================================
+outputs/
+logs/
+lightning_logs/
+debug_gpu.out
+*.out
