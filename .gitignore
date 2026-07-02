@@ -291,3 +291,11 @@ logs/
 lightning_logs/
 debug_gpu.out
 *.out
+
+# Process and runtime files
+*.pid
+monitor_*.sh
+
+# AI prompt / session files (not part of source)
+*copilot_prompt*
+*claude_prompt*
