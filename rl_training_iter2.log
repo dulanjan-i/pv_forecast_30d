@@ -1,60 +1,0 @@
-INFO:__main__:================================================================================
-INFO:__main__:DDQN OFFLINE TRAINING
-INFO:__main__:================================================================================
-INFO:__main__:Data: data/rl_transitions/combined_141.parquet
-INFO:__main__:Epochs: 50
-INFO:__main__:Batch size: 64
-INFO:__main__:Checkpoint dir: checkpoints/rl_meta_controller
-INFO:__main__:Device: cuda
-INFO:__main__:================================================================================
-INFO:src.rl.training:Loading transitions from data/rl_transitions/combined_141.parquet...
-INFO:src.rl.training:Loaded 141 transitions
-INFO:src.rl.training:Columns: ['sample_idx', 'timestamp', 'forecast_start', 'action', 'action_name', 'reward', 'action_success', 'state_0', 'state_1', 'state_2', 'state_3', 'state_4', 'state_5', 'state_6', 'state_7', 'state_8', 'state_9', 'state_10', 'state_11', 'state_12', 'state_13', 'state_14', 'state_15', 'state_16', 'state_17', 'state_18', 'state_19', 'state_20', 'state_21', 'state_22', 'state_23', 'state_24', 'state_25', 'state_26', 'state_27', 'state_28', 'state_29', 'state_30', 'state_31', 'state_32', 'state_33', 'state_34', 'next_state_0', 'next_state_1', 'next_state_2', 'next_state_3', 'next_state_4', 'next_state_5', 'next_state_6', 'next_state_7', 'next_state_8', 'next_state_9', 'next_state_10', 'next_state_11', 'next_state_12', 'next_state_13', 'next_state_14', 'next_state_15', 'next_state_16', 'next_state_17', 'next_state_18', 'next_state_19', 'next_state_20', 'next_state_21', 'next_state_22', 'next_state_23', 'next_state_24', 'next_state_25', 'next_state_26', 'next_state_27', 'next_state_28', 'next_state_29', 'next_state_30', 'next_state_31', 'next_state_32', 'next_state_33', 'next_state_34', 'short_rmse_1h', 'long_rmse_30d', 'physics_residual', 'blend_short', 'blend_long', 'blend_physics']
-INFO:src.rl.training:State dimension: 35
-INFO:src.rl.training:Training data shapes:
-INFO:src.rl.training:  States: (141, 35)
-INFO:src.rl.training:  Actions: (141,)
-INFO:src.rl.training:  Rewards: (141,)
-INFO:src.rl.training:  Next states: (141, 35)
-INFO:src.rl.training:  Dones: (141,)
-INFO:__main__:Initializing MetaController (state_dim=35, n_actions=8)
-INFO:src.rl.rl_meta_controller:[MetaController] Initialized with 8 system actions (DDQN)
-INFO:src.rl.training:Populating replay buffer...
-INFO:src.rl.training:Replay buffer size: 141
-INFO:src.rl.training:Training for 50 epochs...
-Training epochs:   0%|          | 0/50 [00:00<?, ?it/s]Training epochs:   2%|▏         | 1/50 [00:00<00:15,  3.14it/s]INFO:src.rl.training:Epoch 10/50:
-INFO:src.rl.training:  Loss: 82.4662
-INFO:src.rl.training:  Avg Q-value: -0.0536
-INFO:src.rl.training:  Epsilon: 0.9981
-INFO:src.rl.training:  Steps: 20
-Training epochs:  20%|██        | 10/50 [00:00<00:01, 29.51it/s]Training epochs:  38%|███▊      | 19/50 [00:00<00:00, 46.50it/s]INFO:src.rl.training:Epoch 20/50:
-INFO:src.rl.training:  Loss: 95.6964
-INFO:src.rl.training:  Avg Q-value: -0.1366
-INFO:src.rl.training:  Epsilon: 0.9961
-INFO:src.rl.training:  Steps: 40
-Training epochs:  56%|█████▌    | 28/50 [00:00<00:00, 59.30it/s]INFO:src.rl.training:Epoch 30/50:
-INFO:src.rl.training:  Loss: 87.4100
-INFO:src.rl.training:  Avg Q-value: -0.2307
-INFO:src.rl.training:  Epsilon: 0.9941
-INFO:src.rl.training:  Steps: 60
-Training epochs:  72%|███████▏  | 36/50 [00:00<00:00, 65.21it/s]INFO:src.rl.training:Epoch 40/50:
-INFO:src.rl.training:  Loss: 81.9479
-INFO:src.rl.training:  Avg Q-value: -0.3411
-INFO:src.rl.training:  Epsilon: 0.9921
-INFO:src.rl.training:  Steps: 80
-Training epochs:  88%|████████▊ | 44/50 [00:00<00:00, 69.23it/s]INFO:src.rl.training:Epoch 50/50:
-INFO:src.rl.training:  Loss: 74.0232
-INFO:src.rl.training:  Avg Q-value: -0.4713
-INFO:src.rl.training:  Epsilon: 0.9901
-INFO:src.rl.training:  Steps: 100
-Training epochs: 100%|██████████| 50/50 [00:00<00:00, 55.19it/s]
-INFO:src.rl.training:✅ Model saved to checkpoints/rl_meta_controller/ddqn_meta_controller.pt
-INFO:__main__:Training plots saved to checkpoints/rl_meta_controller/training_metrics.png
-INFO:__main__:================================================================================
-INFO:__main__:✅ TRAINING COMPLETE
-INFO:__main__:================================================================================
-INFO:__main__:Final Loss: 74.0232
-INFO:__main__:Final Avg Q: -0.4713
-INFO:__main__:Total Steps: 100
-INFO:__main__:Checkpoint: checkpoints/rl_meta_controller/ddqn_meta_controller.pt
-INFO:__main__:================================================================================
