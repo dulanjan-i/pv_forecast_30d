@@ -46,6 +46,25 @@
       "sha256": "4217c80964d41b007ac6ed8207dd85ae7469d59ab89dfd207137d649c83b373c",
       "size_bytes": 715011,
       "note": "Lightning LSTM encoder for farm2107 plant \u2014 pretrained encoder backbone"
+    },
+    "tft_shorthead_seed42": {
+      "path": "V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.pt",
+      "sha256": "5d9568f624258d5db46d0b346fee95f3c4fa6da28e224a1fdd95f17808944137",
+      "size_bytes": 1810676,
+      "note": "Short-head TFT (seed=42) \u2014 15-min resolution, 24h horizon (96 steps), warm-started from global pretrained encoder, trained 2025-12-29 on H100"
+    },
+    "tft_longhead_seed43": {
+      "path": "V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt",
+      "sha256": "1a21bc37ee7aef146756cceb64992d91fdd8d7fafd4e650c96cbd494fc66968e",
+      "size_bytes": 1810676,
+      "note": "Long-head TFT (seed=43) \u2014 1-hour resolution, 30d horizon (720 steps), warm-started from global pretrained encoder, trained 2025-12-31 on H100"
+    },
+    "lstm_encoder_canonical": {
+      "path": "backups/checkpoints/lstm_encoder_farm2107_CANONICAL.pt",
+      "sha256": "052880672af3b011ee744d41ebde3326d674dc1d51e77dbd42af4eb6020d796b",
+      "size_bytes": 238018,
+      "note": "LSTM encoder for farm2107 \u2014 canonical state-dict copy (vs _last.ckpt which is Lightning format)"
     }
-  }
+  },
+  "updated_utc": "2026-07-06T13:55:18.830351+00:00"
 }
