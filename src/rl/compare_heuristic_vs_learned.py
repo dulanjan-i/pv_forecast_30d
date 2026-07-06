@@ -6,7 +6,9 @@ Runs both heuristic and learned RL policies on the same test windows,
 computes RMSE, action distributions, and statistical significance tests.
 
 Usage:
-    python src/rl/compare_heuristic_vs_learned.py --checkpoint-dir checkpoints/rl_meta_controller_regularized --num-windows 42
+    python src/rl/compare_heuristic_vs_learned.py \
+        --checkpoint-dir freeze/final_thesis_v1/rl/ddqn_minenv_v2 \
+        --num-windows 42
 
 Author: MiRACLE Team
 Date: 2026-01-04
@@ -30,8 +32,8 @@ from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
 def main():
     parser = argparse.ArgumentParser(description='Compare heuristic vs learned RL policies')
     parser.add_argument('--checkpoint-dir', type=str, 
-                        default='checkpoints/rl_meta_controller',
-                        help='Directory containing RL checkpoint')
+                        default='freeze/final_thesis_v1/rl/ddqn_minenv_v2',
+                        help='Directory containing RL checkpoint (ddqn_best.pt or ddqn_final.pt)')
     parser.add_argument('--num-windows', type=int, default=42,
                         help='Number of test windows to evaluate')
     parser.add_argument('--short-ckpt', type=str,
