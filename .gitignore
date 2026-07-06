@@ -276,6 +276,16 @@ checkpoints/
 *.npy.gz
 
 # =============================================================================
+# Intentionally tracked thesis-canonical checkpoints (force-added, SHA256 in
+# freeze/CHECKPOINT_MANIFEST.sha256 — verify with: shasum -a 256 -c freeze/CHECKPOINT_MANIFEST.sha256)
+# =============================================================================
+!V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.pt
+!V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt
+!freeze/**/*.pt
+!backups/checkpoints/*.pt
+!backups/checkpoints/*.ckpt
+
+# =============================================================================
 # Cache and system junk
 # =============================================================================
 .cache.sqlite
