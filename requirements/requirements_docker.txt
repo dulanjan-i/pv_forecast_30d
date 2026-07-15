@@ -14,8 +14,8 @@ scikit-learn>=1.4.0
 
 # ── PyTorch (CPU-only, keeps image small — ~800MB vs ~4GB for CUDA) ─────────
 # On CPU the 30-day inference takes ~30s, acceptable for demo/interview use.
-# For GPU inference, replace with: torch==2.4.0+cu121 from pytorch index.
-torch>=2.2.0
+# ARM64: +cpu suffix only available from 2.6.0+; installed via Dockerfile explicitly.
+torch>=2.6.0
 torchmetrics>=1.3.0
 
 # ── Lightning ecosystem (required by pytorch-forecasting / TFT) ─────────────
