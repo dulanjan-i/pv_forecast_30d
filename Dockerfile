@@ -74,9 +74,10 @@ COPY requirements/requirements_docker.txt /app/requirements_docker.txt
 # We separate this from the rest because it's large and has a special index URL.
 # --index-url tells pip to look at the PyTorch CDN instead of PyPI.
 RUN pip install --no-cache-dir \
-        torch==2.2.2+cpu \
-        torchvision==0.17.2+cpu \
+        torch==2.7.1+cpu \
     --index-url https://download.pytorch.org/whl/cpu
+    # torchvision excluded: not used by TFT/RL inference pipeline.
+    # ARM64 +cpu suffix available from 2.6.0+ only.
 
 # Install the rest of the inference dependencies.
 # --no-cache-dir: don't cache downloaded wheels inside the container (saves space).
