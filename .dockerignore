@@ -1,0 +1,62 @@
+***REMOVED*** .dockerignore — tells Docker what NOT to copy into the image.
+***REMOVED*** Rule of thumb: if it's not needed to RUN inference, exclude it.
+***REMOVED*** This keeps the image lean and build times fast.
+
+***REMOVED*** ── Large data files (NDA / sensitive) ──────────────────────────────────────
+data/
+*.parquet
+*.csv
+*.xlsx
+
+***REMOVED*** ── Experiment outputs and training runs ─────────────────────────────────────
+experiments/
+lightning_logs/
+outputs/
+logs/
+reports/
+
+***REMOVED*** ── Thesis / evaluation artifacts ────────────────────────────────────────────
+freeze/final_thesis_v1/eval*/
+freeze/final_thesis_v1/benchmarks/
+freeze/final_thesis_v1/tft_ablation/
+freeze/final_thesis_v1/plots/
+freeze/_old*/
+freeze/_safety*/
+
+***REMOVED*** ── Checkpoints we DON'T need in Docker ──────────────────────────────────────
+***REMOVED*** (v1 RL kept for reference, v2 is the production model)
+freeze/final_thesis_v1/rl/ddqn_minenv_v1/
+backups/
+
+***REMOVED*** ── Development / testing / docs ─────────────────────────────────────────────
+tests/
+docs/
+*.md
+*.rst
+*.tex
+*.png
+*.pdf
+*.pptx
+
+***REMOVED*** ── Python cache ─────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+***REMOVED*** ── Environment files (we install deps fresh inside the container) ────────────
+envs/
+.venv/
+venv/
+*.conda
+
+***REMOVED*** ── Secrets and local config ─────────────────────────────────────────────────
+.env
+.ecmwf_credentials.json
+.DS_Store
+
+***REMOVED*** ── Git history (not needed at runtime) ──────────────────────────────────────
+.git/
+.gitignore
