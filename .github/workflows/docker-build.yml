@@ -1,0 +1,112 @@
+# =============================================================================
+# MiRACLE — Docker Build, Test & Publish
+# =============================================================================
+# Triggers:
+#   - Push to main (build + test + push image to GHCR)
+#   - Pull request to main (build + test only, no push)
+#   - Manual dispatch
+#
+# Image published to:
+#   ghcr.io/dulanjan-i/miracle-inference:latest
+#   ghcr.io/dulanjan-i/miracle-inference:<git-sha>
+#
+# Pull publicly (no auth needed for public repos):
+#   docker pull ghcr.io/dulanjan-i/miracle-inference:latest
+# =============================================================================
+
+name: Docker Build & Publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only rebuild when these files change — saves CI minutes
+      - 'Dockerfile'
+      - 'requirements/requirements_docker.txt'
+      - 'src/**'
+      - 'scripts/run_inference.sh'
+      - 'V1.0_FINAL_TFT/**'
+      - 'freeze/final_thesis_v1/rl/ddqn_minenv_v2/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/miracle-inference
+
+jobs:
+  build-and-push:
+    name: Build, Test & Push
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Buildx enables multi-platform builds and layer caching
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # GITHUB_TOKEN is auto-provided — no secret setup required
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Generates tags: latest (main only) + sha-<short>
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,prefix=sha-,format=short
+
+      # Build for linux/amd64 (cloud-compatible); cache via GitHub Actions cache
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Verify all checkpoints exist and RL v2 loads correctly
+      - name: Smoke test
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)"
+          docker run --rm "$IMAGE" python -c "
+          from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
+          from src.rl.rl_meta_controller import RLMetaControllerSystem
+          import torch, os, sys
+
+          missing = [p for p in [
+              os.environ['MIRACLE_SHORT_CKPT'],
+              os.environ['MIRACLE_LONG_CKPT'],
+              os.environ['MIRACLE_RL_CKPT'],
+          ] if not os.path.exists(p)]
+
+          if missing:
+              print('MISSING:', missing); sys.exit(1)
+
+          ckpt = torch.load(os.environ['MIRACLE_RL_CKPT'], map_location='cpu', weights_only=False)
+          assert ckpt['steps'] == 660, f'Expected 660, got {ckpt[\"steps\"]}'
+          print('Smoke test PASSED — checkpoints OK, RL v2 steps=660')
+          "
+
+      - name: Print published image
+        if: github.event_name != 'pull_request'
+        run: echo "${{ steps.meta.outputs.tags }}"
