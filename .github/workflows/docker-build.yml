@@ -52,6 +52,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # QEMU lets the AMD64 runner cross-compile an ARM64 image
+      - name: Set up QEMU (for ARM64 cross-build)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
       # GITHUB_TOKEN is auto-provided — no secret setup required
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -71,13 +77,14 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-,format=short
 
-      # Build for linux/amd64 (cloud-compatible); cache via GitHub Actions cache
+      # Builds linux/amd64 (cloud servers) + linux/arm64 (Apple Silicon Macs)
+      # in a single multi-platform manifest — docker pull works on any machine
       - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -85,10 +92,11 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Verify all checkpoints exist and RL v2 loads correctly
+      # Explicitly use amd64 variant — runner is AMD64 and can't run arm64 natively
       - name: Smoke test
         run: |
           IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)"
-          docker run --rm "$IMAGE" python -c "
+          docker run --rm --platform linux/amd64 "$IMAGE" python -c "
           from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
           from src.rl.rl_meta_controller import RLMetaControllerSystem
           import torch, os, sys
