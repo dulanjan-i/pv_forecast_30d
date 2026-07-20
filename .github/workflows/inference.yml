@@ -1,0 +1,99 @@
+# =============================================================================
+# MiRACLE — Scheduled & On-Demand Inference
+# =============================================================================
+# Triggers:
+#   - Daily at 06:00 UTC (adjust cron to match your timezone / grid market)
+#   - Manual dispatch with optional date override
+#
+# What it does:
+#   1. Pulls the latest miracle-inference image from GHCR
+#   2. Fetches live weather from OpenMeteo (free, no API key)
+#   3. Runs 30-day PV forecast for plant_03
+#   4. Uploads forecast parquet as a GitHub Actions artifact (retained 30 days)
+#
+# View results: Actions tab → "Scheduled Inference" → Artifacts
+# =============================================================================
+
+name: Scheduled Inference
+
+on:
+  schedule:
+    # Daily at 06:00 UTC — adjust to match market open / grid settlement
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      forecast_date:
+        description: 'Forecast start date (YYYY-MM-DD). Defaults to today.'
+        required: false
+        default: ''
+      device:
+        description: 'Compute device'
+        required: false
+        default: 'cpu'
+        type: choice
+        options: [cpu, cuda]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/dulanjan-i/miracle-inference:latest
+
+jobs:
+  run-inference:
+    name: Run 30-Day PV Forecast
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: read  # to pull from GHCR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Resolve forecast date — use input if provided, else today in UTC
+      - name: Resolve forecast date
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.forecast_date }}" ]; then
+            echo "date=${{ github.event.inputs.forecast_date }}" >> $GITHUB_OUTPUT
+          else
+            echo "date=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
+          fi
+
+      # Pull from GHCR — uses GITHUB_TOKEN, no extra setup needed for public repos
+      - name: Pull inference image
+        run: docker pull ${{ env.IMAGE }}
+
+      # Verify checkpoint integrity before running inference
+      - name: Verify checkpoint integrity
+        run: |
+          docker run --rm ${{ env.IMAGE }} \
+            shasum -a 256 -c /app/checkpoints/CHECKPOINT_MANIFEST.sha256
+
+      # Run 30-day forecast — mounts outputs/ so the parquet is accessible on the host
+      - name: Run 30-day PV forecast
+        run: |
+          mkdir -p outputs
+          docker run --rm \
+            -v ${{ github.workspace }}/outputs:/app/outputs \
+            -e MIRACLE_FORECAST_DATE=${{ steps.date.outputs.date }} \
+            ${{ env.IMAGE }} \
+            /app/scripts/run_inference.sh \
+              --date ${{ steps.date.outputs.date }} \
+              --output-dir /app/outputs
+
+      # Upload forecast as a downloadable artifact (retained 30 days)
+      - name: Upload forecast artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-${{ steps.date.outputs.date }}
+          path: outputs/forecast_${{ steps.date.outputs.date }}.parquet
+          retention-days: 30
+
+      - name: Print summary
+        run: |
+          echo "## MiRACLE Forecast Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **Date:** ${{ steps.date.outputs.date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image:** ${{ env.IMAGE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** forecast-${{ steps.date.outputs.date }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Checkpoint manifest:** verified OK" >> $GITHUB_STEP_SUMMARY
