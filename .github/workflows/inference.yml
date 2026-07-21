@@ -64,11 +64,39 @@ jobs:
       - name: Pull inference image
         run: docker pull ${{ env.IMAGE }}
 
-      # Verify checkpoint integrity before running inference
+      # Verify checkpoint integrity before running inference.
+      # Uses Python hashlib inside the container — avoids path mismatch between
+      # the local manifest (freeze/...) and container paths (/app/checkpoints/...).
       - name: Verify checkpoint integrity
         run: |
-          docker run --rm ${{ env.IMAGE }} \
-            shasum -a 256 -c /app/checkpoints/CHECKPOINT_MANIFEST.sha256
+          docker run --rm ${{ env.IMAGE }} python -c "
+          import hashlib, sys, os
+
+          EXPECTED = {
+              '/app/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.pt':
+                  '5d9568f624258d5db46d0b346fee95f3c4fa6da28e224a1fdd95f17808944137',
+              '/app/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt':
+                  '1a21bc37ee7aef146756cceb64992d91fdd8d7fafd4e650c96cbd494fc66968e',
+              '/app/checkpoints/rl_v2/ddqn_best.pt':
+                  'bcc32ceb87765fe5dd90248e639619b17fd1a137b2592f8cd431cac03f75e549',
+          }
+
+          failed = []
+          for path, expected_sha in EXPECTED.items():
+              if not os.path.exists(path):
+                  failed.append(f'MISSING: {path}')
+                  continue
+              sha = hashlib.sha256(open(path, 'rb').read()).hexdigest()
+              if sha != expected_sha:
+                  failed.append(f'CORRUPT: {path} (got {sha[:12]}...)')
+              else:
+                  print(f'OK: {os.path.basename(path)}')
+
+          if failed:
+              print('FAILED:', failed, file=sys.stderr)
+              sys.exit(1)
+          print('All checkpoints verified.')
+          "
 
       # Run 30-day forecast — mounts outputs/ so the parquet is accessible on the host
       - name: Run 30-day PV forecast
