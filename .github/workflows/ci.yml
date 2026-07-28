@@ -54,11 +54,21 @@ jobs:
             --index-url https://download.pytorch.org/whl/cpu \
             --extra-index-url https://pypi.org/simple
 
-      # Run all tests except those marked @pytest.mark.integration
-      # (integration tests require real data, HPC paths, or external services)
+      # Run unit tests — exclude files that require external APIs, real data,
+      # or HPC paths (ECMWF key, parquet datasets, real TFT model files).
+      # These are integration tests by nature; they run in the pvforecast env locally.
       - name: Run pytest
         run: |
-          python -m pytest tests/ -m "not integration" \
+          python -m pytest tests/ \
+            -m "not integration" \
+            --ignore=tests/test_ecmwf_opendata.py \
+            --ignore=tests/test_weather_api_comparison.py \
+            --ignore=tests/test_live_weather_forecast.py \
+            --ignore=tests/test_full_pipeline_real_tft.py \
+            --ignore=tests/test_hierarchical_pipeline.py \
+            --ignore=tests/test_rl_integration.py \
+            --ignore=tests/test_tft_integration.py \
+            --ignore=tests/test_action_executors.py \
             --tb=short \
             --junitxml=test-results.xml \
             -v
