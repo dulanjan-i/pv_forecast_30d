@@ -1,0 +1,73 @@
+name: CI — pytest
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'requirements/requirements_test.txt'
+      - 'pytest.ini'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'requirements/requirements_test.txt'
+      - 'pytest.ini'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  test:
+    name: pytest (Python 3.11, CPU)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Python 3.11 matches the pvforecast conda env and Docker image
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Cache pip packages keyed on requirements_test.txt hash.
+      # First run: ~8 min (downloads torch+forecasting). Subsequent runs: ~30s.
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-test-${{ runner.os }}-${{ hashFiles('requirements/requirements_test.txt') }}
+          restore-keys: |
+            pip-test-${{ runner.os }}-
+
+      # Install CPU-only torch explicitly first to avoid the default CUDA wheel
+      - name: Install PyTorch (CPU-only)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements/requirements_test.txt \
+            --index-url https://download.pytorch.org/whl/cpu \
+            --extra-index-url https://pypi.org/simple
+
+      # Run all tests except those marked @pytest.mark.integration
+      # (integration tests require real data, HPC paths, or external services)
+      - name: Run pytest
+        run: |
+          python -m pytest tests/ -m "not integration" \
+            --tb=short \
+            --junitxml=test-results.xml \
+            -v
+
+      # Publish test results so they appear in the GitHub Actions summary tab
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: test-results.xml
+          retention-days: 14

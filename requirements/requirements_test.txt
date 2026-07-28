@@ -1,0 +1,29 @@
+# requirements/requirements_test.txt
+# CI test dependencies — minimal set needed to run `pytest -m "not integration"`.
+# Excludes openmeteo, weather API clients, and heavy training-only deps.
+
+# ── Core scientific stack ────────────────────────────────────────────────────
+numpy>=1.26.0,<3.0
+pandas>=2.2.0
+scipy>=1.12.0
+scikit-learn>=1.4.0
+
+# ── PyTorch (CPU-only wheel — keeps CI fast and avoids CUDA setup) ───────────
+torch>=2.6.0
+
+# ── Lightning ecosystem ──────────────────────────────────────────────────────
+pytorch-lightning>=2.2.0
+lightning>=2.2.0
+torchmetrics>=1.3.0
+
+# ── TFT model (needed by test_rl_checkpoint.py) ──────────────────────────────
+pytorch-forecasting>=1.0.0
+
+# ── PV physics (needed by test_rl_checkpoint.py) ─────────────────────────────
+pvlib>=0.11.0
+
+# ── Data I/O ─────────────────────────────────────────────────────────────────
+pyarrow>=14.0.0
+
+# ── Test runner ──────────────────────────────────────────────────────────────
+pytest>=8.0.0
