@@ -4,6 +4,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20177800.svg)](https://doi.org/10.5281/zenodo.20177800)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Docker Build](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/docker-build.yml/badge.svg)](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/docker-build.yml)
+[![CI — pytest](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/ci.yml/badge.svg)](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/ci.yml)
 
 This repository contains the advanced **dual-head Temporal Fusion Transformer (TFT)** engine developed for my Master's thesis. It is made available for academic research, peer review, and technical evaluation.
 
