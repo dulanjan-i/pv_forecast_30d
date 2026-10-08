@@ -17,6 +17,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List
 import json
+import os
 import sys
 import logging
 
@@ -106,6 +107,7 @@ class ERA5Fetcher:
         logger.info(f"{'='*70}\n")
         
         all_data = []
+        failed_chunks = []
         
         # Generate chunk dates
         current = pd.to_datetime(start_date)
@@ -152,12 +154,16 @@ class ERA5Fetcher:
                         logger.info(f"  ✓ Retry successful\n")
                         current += timedelta(days=7)
                         continue
-                    except:
-                        pass
+                    except Exception as retry_err:
+                        logger.error(f"  ✗ Retry also failed: {retry_err}")
+                        failed_chunks.append((chunk_idx, current.strftime("%Y-%m-%d")))
             
             # Move to next chunk
             current += timedelta(days=days_to_fetch)
         
+        if failed_chunks:
+            logger.warning(f"{len(failed_chunks)} chunk(s) could NOT be fetched; the dataset has gaps: {failed_chunks}")
+
         # Combine all chunks
         if not all_data:
             raise RuntimeError("No ERA5 data fetched!")
@@ -195,7 +201,8 @@ def main():
     )
     
     # Save
-    output_path = Path("/home/dwijenayake/pv_forecast_30d/data/processed/era5_2023_2025_extended.parquet")
+    data_dir = Path(os.environ.get("MIRACLE_DATA_DIR", "data"))
+    output_path = data_dir / "processed" / "era5_2023_2025_extended.parquet"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     dataset.to_parquet(output_path, index=False)
     
@@ -205,7 +212,7 @@ def main():
     logger.info(f"\nNext steps:")
     logger.info(f"  1. Generate RL transitions: python src/rl/generate_era5_eval_transitions.py")
     logger.info(f"  2. Merge datasets: Combine with existing 33 samples")
-    logger.info(f"  3. Train DDQN: python src/training/train_rl_offline.py --epochs 5000")
+    logger.info(f"  3. Train DDQN: python src/rl/run_rl_training.py --data <transitions.parquet> --epochs 60")
 
 
 if __name__ == "__main__":

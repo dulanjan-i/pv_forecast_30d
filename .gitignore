@@ -262,7 +262,9 @@ experiments/**/runs/
 # =============================================================================
 # NDA / Sensitive Data — local only, NEVER commit to remote
 # =============================================================================
-data/
+# Anchored to the repo root: an unanchored `data/` also ignored the source package src/data/,
+# so new modules there were silently left out of commits.
+/data/
 data.zip
 data.tar.gz
 

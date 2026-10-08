@@ -120,6 +120,10 @@ class DataPaths:
         return self.data_dir / "processed"
 
     @property
+    def germany_processed(self) -> Path:
+        return self.processed / "germany"
+
+    @property
     def germany_pretraining(self) -> Path:
         return self.processed / "pretraining" / "germany"
 
@@ -158,3 +162,80 @@ def canonicalize_columns(df, mapping: Dict[str, str]):
 def enforce_lstm_feature_order(df):
     """Return a view ordered exactly as LSTM_INPUT_FEATURES."""
     return df[LSTM_INPUT_FEATURES]
+
+
+# -----------------------------
+# Data quality gate for PV time series
+# -----------------------------
+def validate_pv_frame(
+    df,
+    *,
+    time_col: str = TIME_COL,
+    power_col: str = POWER_NORM_COL,
+    step_minutes: int = TIME_STEP_MINUTES,
+    max_norm: float = 1.5,
+    max_nan_frac: float = 0.5,
+    max_gap_steps: int = 4 * 24 * 3,
+    flat_run_steps: int = 4 * 6,
+    raise_on_error: bool = False,
+) -> list:
+    """
+    Plausibility checks for one plant's PV frame. Returns a list of human-readable issues
+    (empty list = clean). Nothing is modified.
+
+    Checks: required columns, tz-aware UTC timestamps, sorted + unique timestamps, regular grid
+    (reports the largest gap), share of NaN power, value range [0, max_norm], and long runs of
+    identical non-zero values (stuck sensor / frozen export).
+
+    Gaps are *reported*, not fixed: dropping or filling rows silently is what lets windows span
+    missing data, so callers decide explicitly (see SimpleWindowDataset(require_contiguous=True)).
+    """
+    import numpy as np
+    import pandas as pd
+
+    issues: list = []
+    missing = [c for c in (time_col, power_col) if c not in df.columns]
+    if missing:
+        issues.append(f"missing columns: {missing}")
+    else:
+        ts = df[time_col]
+        if not pd.api.types.is_datetime64_any_dtype(ts) or getattr(ts.dt, "tz", None) is None:
+            issues.append(f"{time_col} is not timezone-aware datetime")
+        else:
+            if str(ts.dt.tz) not in ("UTC", "utc", "datetime.timezone.utc", "+00:00"):
+                issues.append(f"{time_col} is not UTC (tz={ts.dt.tz})")
+            if not ts.is_monotonic_increasing:
+                issues.append(f"{time_col} is not sorted ascending")
+            dup = int(ts.duplicated().sum())
+            if dup:
+                issues.append(f"{dup} duplicate timestamps")
+            step = pd.Timedelta(minutes=step_minutes)
+            diffs = ts.sort_values().diff().dropna()
+            off_grid = int((diffs % step != pd.Timedelta(0)).sum())
+            if off_grid:
+                issues.append(f"{off_grid} timestamp steps are not multiples of {step_minutes} min")
+            if len(diffs):
+                largest = int(diffs.max() / step) - 1
+                if largest > max_gap_steps:
+                    issues.append(f"largest gap is {largest} steps ({largest * step_minutes / 60:.1f} h)")
+
+        p = pd.to_numeric(df[power_col], errors="coerce")
+        nan_frac = float(p.isna().mean()) if len(p) else 1.0
+        if nan_frac > max_nan_frac:
+            issues.append(f"{nan_frac:.1%} of {power_col} is NaN (limit {max_nan_frac:.0%})")
+        pv = p.dropna()
+        if len(pv):
+            if (pv < -1e-9).any():
+                issues.append(f"{int((pv < -1e-9).sum())} negative {power_col} values")
+            if (pv > max_norm).any():
+                issues.append(f"{int((pv > max_norm).sum())} {power_col} values above {max_norm}")
+            nonzero_flat = (pv > 1e-6) & (pv.diff() == 0)
+            run = nonzero_flat.groupby((~nonzero_flat).cumsum()).cumsum()
+            if len(run) and int(run.max()) >= flat_run_steps:
+                issues.append(f"stuck value: {int(run.max())} identical non-zero {power_col} samples in a row")
+            if np.isclose(pv.max(), 0.0):
+                issues.append(f"{power_col} is all zeros")
+
+    if issues and raise_on_error:
+        raise ValueError("validate_pv_frame: " + "; ".join(issues))
+    return issues

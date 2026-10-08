@@ -20,6 +20,13 @@ Normalization rules (match Farm2107 behavior)
 - poa_irradiance may be NaN for now; scaler will skip NaNs naturally. Later PVLib
   will fill it and the pipeline can be rerun.
 
+v1.1 NOTE - split default changed
+- The "stratified temporal split" below shuffles individual 15-min rows within each season. Neighbouring
+  rows therefore land in train/val/test, and overlapping 96-step windows leak across the splits
+  (optimistic val/test scores). It is kept only behind --legacy-random-split for reproducing old runs.
+- Default is now a chronological 70/15/15 split with a purge gap (default 96 rows) dropped at each
+  boundary so no window straddles two splits.
+
 Old Splitting Strategy (Version 01) - DEPRECATED
 - Simple chronological split (train 70%, val 15%, test 15%)
 - Problem: Validation set ended up biased towards summer months, causing misleadingly low val errors.
@@ -183,7 +190,28 @@ def stratified_temporal_split(
     return train_indices, val_indices, test_indices
 
 
-def process_one(plant_id: str, paths: DataPaths) -> None:
+def chronological_split_with_purge(
+    n_rows: int,
+    train_frac: float = 0.70,
+    val_frac: float = 0.15,
+    purge: int = 96,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Contiguous train/val/test index blocks in time order. `purge` rows are dropped on each side of
+    every boundary (train end, val start/end, test start) so a window of that length never
+    straddles two splits.
+    """
+    if not 0 < train_frac < 1 or not 0 < val_frac < 1 or train_frac + val_frac >= 1:
+        raise ValueError("fractions must satisfy 0 < train, val and train + val < 1")
+    n_train_end = int(n_rows * train_frac)
+    n_val_end = int(n_rows * (train_frac + val_frac))
+    train = np.arange(0, max(n_train_end - purge, 0))
+    val = np.arange(n_train_end + purge, max(n_val_end - purge, n_train_end + purge))
+    test = np.arange(n_val_end + purge, n_rows)
+    return train, val, test
+
+
+def process_one(plant_id: str, paths: DataPaths, legacy_random_split: bool = False, purge: int = 96) -> None:
     in_path = paths.germany_pretraining / f"{plant_id}_pretrain_base.parquet"
     if not in_path.exists():
         raise FileNotFoundError(f"Missing pretrain base: {in_path}")
@@ -203,15 +231,19 @@ def process_one(plant_id: str, paths: DataPaths) -> None:
 
     # Split into train/val/test (ALL THREE SPLITS)
     # Version 02: Using stratified temporal split (ensures balanced seasonal representation)
-    print(f"\n[INFO] {plant_id}: Performing stratified temporal split...")
-    train_idx, val_idx, test_idx = stratified_temporal_split(
-        df=df,
-        time_col=TIME_COL,
-        train_frac=0.70,
-        val_frac=0.15,
-        test_frac=0.15,
-        random_seed=42
-    )
+    if legacy_random_split:
+        print(f"\n[WARN] {plant_id}: --legacy-random-split: random row split, windows leak across splits")
+        train_idx, val_idx, test_idx = stratified_temporal_split(
+            df=df,
+            time_col=TIME_COL,
+            train_frac=0.70,
+            val_frac=0.15,
+            test_frac=0.15,
+            random_seed=42
+        )
+    else:
+        print(f"\n[INFO] {plant_id}: chronological split with purge={purge} rows")
+        train_idx, val_idx, test_idx = chronological_split_with_purge(len(df), 0.70, 0.15, purge)
     
     # Extract splits using indices (not slices, since stratified sampling is non-contiguous)
     df_train = df.iloc[train_idx].copy()

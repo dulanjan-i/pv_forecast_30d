@@ -22,6 +22,14 @@ DO NOT:
 - Do not change the timestamp_utc column or the daily curve shape.
   This script only fixes magnitude, not time or shape.
 
+IMPORTANT - what the rescaling really does:
+- scale = capacity / max(power_kw), so after rescaling max(power_kw) == installed capacity and
+  power_norm peaks at exactly 1.0. The normalisation of the rescaled plants is therefore
+  "relative to the observed peak, which is set equal to installed capacity", and it depends on one
+  extreme sample over the whole file. Every run writes a provenance record next to the parquet
+  (<plant>_scaling.json) with the factor, the pre-scaling maximum and an outlier indicator, so the
+  normalisation can be audited later. Use --dry-run to inspect without writing.
+
 Concept:
 - Plants 01, 02, and 05 already have realistic magnitudes.
   Their max(power_kw) is at a sensible fraction of capacity, so they are left untouched.
@@ -30,7 +38,9 @@ Concept:
   For these, we treat the mismatch as a unit error and rescale them in place.
 """
 
+from datetime import datetime, timezone
 from pathlib import Path
+import argparse
 import json
 
 import pandas as pd
@@ -59,7 +69,12 @@ def load_meta(pid: str) -> dict:
         return json.load(f)
 
 
-def fix_plant_if_needed(pid: str) -> None:
+def _write_provenance(pid: str, record: dict) -> None:
+    path = PV_DIR / f"{pid}_scaling.json"
+    path.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def fix_plant_if_needed(pid: str, dry_run: bool = False) -> None:
     parquet_path = PV_DIR / f"{pid}_pv_15min.parquet"
     if not parquet_path.exists():
         print(f"[WARN] parquet not found for {pid}, skipping")
@@ -80,13 +95,34 @@ def fix_plant_if_needed(pid: str) -> None:
         return
 
     ratio = cap_kw / max_kw
-    print(f"[INFO] {pid}: cap={cap_kw:.3f}  max_kw={max_kw:.6g}  cap/max={ratio:.3g}")
+    p999 = float(df["power_kw"].quantile(0.999))
+    # max / p99.9 far above 1 means the peak is a single outlier, so a max-based factor is unreliable
+    outlier_ratio = float(max_kw / p999) if p999 > 0 else float("inf")
+    print(f"[INFO] {pid}: cap={cap_kw:.3f}  max_kw={max_kw:.6g}  cap/max={ratio:.3g}  max/p99.9={outlier_ratio:.3g}")
+    record = {
+        "plant_id": pid,
+        "installed_capacity_kw": cap_kw,
+        "max_power_kw_before": float(max_kw),
+        "p999_power_kw_before": p999,
+        "max_over_p999": outlier_ratio,
+        "cap_over_max": float(ratio),
+        "ratio_threshold": RATIO_THRESHOLD,
+        "rule": "scale = installed_capacity_kw / max(power_kw); max(power_kw) becomes installed capacity",
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    if outlier_ratio > 1.5:
+        print(f"[WARN] {pid}: max is {outlier_ratio:.2f}x the 99.9th percentile; the scale factor may be "
+              f"driven by a single outlier. Inspect the series before trusting the normalisation.")
 
     # If ratio is within a reasonable range, plant is assumed to be fine.
     # We do NOT try to "normalize" plants to exactly reach capacity.
     # This respects physical factors like losses, temperature, snow, shading.
     if ratio <= RATIO_THRESHOLD:
         print(f"[INFO] {pid}: ratio <= {RATIO_THRESHOLD}, assumed OK, no scaling applied")
+        if not dry_run:
+            # Do not overwrite an earlier record that documents an applied scale factor.
+            if not (PV_DIR / f"{pid}_scaling.json").exists():
+                _write_provenance(pid, {**record, "applied": False, "scale": 1.0})
         return
 
     # At this point the plant is clearly broken in magnitude.
@@ -94,6 +130,9 @@ def fix_plant_if_needed(pid: str) -> None:
     # We compute a scale factor that maps the current max power close to capacity.
     scale = ratio
     print(f"[INFO] {pid}: applying scale factor {scale:.6g}")
+    if dry_run:
+        print(f"[DRY-RUN] {pid}: nothing written")
+        return
 
     df = df.copy()
 
@@ -115,12 +154,16 @@ def fix_plant_if_needed(pid: str) -> None:
         df["power_norm"] = pd.NA
 
     df.to_parquet(parquet_path, index=False)
-    print(f"[INFO] {pid}: wrote fixed parquet")
+    _write_provenance(pid, {**record, "applied": True, "scale": float(scale)})
+    print(f"[INFO] {pid}: wrote fixed parquet and {pid}_scaling.json")
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true", help="report ratios and outliers, write nothing")
+    args = ap.parse_args()
     for pid in PLANT_IDS:
-        fix_plant_if_needed(pid)
+        fix_plant_if_needed(pid, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
