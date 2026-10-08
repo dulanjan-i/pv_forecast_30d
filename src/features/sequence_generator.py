@@ -30,6 +30,13 @@ class SimpleWindowDataset(Dataset):
         Number of past steps to use as input (encoder length).
     forecast_horizon : int
         Number of future steps to predict. In pretraining we usually set this to 1.
+    require_contiguous : bool
+        If True, drop every window whose timestamps are not exactly `step` apart, i.e. windows that
+        span a gap left by dropped/missing rows. Default False keeps the v1.0 behaviour (positional
+        windows), which is what the published checkpoints were trained with.
+    step : pandas.Timedelta | int | float | None
+        Expected spacing between consecutive rows for `require_contiguous`. Defaults to 15 minutes
+        for datetime columns and 1 for numeric ones.
     """
 
     def __init__(
@@ -41,6 +48,8 @@ class SimpleWindowDataset(Dataset):
         target_col: str,
         input_window: int,
         forecast_horizon: int = 1,
+        require_contiguous: bool = False,
+        step=None,
     ):
         self.time_col = time_col
         self.group_col = group_col
@@ -48,6 +57,9 @@ class SimpleWindowDataset(Dataset):
         self.target_col = target_col
         self.input_window = int(input_window)
         self.forecast_horizon = int(forecast_horizon)
+        self.require_contiguous = bool(require_contiguous)
+        self.step = step
+        self.n_dropped_gap_windows = 0
 
         # Sort by group + time to ensure correct ordering
         if group_col is not None:
@@ -60,34 +72,46 @@ class SimpleWindowDataset(Dataset):
         # Precompute valid index ranges for sliding windows
         self.indices = self._build_indices()
 
+    def _contiguous_mask(self, times: pd.Series, n_windows: int) -> np.ndarray:
+        """True for window starts whose full span (input + horizon) has no gap."""
+        span = self.input_window + self.forecast_horizon - 1
+        if pd.api.types.is_datetime64_any_dtype(times):
+            step = self.step if self.step is not None else pd.Timedelta(minutes=15)
+            t = times.to_numpy(dtype="datetime64[ns]").astype("int64")
+            step_ns = int(pd.Timedelta(step).value)
+        else:
+            step_ns = int(self.step if self.step is not None else 1)
+            t = times.to_numpy().astype("int64")
+        return (t[span:span + n_windows] - t[:n_windows]) == span * step_ns
+
     def _build_indices(self):
         """
         Build a list of (start_idx, end_idx_input, start_idx_target, end_idx_target)
         for each valid window.
         """
         indices = []
-
-        if self.group_col is not None:
-            grouped = self.df.groupby(self.group_col, sort=False)
-            for _, g in grouped:
-                n = len(g)
-                max_start = n - (self.input_window + self.forecast_horizon) + 1
-                for start in range(max_start):
-                    in_start = g.index[start]
-                    in_end = g.index[start + self.input_window - 1]
-                    out_start = g.index[start + self.input_window]
-                    out_end = g.index[start + self.input_window + self.forecast_horizon - 1]
-                    indices.append((in_start, in_end, out_start, out_end))
-        else:
-            n = len(self.df)
-            max_start = n - (self.input_window + self.forecast_horizon) + 1
-            for start in range(max_start):
-                in_start = start
-                in_end = start + self.input_window - 1
-                out_start = start + self.input_window
-                out_end = start + self.input_window + self.forecast_horizon - 1
-                indices.append((in_start, in_end, out_start, out_end))
-
+        groups = (
+            [g for _, g in self.df.groupby(self.group_col, sort=False)]
+            if self.group_col is not None
+            else [self.df]
+        )
+        for g in groups:
+            n = len(g)
+            n_windows = n - (self.input_window + self.forecast_horizon) + 1
+            if n_windows <= 0:
+                continue
+            keep = np.ones(n_windows, dtype=bool)
+            if self.require_contiguous:
+                keep = self._contiguous_mask(g[self.time_col], n_windows)
+                self.n_dropped_gap_windows += int((~keep).sum())
+            idx = g.index
+            for start in np.flatnonzero(keep):
+                indices.append((
+                    idx[start],
+                    idx[start + self.input_window - 1],
+                    idx[start + self.input_window],
+                    idx[start + self.input_window + self.forecast_horizon - 1],
+                ))
         return indices
 
     def __len__(self) -> int:

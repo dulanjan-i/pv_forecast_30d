@@ -86,7 +86,8 @@ def build_dataloader(
     horizon: int,
     batch_size: int,
     num_workers: int = 0,
-    shuffle: bool = True, 
+    shuffle: bool = True,
+    require_contiguous: bool = False,
 ) -> DataLoader:
     assert csv_path.exists(), f"File not found at {csv_path}"
 
@@ -111,7 +112,10 @@ def build_dataloader(
         target_col=target_col,
         input_window=window_size,
         forecast_horizon=horizon,
+        require_contiguous=require_contiguous,
     )
+    if require_contiguous:
+        print(f"[INFO] dropped {dataset.n_dropped_gap_windows} windows that span a time gap")
 
     loader = DataLoader(
         dataset,
@@ -175,6 +179,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         batch_size=batch_size,
         num_workers=num_workers,
         shuffle=True,
+        require_contiguous=bool(data_cfg.get("require_contiguous", False)),
     )
 
     val_loader = build_dataloader(
@@ -188,6 +193,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         batch_size=batch_size,
         num_workers=num_workers,
         shuffle=False,
+        require_contiguous=bool(data_cfg.get("require_contiguous", False)),
     )
 
     # 3) Instantiate LSTMEncoder

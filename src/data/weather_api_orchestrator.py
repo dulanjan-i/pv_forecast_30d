@@ -127,7 +127,7 @@ class WeatherAPIOrchestrator:
         
         try:
             print(f"   📡 Calling Open-Meteo API...")
-            response = requests.get(self.open_meteo_url, params=params, timeout=30, verify=False)
+            response = requests.get(self.open_meteo_url, params=params, timeout=30)
             response.raise_for_status()
             
             data = response.json()

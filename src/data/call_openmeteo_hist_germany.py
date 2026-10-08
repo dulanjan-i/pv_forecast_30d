@@ -26,6 +26,8 @@ Notes:
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Dict, List
 
@@ -33,6 +35,10 @@ import openmeteo_requests
 import pandas as pd
 import requests_cache
 from retry_requests import retry
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.data.time_utils import LOCAL_TZ, utc_index_from_epoch  # noqa: E402
 
 
 # ---------------------------------------------------------------------
@@ -92,8 +98,11 @@ HOURLY_VARS = [
 
 cache_session = requests_cache.CachedSession(".cache", expire_after=-1)
 retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
-# Disable SSL verification for corporate proxy/firewall
-retry_session.verify = False
+# TLS verification stays ON. Behind a corporate proxy, point REQUESTS_CA_BUNDLE (or
+# OPENMETEO_CA_BUNDLE) at the proxy's CA file instead of disabling verification.
+_ca_bundle = os.environ.get("OPENMETEO_CA_BUNDLE") or os.environ.get("REQUESTS_CA_BUNDLE")
+if _ca_bundle:
+    retry_session.verify = _ca_bundle
 openmeteo = openmeteo_requests.Client(session=retry_session)
 
 
@@ -163,12 +172,13 @@ def response_to_dataframes(response) -> Dict[str, pd.DataFrame]:
     for i, var_name in enumerate(HOURLY_VARS):
         hourly_data[var_name] = hourly.Variables(i).ValuesAsNumpy()
     
-    # Create date_range matching the actual data length
-    start_dt = pd.to_datetime(hourly.Time(), unit="s", utc=True).tz_convert(TIMEZONE).tz_localize(None)
-    freq = pd.Timedelta(seconds=hourly.Interval())
+    # Open-Meteo returns a uniform UTC series (start epoch + fixed interval). Keep it in UTC and
+    # derive the true local wall clock from it; never build uniform naive local labels (DST bug).
     n_points = len(hourly_data[HOURLY_VARS[0]])
-    hourly_data["date"] = pd.date_range(start=start_dt, periods=n_points, freq=freq)
-    
+    idx = utc_index_from_epoch(hourly.Time(), hourly.Interval(), n_points)
+    hourly_data["timestamp_utc"] = idx
+    hourly_data["date"] = idx.tz_convert(LOCAL_TZ).tz_localize(None)  # informational wall clock only
+
     hourly_df = pd.DataFrame(hourly_data)
 
     # Daily
@@ -183,12 +193,11 @@ def response_to_dataframes(response) -> Dict[str, pd.DataFrame]:
         else:
             daily_data[var_name] = daily.Variables(i).ValuesAsNumpy()
     
-    # Create date_range matching the actual data length
-    start_dt = pd.to_datetime(daily.Time(), unit="s", utc=True).tz_convert(TIMEZONE).tz_localize(None)
-    freq = pd.Timedelta(seconds=daily.Interval())
+    # Daily values are labelled by local calendar day; keep that as a plain date.
     n_points = len(daily_data[DAILY_VARS[0]])
-    daily_data["date"] = pd.date_range(start=start_dt, periods=n_points, freq=freq)
-    
+    didx = utc_index_from_epoch(daily.Time(), daily.Interval(), n_points)
+    daily_data["date"] = didx.tz_convert(LOCAL_TZ).tz_localize(None).normalize()
+
     daily_df = pd.DataFrame(daily_data)
 
     return {"hourly": hourly_df, "daily": daily_df}

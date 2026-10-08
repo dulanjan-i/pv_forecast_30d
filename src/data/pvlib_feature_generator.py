@@ -3,10 +3,19 @@ PVLib Feature Generator
 Adds solar position and irradiance features to weather dataframes.
 """
 
+import warnings
+
 import pandas as pd
 import numpy as np
 import pvlib
-from datetime import datetime
+
+
+def _first_col(df: pd.DataFrame, names):
+    """First existing column from `names` (as a Series), else None."""
+    for n in names:
+        if n in df.columns:
+            return pd.to_numeric(df[n], errors="coerce")
+    return None
 
 
 def generate_pvlib_features(weather_df: pd.DataFrame,
@@ -55,7 +64,7 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
     )
     
     # Get timestamps
-    times = pd.to_datetime(df['timestamp_utc'])
+    times = pd.DatetimeIndex(pd.to_datetime(df['timestamp_utc'], utc=True))
     
     # Calculate solar position
     solar_position = location.get_solarposition(times)
@@ -64,66 +73,47 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
     df['solar_azimuth'] = solar_position['azimuth'].values
     df['solar_elevation'] = solar_position['elevation'].values
     
-    # Calculate POA irradiance if GHI/DNI/DHI available
-    if all(col in df.columns for col in ['shortwave_radiation', 'direct_radiation', 'diffuse_radiation']):
-        # Open-Meteo provides these as shortwave/direct/diffuse
-        ghi = df['shortwave_radiation'].values
-        dni = df['direct_radiation'].values if 'direct_radiation' in df.columns else df.get('direct_normal_irradiance', np.zeros_like(ghi)).values
-        dhi = df['diffuse_radiation'].values
-        
-        # Calculate POA irradiance
-        poa_irradiance = pvlib.irradiance.get_total_irradiance(
-            surface_tilt=tilt,
-            surface_azimuth=azimuth,
-            solar_zenith=solar_position['zenith'],
-            solar_azimuth=solar_position['azimuth'],
-            dni=dni,
-            ghi=ghi,
-            dhi=dhi
-        )
-        
-        df['poa_global'] = poa_irradiance['poa_global'].values
-        df['poa_direct'] = poa_irradiance['poa_direct'].values
-        df['poa_diffuse'] = poa_irradiance['poa_diffuse'].values
-        
-    elif 'ghi' in df.columns:
-        # Standard naming convention
-        ghi = df['ghi'].values
-        dni = df.get('dni', np.zeros_like(ghi)).values
-        dhi = df.get('dhi', np.zeros_like(ghi)).values
-        
-        poa_irradiance = pvlib.irradiance.get_total_irradiance(
-            surface_tilt=tilt,
-            surface_azimuth=azimuth,
-            solar_zenith=solar_position['zenith'],
-            solar_azimuth=solar_position['azimuth'],
-            dni=dni,
-            ghi=ghi,
-            dhi=dhi
-        )
-        
-        df['poa_global'] = poa_irradiance['poa_global'].values
-        df['poa_direct'] = poa_irradiance['poa_direct'].values
-        df['poa_diffuse'] = poa_irradiance['poa_diffuse'].values
+    # Resolve irradiance columns. Open-Meteo's `direct_radiation` is the *horizontal* beam component,
+    # not DNI, so it must never be passed as `dni`; use the *_normal_irradiance column instead.
+    ghi_s = _first_col(df, ["shortwave_radiation_instant", "shortwave_radiation", "ghi"])
+    dhi_s = _first_col(df, ["diffuse_radiation_instant", "diffuse_radiation", "dhi"])
+    dni_s = _first_col(df, ["direct_normal_irradiance_instant", "direct_normal_irradiance", "dni"])
+
+    if ghi_s is not None and dhi_s is not None:
+        ghi = ghi_s.clip(lower=0.0).to_numpy(dtype=float)
+        dhi = dhi_s.clip(lower=0.0).to_numpy(dtype=float)
+        if dni_s is not None:
+            dni = dni_s.clip(lower=0.0).to_numpy(dtype=float)
+        else:
+            # Derive DNI from closure: DNI = (GHI - DHI) / cos(zenith), only for a well-defined sun position
+            cosz = np.cos(np.radians(solar_position['zenith'].to_numpy(dtype=float)))
+            with np.errstate(divide="ignore", invalid="ignore"):
+                dni = np.where(cosz > 0.05, (ghi - dhi) / cosz, 0.0)
+            dni = np.clip(dni, 0.0, 1400.0)
     else:
-        # No irradiance data - use clear sky model
-        print("   ⚠️  No GHI/DNI/DHI found - using clear sky model")
-        clearsky = location.get_clearsky(times)
-        
-        poa_irradiance = pvlib.irradiance.get_total_irradiance(
-            surface_tilt=tilt,
-            surface_azimuth=azimuth,
-            solar_zenith=solar_position['zenith'],
-            solar_azimuth=solar_position['azimuth'],
-            dni=clearsky['dni'],
-            ghi=clearsky['ghi'],
-            dhi=clearsky['dhi']
+        warnings.warn(
+            "No GHI/DHI columns found (looked for shortwave_radiation[_instant]/ghi and "
+            "diffuse_radiation[_instant]/dhi); falling back to a clear-sky model.",
+            stacklevel=2,
         )
-        
-        df['poa_global'] = poa_irradiance['poa_global'].values
-        df['poa_direct'] = poa_irradiance['poa_direct'].values
-        df['poa_diffuse'] = poa_irradiance['poa_diffuse'].values
-    
+        clearsky = location.get_clearsky(times)
+        ghi = clearsky['ghi'].to_numpy(dtype=float)
+        dni = clearsky['dni'].to_numpy(dtype=float)
+        dhi = clearsky['dhi'].to_numpy(dtype=float)
+
+    poa_irradiance = pvlib.irradiance.get_total_irradiance(
+        surface_tilt=tilt,
+        surface_azimuth=azimuth,
+        solar_zenith=solar_position['zenith'],
+        solar_azimuth=solar_position['azimuth'],
+        dni=dni,
+        ghi=ghi,
+        dhi=dhi
+    )
+    df['poa_global'] = poa_irradiance['poa_global'].values
+    df['poa_direct'] = poa_irradiance['poa_direct'].values
+    df['poa_diffuse'] = poa_irradiance['poa_diffuse'].values
+
     # Add time features
     df['hour_sin'] = np.sin(2 * np.pi * times.hour / 24)
     df['hour_cos'] = np.cos(2 * np.pi * times.hour / 24)
