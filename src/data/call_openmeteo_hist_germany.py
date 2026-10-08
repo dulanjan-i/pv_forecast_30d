@@ -1,7 +1,7 @@
 """
 call_openmeteo_hist_germany.py
 
-Fetch historical Open-Meteo weather for the six German Syneco plants.
+Fetch historical Open-Meteo weather for the six German plants.
 
 Logic:
 - For each plant_01 … plant_06:

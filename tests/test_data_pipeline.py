@@ -64,7 +64,7 @@ class TestTimeUtils:
     def test_weather_preprocessing_has_no_summer_offset(self, legacy):
         """The pipeline must keep daily GHI peaks on the clear-sky peak in every month."""
         chk = _load_alignment_script()
-        lat, lon = 48.694644, 12.597587
+        lat, lon = 48.14, 11.58  # generic Bavaria-area point, not a real plant
         raw = chk.synthetic_hourly(lat, lon, legacy=legacy)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
