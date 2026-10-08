@@ -17,6 +17,7 @@ on:
       - 'requirements/requirements_test.txt'
       - 'pytest.ini'
       - '.github/workflows/ci.yml'
+  workflow_dispatch:  ***REMOVED*** enables manual trigger from GitHub Actions UI
 
 jobs:
   test:
