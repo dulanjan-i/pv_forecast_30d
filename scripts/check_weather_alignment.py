@@ -16,7 +16,7 @@ Two modes:
 Usage:
   python scripts/check_weather_alignment.py
   python scripts/check_weather_alignment.py --csv data/raw/germany/plant_03/historical_weather_hourly.csv \
-      --lat 48.694644 --lon 12.597587
+      --lat <lat> --lon <lon>
 """
 from __future__ import annotations
 
@@ -95,8 +95,8 @@ def synthetic_hourly(lat: float, lon: float, year: int = 2023, legacy: bool = Fa
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--csv", type=Path, help="hourly weather CSV to check instead of synthetic data")
-    ap.add_argument("--lat", type=float, default=48.694644)
-    ap.add_argument("--lon", type=float, default=12.597587)
+    ap.add_argument("--lat", type=float, default=48.14)
+    ap.add_argument("--lon", type=float, default=11.58)
     ap.add_argument("--tolerance", type=float, default=0.5, help="max |offset| in hours")
     args = ap.parse_args()
 
