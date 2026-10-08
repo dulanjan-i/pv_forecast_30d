@@ -49,12 +49,12 @@ from src.data.schema import (
     canonicalize_columns,
 )
 
-***REMOVED*** Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
+# Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
 PLANT_IDS: List[str] = [
     "plant_01",
     "plant_02",
     "plant_03",
-    ***REMOVED*** "plant_04",  ***REMOVED*** EXCLUDED: See reports/stage2_version01_failed_chronological_split.md
+    # "plant_04",  # EXCLUDED: See reports/stage2_version01_failed_chronological_split.md
     "plant_05",
     "plant_06",
 ]
@@ -67,38 +67,38 @@ def build_one(plant_id: str, paths: DataPaths) -> Path:
 
     df = pd.read_parquet(in_path)
 
-    ***REMOVED*** Validate merged contract (Germany processed should already satisfy this)
+    # Validate merged contract (Germany processed should already satisfy this)
     validate_required_columns(df.columns, REQUIRED_MERGED, context=f"{plant_id}: processed(germany)")
 
-    ***REMOVED*** Canonicalize names (mostly identity for Germany, but keep it explicit)
+    # Canonicalize names (mostly identity for Germany, but keep it explicit)
     df = canonicalize_columns(df, GERMANY_TO_CANONICAL)
 
-    ***REMOVED*** Ensure time col is UTC and sorted
+    # Ensure time col is UTC and sorted
     df[TIME_COL] = pd.to_datetime(df[TIME_COL], utc=True)
     df = df.sort_values(TIME_COL).reset_index(drop=True)
 
-    ***REMOVED*** Ensure poa_irradiance exists (LSTM contract needs it, filled later by PVLib)
+    # Ensure poa_irradiance exists (LSTM contract needs it, filled later by PVLib)
     if "poa_irradiance" not in df.columns:
         df["poa_irradiance"] = np.nan
 
-    ***REMOVED*** Set poa_irradiance := globa;_tilted_irradiance as a proxy (temporary)
+    # Set poa_irradiance := globa;_tilted_irradiance as a proxy (temporary)
     if df["poa_irradiance"].isna().all() and "global_tilted_irradiance_instant" in df.columns:
         df["poa_irradiance"] = df["global_tilted_irradiance_instant"]
 
-    ***REMOVED*** Ensure required pretrain base columns exist
+    # Ensure required pretrain base columns exist
     missing = [c for c in LSTM_INPUT_FEATURES if c not in df.columns]
     if missing:
         raise ValueError(f"{plant_id}: missing columns required by LSTM_INPUT_FEATURES: {missing}")
 
-    ***REMOVED*** Keep only what we need for pretraining base (time + LSTM inputs)
+    # Keep only what we need for pretraining base (time + LSTM inputs)
     out_df = df[[TIME_COL] + LSTM_INPUT_FEATURES].copy()
 
-    ***REMOVED*** Basic sanity: target must exist
+    # Basic sanity: target must exist
     if POWER_NORM_COL not in out_df.columns:
         raise ValueError(f"{plant_id}: missing target {POWER_NORM_COL} in pretrain base")
 
-    ***REMOVED*** Version 02: Drop rows with NaN in power_norm (ensures clean training data)
-    ***REMOVED*** This removes nighttime periods with missing production data and any data quality issues
+    # Version 02: Drop rows with NaN in power_norm (ensures clean training data)
+    # This removes nighttime periods with missing production data and any data quality issues
     rows_before = len(out_df)
     out_df = out_df.dropna(subset=[POWER_NORM_COL])
     rows_after = len(out_df)
@@ -107,7 +107,7 @@ def build_one(plant_id: str, paths: DataPaths) -> Path:
         pct_dropped = (rows_dropped / rows_before) * 100
         print(f"[INFO] {plant_id}: Dropped {rows_dropped:,} rows ({pct_dropped:.1f}%) with NaN in {POWER_NORM_COL}")
 
-    ***REMOVED*** Write
+    # Write
     out_dir = paths.germany_pretraining
     out_dir.mkdir(parents=True, exist_ok=True)
 

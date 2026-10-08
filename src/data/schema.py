@@ -23,27 +23,27 @@ from pathlib import Path
 from typing import Dict, List, Sequence, Set
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Canonical column names
-***REMOVED*** -----------------------------
+# -----------------------------
+# Canonical column names
+# -----------------------------
 TIME_COL: str = "timestamp_utc"
 POWER_KW_COL: str = "power_kw"
 POWER_NORM_COL: str = "power_norm"
 
-***REMOVED*** Target contract (Stage 3 global encoder predicts next-step PV power)
+# Target contract (Stage 3 global encoder predicts next-step PV power)
 TARGET_COL: str = POWER_NORM_COL
 
-***REMOVED*** Expected time step for 15-min data (used by window builders)
+# Expected time step for 15-min data (used by window builders)
 TIME_STEP_MINUTES: int = 15
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** LSTM base feature order (15 features)
-***REMOVED*** IMPORTANT: This order must match Farm2107 pretraining feature order.
-***REMOVED*** -----------------------------
+# -----------------------------
+# LSTM base feature order (15 features)
+# IMPORTANT: This order must match Farm2107 pretraining feature order.
+# -----------------------------
 LSTM_INPUT_FEATURES: List[str] = [
-    POWER_NORM_COL,  ***REMOVED*** autoregressive input
-    "poa_irradiance",  ***REMOVED*** required for Farm2107 feature alignment
+    POWER_NORM_COL,  # autoregressive input
+    "poa_irradiance",  # required for Farm2107 feature alignment
     "temperature_2m",
     "relative_humidity_2m",
     "precipitation",
@@ -60,9 +60,9 @@ LSTM_INPUT_FEATURES: List[str] = [
 ]
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Required column sets per dataset stage
-***REMOVED*** -----------------------------
+# -----------------------------
+# Required column sets per dataset stage
+# -----------------------------
 REQUIRED_PV_ONLY: Set[str] = {TIME_COL, POWER_KW_COL, POWER_NORM_COL}
 
 REQUIRED_WEATHER_15MIN: Set[str] = {
@@ -87,9 +87,9 @@ REQUIRED_MERGED: Set[str] = REQUIRED_PV_ONLY | (REQUIRED_WEATHER_15MIN - {TIME_C
 REQUIRED_PRETRAIN_BASE: Set[str] = {TIME_COL} | set(LSTM_INPUT_FEATURES)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Version 3: Global Forecasting Model constants
-***REMOVED*** -----------------------------
+# -----------------------------
+# Version 3: Global Forecasting Model constants
+# -----------------------------
 PLANT_IDS: List[str] = [
     "plant_01",
     "plant_02",
@@ -104,9 +104,9 @@ PLANT_ONEHOT_COLS: List[str] = PLANT_IDS
 GLOBAL_LSTM_INPUT_FEATURES: List[str] = LSTM_INPUT_FEATURES + PLANT_ONEHOT_COLS
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Canonical paths helper
-***REMOVED*** -----------------------------
+# -----------------------------
+# Canonical paths helper
+# -----------------------------
 @dataclass(frozen=True)
 class DataPaths:
     repo_root: Path
@@ -124,9 +124,9 @@ class DataPaths:
         return self.processed / "pretraining" / "germany"
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Dataset-specific column adapters
-***REMOVED*** -----------------------------
+# -----------------------------
+# Dataset-specific column adapters
+# -----------------------------
 FARM2107_TO_CANONICAL: Dict[str, str] = {
     "measured_on": TIME_COL,
     "pv_power_norm": POWER_NORM_COL,
@@ -140,9 +140,9 @@ GERMANY_TO_CANONICAL: Dict[str, str] = {
 }
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Validation helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Validation helpers
+# -----------------------------
 def validate_required_columns(columns: Sequence[str], required: Set[str], context: str) -> None:
     cols = set(columns)
     missing = sorted(required - cols)

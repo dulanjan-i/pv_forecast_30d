@@ -1,14 +1,14 @@
-***REMOVED*** Chapter 4: Updated Section 4.5 (Results for RQ4: RL Meta-Controller)
+# Chapter 4: Updated Section 4.5 (Results for RQ4: RL Meta-Controller)
 
-***REMOVED******REMOVED*** Replace section 4.5 entirely with the following:
+## Replace section 4.5 entirely with the following:
 
 ---
 
-***REMOVED******REMOVED*** 4.5 Research Question 4: Reinforcement Learning Meta-Controller
+## 4.5 Research Question 4: Reinforcement Learning Meta-Controller
 
 **RQ4:** *Can a reinforcement learning agent learn to adaptively weight ensemble components (short-head TFT, long-head TFT, physics baseline) in real-time based on forecast horizon and input features, and does this learned policy outperform fixed heuristic weights?*
 
-***REMOVED******REMOVED******REMOVED*** 4.5.1 Evaluation Protocol
+### 4.5.1 Evaluation Protocol
 
 We instantiate the DDQN meta-controller (Phase 1 checkpoint: `ddqn_phase1_daily_norm.pt`, trained on Q2–Q3 2023) and evaluate via two-stage counterfactual replay on the 2024 test set (n=288 forecast starts):
 
@@ -20,7 +20,7 @@ Both stages compare learned policy selections against the fixed baseline (a₀: 
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 4.5.2 Quantitative Results
+### 4.5.2 Quantitative Results
 
 | **Metric** | **Baseline (Fixed)** | **Stage 1 (Restricted)** | **Stage 2 (Full)** |
 |------------|---------------------|-------------------------|-------------------|
@@ -34,7 +34,7 @@ Both stages compare learned policy selections against the fixed baseline (a₀: 
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 4.5.3 Action Selection Patterns
+### 4.5.3 Action Selection Patterns
 
 Stage 2 action distribution reveals three strategic regimes:
 
@@ -48,7 +48,7 @@ No forecasts selected actions {a₂, a₄, a₅, a₆, a₇}, indicating these c
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 4.5.4 Comparison to Stage 1 (Restricted)
+### 4.5.4 Comparison to Stage 1 (Restricted)
 
 The **minimal performance difference between Stage 1 and baseline** (Δ RMSE = +0.000119, 0.69% win rate) validates that Phase 1 training convergence to {a₀, a₂, a₃} was operationally sound — the restricted policy effectively replicates heuristic behavior under safety constraints.
 
@@ -62,7 +62,7 @@ This two-stage result suggests **deployment strategy**: train with full action s
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 4.5.5 Limitations and Edge Cases
+### 4.5.5 Limitations and Edge Cases
 
 While Stage 2 demonstrates substantial improvement, **68% of forecasts still show no advantage or slight degradation** relative to baseline. Analysis of policy-worse cases reveals:
 
@@ -76,7 +76,7 @@ These failure modes are not unique to RL meta-control; **fixed heuristic weights
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 4.5.6 Interpretation: RQ4 Verdict
+### 4.5.6 Interpretation: RQ4 Verdict
 
 **Answer: SUCCESS WITH CAVEATS**
 
@@ -98,16 +98,16 @@ The RL meta-controller demonstrates **two validated capabilities**:
 
 ---
 
-***REMOVED******REMOVED*** Updated Figure for Chapter 4:
+## Updated Figure for Chapter 4:
 
-***REMOVED******REMOVED******REMOVED*** Figure 4.X: Two-Stage RL Policy Evaluation
+### Figure 4.X: Two-Stage RL Policy Evaluation
 **Caption:** *Stage 1 (left panels) restricts policy to Phase 1 actions {a₀, a₂, a₃}, yielding performance indistinguishable from fixed baseline (Δ RMSE = +0.000119, 0.69% win rate). Stage 2 (right panels) enables full action space {a₀–a₇}, revealing learned strategy: 60% long-head dominant (a₁), 36% baseline fallback (a₀), 3% physics safe-harbor (a₃). Achieves −3.76% RMSE reduction and 31.94% win rate. Action distribution (middle row) and per-forecast scatter (bottom row) visualize strategic specialization.*
 
 **File:** `experiments/rl/counterfactuals/plant_03/summary/rl_two_stage_evaluation.png`
 
 ---
 
-***REMOVED******REMOVED*** Key Changes Summary:
+## Key Changes Summary:
 
 1. **Verdict changed:** "PARTIAL SUCCESS" → "SUCCESS WITH CAVEATS"
 2. **Framed two-stage protocol** as intentional safety validation, not post-hoc fix

@@ -28,9 +28,9 @@ import torch.optim as optim
 from src.rl.training import load_transitions
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Model
-***REMOVED*** -----------------------------
+# -----------------------------
+# Model
+# -----------------------------
 class DQNNetwork(nn.Module):
     def __init__(self, state_dim: int, action_dim: int, hidden_sizes: List[int]):
         super().__init__()
@@ -86,7 +86,7 @@ def ddqn_train(
     opt = optim.Adam(q_net.parameters(), lr=cfg.lr)
     loss_fn = nn.SmoothL1Loss()
 
-    ***REMOVED*** tensors
+    # tensors
     S = torch.tensor(states, dtype=torch.float32, device=device)
     A = torch.tensor(actions, dtype=torch.int64, device=device)
     R = torch.tensor(rewards, dtype=torch.float32, device=device)
@@ -100,7 +100,7 @@ def ddqn_train(
     best_ckpt = outdir / "ddqn_best.pt"
 
     for epoch in range(cfg.epochs):
-        ***REMOVED*** shuffle indices
+        # shuffle indices
         idx = torch.randperm(n, device=device)
 
         epoch_losses = []
@@ -116,15 +116,15 @@ def ddqn_train(
             ns = NS[batch_idx]
             d = D[batch_idx]
 
-            ***REMOVED*** current Q(s,a)
-            q = q_net(s)  ***REMOVED*** (B, action_dim)
+            # current Q(s,a)
+            q = q_net(s)  # (B, action_dim)
             q_sa = q.gather(1, a.view(-1, 1)).squeeze(1)
 
-            ***REMOVED*** DDQN target:
-            ***REMOVED*** a* = argmax_a Q_online(ns,a)
+            # DDQN target:
+            # a* = argmax_a Q_online(ns,a)
             with torch.no_grad():
                 q_next_online = q_net(ns)
-                a_star = torch.argmax(q_next_online, dim=1)  ***REMOVED*** (B,)
+                a_star = torch.argmax(q_next_online, dim=1)  # (B,)
                 q_next_target = target_net(ns)
                 q_ns_astar = q_next_target.gather(1, a_star.view(-1, 1)).squeeze(1)
                 y = r + cfg.gamma * (1.0 - d) * q_ns_astar
@@ -150,14 +150,14 @@ def ddqn_train(
             ckpt = {
                 "q_net": q_net.state_dict(),
                 "target_net": target_net.state_dict(),
-                "state_dict": q_net.state_dict(),  ***REMOVED*** alias for inference loaders
+                "state_dict": q_net.state_dict(),  # alias for inference loaders
                 "config": asdict(cfg),
                 "best_loss": best_loss,
                 "steps": steps,
             }
             torch.save(ckpt, best_ckpt)
 
-    ***REMOVED*** save final too
+    # save final too
     final_ckpt = outdir / "ddqn_final.pt"
     torch.save(
         {
@@ -214,7 +214,7 @@ def main() -> None:
     print(f"[data] N={len(states)} state_dim={states.shape[1]} actions={len(set(actions.tolist()))}")
     print(f"[data] reward mean={rewards.mean():.6f} std={rewards.std():.6f}")
 
-    ***REMOVED*** save config for provenance
+    # save config for provenance
     (outdir / "train_config.json").write_text(json.dumps(asdict(cfg), indent=2))
 
     ddqn_train(states, actions, rewards, next_states, dones, cfg, outdir)

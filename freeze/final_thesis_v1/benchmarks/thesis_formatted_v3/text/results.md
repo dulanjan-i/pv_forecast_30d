@@ -1,4 +1,4 @@
-***REMOVED*** Benchmark suite summary (v3 - FORMATTED)
+# Benchmark suite summary (v3 - FORMATTED)
 
 - Truth: /home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/phase1_2024daily_final/processed/ground_truth_15min_utc_capnorm.parquet
 
@@ -11,7 +11,7 @@
 - Truth label: Ground Truth Plant 03
 
 
-***REMOVED******REMOVED*** Overall metrics
+## Overall metrics
 
 | model              |       MAE |     RMSE |    nRMSE |         MBE |        R2 |      N |
 |:-------------------|----------:|---------:|---------:|------------:|----------:|-------:|
@@ -22,7 +22,7 @@
 | TFT-Only           | 0.100812  | 0.140186 | 0.140186 | -0.0471044  |  0.486609 | 394008 |
 
 
-***REMOVED******REMOVED*** Stitched overall metrics
+## Stitched overall metrics
 
 | model              |       MAE |     RMSE |    nRMSE |         MBE |        R2 |     N |
 |:-------------------|----------:|---------:|---------:|------------:|----------:|------:|
@@ -33,7 +33,7 @@
 | TFT-Only           | 0.0998884 | 0.139977 | 0.139977 | -0.0500917  |  0.481198 | 13869 |
 
 
-***REMOVED******REMOVED*** Tail abs error
+## Tail abs error
 
 | model              |       P50 |      P90 |      P95 |      P99 |      mean |
 |:-------------------|----------:|---------:|---------:|---------:|----------:|
@@ -44,7 +44,7 @@
 | TFT-Only           | 0.068616  | 0.240817 | 0.301579 | 0.424015 | 0.100812  |
 
 
-***REMOVED******REMOVED*** Paired daily deltas vs baseline
+## Paired daily deltas vs baseline
 
 | model              |   mean_daily_delta_MAE |   ci95_lo |   ci95_hi |   frac_days_improved_MAE |   N_days |
 |:-------------------|-----------------------:|----------:|----------:|-------------------------:|---------:|

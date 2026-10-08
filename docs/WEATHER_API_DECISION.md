@@ -1,20 +1,20 @@
-***REMOVED*** Weather API Decision for MiRACLE PV Forecasting
+# Weather API Decision for MiRACLE PV Forecasting
 **Date**: 2026-01-03  
 **Status**: FINAL - Keep Open-Meteo (No Change)
 
-***REMOVED******REMOVED*** Executive Summary
+## Executive Summary
 After testing ECMWF Direct API, ECMWF Open Data, and Open-Meteo APIs, we determined that **Open-Meteo is optimal** for 30-day PV forecasting in Germany. No changes needed to existing WeatherClient.
 
-***REMOVED******REMOVED*** APIs Tested
+## APIs Tested
 
-***REMOVED******REMOVED******REMOVED*** 1. ECMWF Direct API (via ecmwf-api-client)
+### 1. ECMWF Direct API (via ecmwf-api-client)
 - **Status**: ❌ Not accessible
 - **Issue**: Package import failed, would require MARS system integration
 - **Complexity**: High (GRIB2 format, asynchronous retrieval, minutes delay)
 - **Benefit**: Extended range up to 46 days (sub-seasonal)
 - **Verdict**: Not worth complexity for marginal benefit
 
-***REMOVED******REMOVED******REMOVED*** 2. ECMWF Open Data API (Free)
+### 2. ECMWF Open Data API (Free)
 - **Status**: ⚠️ Accessible but problematic
 - **Pros**: 
   - Free (no credentials)
@@ -28,7 +28,7 @@ After testing ECMWF Direct API, ECMWF Open Data, and Open-Meteo APIs, we determi
   - 500 simultaneous connection limit
 - **Verdict**: Too much overhead for PV use case
 
-***REMOVED******REMOVED******REMOVED*** 3. Open-Meteo APIs (Current Setup) ✅
+### 3. Open-Meteo APIs (Current Setup) ✅
 - **Status**: ✅ Working perfectly
 - **Performance**:
   - Forecast API: 15 days, <0.01s latency, quality=8
@@ -42,16 +42,16 @@ After testing ECMWF Direct API, ECMWF Open Data, and Open-Meteo APIs, we determi
   - Generous rate limits (10,000/day)
 - **Verdict**: **OPTIMAL FOR PV FORECASTING**
 
-***REMOVED******REMOVED*** Final Routing Strategy (No Change)
+## Final Routing Strategy (No Change)
 
 ```python
-***REMOVED*** WeatherClient.select_best_api() - UNCHANGED
+# WeatherClient.select_best_api() - UNCHANGED
 if days <= 7:
-    return "Forecast", self.forecast_url      ***REMOVED*** High accuracy, fast
+    return "Forecast", self.forecast_url      # High accuracy, fast
 elif days <= 15:
-    return "ECMWF", self.ecmwf_url           ***REMOVED*** ECMWF IFS via Open-Meteo
+    return "ECMWF", self.ecmwf_url           # ECMWF IFS via Open-Meteo
 else:
-    return "GFS", self.gfs_url               ***REMOVED*** Long-range (16+ days)
+    return "GFS", self.gfs_url               # Long-range (16+ days)
 ```
 
 **For 30-day PV forecasting:**
@@ -59,10 +59,10 @@ else:
 - Days 8-15: Open-Meteo ECMWF proxy (**already ECMWF IFS data!**)
 - Days 16-30: Open-Meteo GFS or repeat/climatology
 
-***REMOVED******REMOVED*** Key Insight
+## Key Insight
 **Open-Meteo's ECMWF endpoint IS ECMWF data** - it's just accessed via a convenient JSON API instead of complex GRIB2/MARS. We get ECMWF quality without complexity.
 
-***REMOVED******REMOVED*** Test Results Summary
+## Test Results Summary
 
 | API Source | Horizon | Latency | Quality | Solar Vars | Status |
 |-----------|---------|---------|---------|------------|--------|
@@ -72,7 +72,7 @@ else:
 | ECMWF Direct | N/A | N/A | N/A | ❌ Need processing | ❌ FAIL |
 | ECMWF Open Data | 10d | >2s | 10 | ⚠️ Accumulated | ⚠️ SSL Issues |
 
-***REMOVED******REMOVED*** Why Open-Meteo Wins for PV Forecasting
+## Why Open-Meteo Wins for PV Forecasting
 
 1. **Solar-Ready**: GHI, DNI, DHI, GTI pre-computed with tilt/azimuth
 2. **Fast**: JSON API, <0.2s response time
@@ -80,19 +80,19 @@ else:
 4. **Works Now**: No SSL issues, no parsing complexity
 5. **Proven**: Already integrated and tested in production
 
-***REMOVED******REMOVED*** Action Items
+## Action Items
 - ✅ Keep existing WeatherClient unchanged
 - ✅ Use Open-Meteo for all RL data collection
 - ✅ Document decision for future reference
 - 🚀 Proceed with RL training data generation
 
-***REMOVED******REMOVED*** Related Files
+## Related Files
 - `src/inference/weather_client.py` - Current implementation (KEEP AS-IS)
 - `tests/test_weather_api_comparison.py` - API benchmark results
 - `tests/test_ecmwf_opendata.py` - ECMWF Open Data test
 - `.ecmwf_credentials.json` - Unused (for future if needed)
 
-***REMOVED******REMOVED*** References
+## References
 - [ECMWF Open Data](https://www.ecmwf.int/en/forecasts/datasets/open-data)
 - [Open-Meteo API Docs](https://open-meteo.com/en/docs)
 - [ECMWF Public Datasets](https://confluence.ecmwf.int/display/WEBAPI/Access+ECMWF+Public+Datasets)

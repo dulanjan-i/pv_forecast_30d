@@ -26,9 +26,9 @@ import json
 import pandas as pd
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Paths
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -39,9 +39,9 @@ INTERIM_DIR = REPO_ROOT / "data" / "interim" / "germany"
 INTERIM_DIR.mkdir(parents=True, exist_ok=True)
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Helpers
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
 
 def load_metadata(plant_id: str) -> dict:
     meta_path = META_DIR / f"{plant_id}.json"
@@ -71,16 +71,16 @@ def load_raw_plant_csvs(plant_id: str) -> pd.DataFrame:
             sep=";",
             header=0,
             names=["timestamp", "power_raw"],
-            decimal=",",   ***REMOVED*** 0,252 -> 0.252
+            decimal=",",   # 0,252 -> 0.252
         )
         dfs.append(df)
 
     df_all = pd.concat(dfs, ignore_index=True)
 
-    ***REMOVED*** Parse timestamps as UTC
+    # Parse timestamps as UTC
     df_all["timestamp_utc"] = pd.to_datetime(df_all["timestamp"], utc=True)
 
-    ***REMOVED*** Drop the original text column
+    # Drop the original text column
     df_all = df_all.drop(columns=["timestamp"])
 
     return df_all
@@ -98,22 +98,22 @@ def add_power_columns(df: pd.DataFrame, meta: dict) -> pd.DataFrame:
 
     df = df.copy()
 
-    ***REMOVED*** Robust conversion to float
+    # Robust conversion to float
     df["power_kw"] = pd.to_numeric(df["power_raw"], errors="coerce")
 
-    ***REMOVED*** Power in W
+    # Power in W
     df["power_w"] = df["power_kw"] * 1000.0
 
-    ***REMOVED*** Normalized power
+    # Normalized power
     if cap_kw > 0:
         df["power_norm"] = df["power_kw"] / cap_kw
     else:
         df["power_norm"] = pd.NA
 
-    ***REMOVED*** Keep only canonical columns
+    # Keep only canonical columns
     df = df[["timestamp_utc", "power_kw", "power_w", "power_norm"]]
 
-    ***REMOVED*** Sort and deduplicate
+    # Sort and deduplicate
     df = df.sort_values("timestamp_utc").drop_duplicates(subset=["timestamp_utc"])
 
     return df
@@ -130,17 +130,17 @@ def preprocess_plant(plant_id: str) -> Path:
     return out_path
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Main
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------
 
 def main():
-    ***REMOVED*** Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
+    # Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
     plant_ids = [
         "plant_01",
         "plant_02",
         "plant_03",
-        ***REMOVED*** "plant_04",  ***REMOVED*** EXCLUDED: See reports/stage2_version01_failed_chronological_split.md
+        # "plant_04",  # EXCLUDED: See reports/stage2_version01_failed_chronological_split.md
         "plant_05",
         "plant_06",
     ]

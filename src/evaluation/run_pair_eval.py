@@ -1,4 +1,4 @@
-***REMOVED*** src/evaluation/run_pair_eval.py
+# src/evaluation/run_pair_eval.py
 from __future__ import annotations
 
 import argparse
@@ -12,9 +12,9 @@ import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** IO
-***REMOVED*** -----------------------------
+# -----------------------------
+# IO
+# -----------------------------
 def read_parquet(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Missing parquet: {path}")
@@ -29,9 +29,9 @@ def to_utc_datetime(s: pd.Series) -> pd.Series:
     return pd.to_datetime(s, utc=True)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Metrics
-***REMOVED*** -----------------------------
+# -----------------------------
+# Metrics
+# -----------------------------
 def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.mean(np.abs(y_pred - y_true)))
 
@@ -71,9 +71,9 @@ def metrics_row(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
     }
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Buckets + bootstrap
-***REMOVED*** -----------------------------
+# -----------------------------
+# Buckets + bootstrap
+# -----------------------------
 def lead_bucket(hours_ahead: float) -> str:
     if hours_ahead <= 24:
         return "0-24h"
@@ -95,9 +95,9 @@ def bootstrap_mean_ci(deltas: np.ndarray, n_boot: int = 5000, seed: int = 42) ->
     return mean0, lo, hi
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Plotting
-***REMOVED*** -----------------------------
+# -----------------------------
+# Plotting
+# -----------------------------
 def save_fig(path: Path, dpi: int = 200) -> None:
     plt.tight_layout()
     plt.savefig(path.as_posix(), dpi=dpi, bbox_inches='tight')
@@ -110,10 +110,10 @@ def plot_monthly_rmse(monthly: pd.DataFrame, out: Path, a_name: str, b_name: str
     yb = monthly["RMSE_B"].values
 
     plt.figure(figsize=(10, 4))
-    ***REMOVED*** Model A (typically baseline) = BOLD GREEN (HIGHLIGHTED)
-    plt.plot(x, ya, marker="o", label=a_name, color='***REMOVED***00AA00', linewidth=2.5, markersize=7, alpha=1.0)
-    ***REMOVED*** Model B (comparison) = LIGHT BLUE (de-emphasized)
-    plt.plot(x, yb, marker="s", label=b_name, color='***REMOVED***6BA3D8', linewidth=1.5, markersize=5, alpha=0.9)
+    # Model A (typically baseline) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(x, ya, marker="o", label=a_name, color='#00AA00', linewidth=2.5, markersize=7, alpha=1.0)
+    # Model B (comparison) = LIGHT BLUE (de-emphasized)
+    plt.plot(x, yb, marker="s", label=b_name, color='#6BA3D8', linewidth=1.5, markersize=5, alpha=0.9)
     plt.xticks(rotation=45, ha="right")
     plt.xlabel("Month", fontsize=11)
     plt.ylabel("RMSE (power_norm)", fontsize=11)
@@ -125,10 +125,10 @@ def plot_monthly_rmse(monthly: pd.DataFrame, out: Path, a_name: str, b_name: str
 
 def plot_error_hist(df: pd.DataFrame, out: Path, a_name: str, b_name: str, max_abs: float = 1.0) -> None:
     plt.figure(figsize=(8, 5))
-    ***REMOVED*** Model B first (behind, de-emphasized) = LIGHT BLUE
-    plt.hist(df["abs_err_B"].clip(0, max_abs), bins=80, alpha=0.6, label=b_name, color='***REMOVED***6BA3D8', edgecolor='black', linewidth=0.5)
-    ***REMOVED*** Model A on top (HIGHLIGHTED) = BOLD GREEN
-    plt.hist(df["abs_err_A"].clip(0, max_abs), bins=80, alpha=0.7, label=a_name, color='***REMOVED***00AA00', edgecolor='black', linewidth=0.5)
+    # Model B first (behind, de-emphasized) = LIGHT BLUE
+    plt.hist(df["abs_err_B"].clip(0, max_abs), bins=80, alpha=0.6, label=b_name, color='#6BA3D8', edgecolor='black', linewidth=0.5)
+    # Model A on top (HIGHLIGHTED) = BOLD GREEN
+    plt.hist(df["abs_err_A"].clip(0, max_abs), bins=80, alpha=0.7, label=a_name, color='#00AA00', edgecolor='black', linewidth=0.5)
     plt.xlabel("Absolute error (clipped)", fontsize=11)
     plt.ylabel("Count", fontsize=11)
     plt.legend(fontsize=10, framealpha=0.9)
@@ -143,10 +143,10 @@ def plot_cumulative_abs_error(df: pd.DataFrame, out: Path, a_name: str, b_name: 
     cum_b = np.cumsum(dd["abs_err_B"].values)
 
     plt.figure(figsize=(10, 4))
-    ***REMOVED*** Model A (baseline) = BOLD GREEN (HIGHLIGHTED)
-    plt.plot(dd["timestamp_utc"].values, cum_a, label=a_name, color='***REMOVED***00AA00', linewidth=2.5, alpha=1.0)
-    ***REMOVED*** Model B (comparison) = LIGHT BLUE (de-emphasized)
-    plt.plot(dd["timestamp_utc"].values, cum_b, label=b_name, color='***REMOVED***6BA3D8', linewidth=1.5, alpha=0.9)
+    # Model A (baseline) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(dd["timestamp_utc"].values, cum_a, label=a_name, color='#00AA00', linewidth=2.5, alpha=1.0)
+    # Model B (comparison) = LIGHT BLUE (de-emphasized)
+    plt.plot(dd["timestamp_utc"].values, cum_b, label=b_name, color='#6BA3D8', linewidth=1.5, alpha=0.9)
     plt.xlabel("Time", fontsize=11)
     plt.ylabel("Cumulative absolute error", fontsize=11)
     plt.legend(fontsize=10, framealpha=0.9)
@@ -187,12 +187,12 @@ def plot_case_study_stitched(
     dd = dd.groupby("timestamp_utc", as_index=False).first()
 
     plt.figure(figsize=(12, 5))
-    ***REMOVED*** Ground truth = LIGHT GREY (subtle reference)
-    plt.plot(dd["timestamp_utc"].values, dd["y_true"].values, label="Ground Truth", color='***REMOVED***888888', linewidth=1.5, alpha=0.7)
-    ***REMOVED*** Model A (baseline) = BOLD GREEN (HIGHLIGHTED)
-    plt.plot(dd["timestamp_utc"].values, dd["y_A"].values, label=a_name, color='***REMOVED***00AA00', linewidth=2.5, alpha=1.0)
-    ***REMOVED*** Model B (comparison) = LIGHT BLUE (de-emphasized)
-    plt.plot(dd["timestamp_utc"].values, dd["y_B"].values, label=b_name, color='***REMOVED***6BA3D8', linewidth=1.5, alpha=0.9)
+    # Ground truth = LIGHT GREY (subtle reference)
+    plt.plot(dd["timestamp_utc"].values, dd["y_true"].values, label="Ground Truth", color='#888888', linewidth=1.5, alpha=0.7)
+    # Model A (baseline) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(dd["timestamp_utc"].values, dd["y_A"].values, label=a_name, color='#00AA00', linewidth=2.5, alpha=1.0)
+    # Model B (comparison) = LIGHT BLUE (de-emphasized)
+    plt.plot(dd["timestamp_utc"].values, dd["y_B"].values, label=b_name, color='#6BA3D8', linewidth=1.5, alpha=0.9)
     plt.xlabel("Time (UTC)", fontsize=11)
     plt.ylabel("Power (normalized)", fontsize=11)
     plt.legend(fontsize=10, framealpha=0.9)
@@ -201,9 +201,9 @@ def plot_case_study_stitched(
     save_fig(out, dpi=300)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main
+# -----------------------------
 @dataclass
 class Paths:
     out_dir: Path
@@ -242,7 +242,7 @@ def main() -> None:
     a = read_parquet(Path(args.a))
     b = read_parquet(Path(args.b))
 
-    ***REMOVED*** Standardize timestamps
+    # Standardize timestamps
     truth["timestamp_utc"] = to_utc_datetime(truth["timestamp_utc"])
     a["timestamp_utc"] = to_utc_datetime(a["timestamp_utc"])
     b["timestamp_utc"] = to_utc_datetime(b["timestamp_utc"])
@@ -255,11 +255,11 @@ def main() -> None:
         raise ValueError("Truth parquet must contain power_norm")
     truth = truth[["timestamp_utc", "power_norm"]].rename(columns={"power_norm": "y_true"})
 
-    ***REMOVED*** Join truth
+    # Join truth
     a = a.merge(truth, on="timestamp_utc", how="inner")
     b = b.merge(truth, on="timestamp_utc", how="inner")
 
-    ***REMOVED*** Require common alignment keys
+    # Require common alignment keys
     key = ["forecast_start", "step_ahead", "timestamp_utc"]
     for name, df in [("A", a), ("B", b)]:
         for k in key + ["hours_ahead", "predicted_power_norm"]:
@@ -322,7 +322,7 @@ def main() -> None:
         index=False,
     )
 
-    ***REMOVED*** Monthly
+    # Monthly
     rows = []
     for m, g in df.groupby("month"):
         ma = metrics_row(g["y_true"].values, g["y_A"].values)
@@ -340,7 +340,7 @@ def main() -> None:
     monthly = pd.DataFrame(rows).sort_values("month")
     write_csv_and_tex(monthly, paths.tables_dir / "monthly_metrics.csv", paths.tables_dir / "monthly_metrics.tex", index=False)
 
-    ***REMOVED*** Lead buckets
+    # Lead buckets
     rows = []
     for lb, g in df.groupby("lead_bucket"):
         ma = metrics_row(g["y_true"].values, g["y_A"].values)
@@ -361,7 +361,7 @@ def main() -> None:
     lead_tbl = lead_tbl.sort_values("__ord").drop(columns="__ord")
     write_csv_and_tex(lead_tbl, paths.tables_dir / "lead_bucket_metrics.csv", paths.tables_dir / "lead_bucket_metrics.tex", index=False)
 
-    ***REMOVED*** Daily paired stats
+    # Daily paired stats
     daily_rows = []
     for d, g in df.groupby("day"):
         ma = metrics_row(g["y_true"].values, g["y_A"].values)
@@ -394,21 +394,21 @@ def main() -> None:
     plot_case_study_stitched(df, args.case_winter_start, args.case_winter_end, paths.figures_dir / "case_winter_week.png", args.a_name, args.b_name)
 
     md = []
-    md.append("***REMOVED*** Evaluation summary\n")
+    md.append("# Evaluation summary\n")
     md.append(f"- Night filtering: {'OFF' if args.include_night else 'ON'} (threshold y_true >= {args.daylight_threshold})\n")
-    md.append("***REMOVED******REMOVED*** Overall\n")
+    md.append("## Overall\n")
     md.append(overall.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Stitched overall (most recent forecast per timestamp)\n")
+    md.append("\n\n## Stitched overall (most recent forecast per timestamp)\n")
     md.append(stitched_overall.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Lead buckets\n")
+    md.append("\n\n## Lead buckets\n")
     md.append(lead_tbl.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Monthly\n")
+    md.append("\n\n## Monthly\n")
     md.append(monthly.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Paired daily comparison\n")
+    md.append("\n\n## Paired daily comparison\n")
     md.append(f"- Mean daily delta MAE (B-A): {mean_delta:.6f}\n")
     md.append(f"- 95% bootstrap CI for mean delta: [{lo:.6f}, {hi:.6f}]\n")
     md.append(f"- Fraction of days improved (delta < 0): {frac_improved:.3f}\n")
-    md.append("\n\n***REMOVED******REMOVED*** Tail absolute error\n")
+    md.append("\n\n## Tail absolute error\n")
     md.append(tail_tbl.to_markdown(index=False))
 
     (paths.text_dir / "results.md").write_text("\n".join(md))

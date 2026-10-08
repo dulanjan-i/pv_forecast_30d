@@ -1,4 +1,4 @@
-***REMOVED*** src/inference/pvlib_predictor.py
+# src/inference/pvlib_predictor.py
 """
 PVLib Physics-Based Power Predictor for MiRACLE.
 
@@ -43,25 +43,25 @@ Input/Output Paths:
 Usage:
     from src.inference.pvlib_predictor import PVLibPredictor
     
-    ***REMOVED*** Initialize with plant metadata
+    # Initialize with plant metadata
     predictor = PVLibPredictor("data/metadata/germany/plant_03.json")
     
-    ***REMOVED*** Option 1: From forecasted weather (validation with historical data)
+    # Option 1: From forecasted weather (validation with historical data)
     weather_df = pd.read_parquet("data/processed/.../test.parquet")
     pvlib_power = predictor.predict_from_weather(weather_df)
     
-    ***REMOVED*** Option 2: Clear-sky baseline (no weather needed)
+    # Option 2: Clear-sky baseline (no weather needed)
     pvlib_power = predictor.predict_clear_sky(start_time, num_steps=2880, freq="15min")
     
-    ***REMOVED*** Save predictions
+    # Save predictions
     predictor.save_prediction(pvlib_power, timestamps, "outputs/pvlib_forecasted/out.parquet")
 
 CLI Usage (demo only):
-    ***REMOVED*** Run built-in demo from repo root
+    # Run built-in demo from repo root
     python -m src.inference.pvlib_predictor
     
-    ***REMOVED*** For custom CLI script with weather file input, create wrapper:
-    ***REMOVED*** scripts/run_pvlib_prediction.py --weather_csv forecast.csv --plant plant_03
+    # For custom CLI script with weather file input, create wrapper:
+    # scripts/run_pvlib_prediction.py --weather_csv forecast.csv --plant plant_03
 
 Dependencies:
     - pvlib>=0.9.0
@@ -105,7 +105,7 @@ class PVLibPredictor:
         if not self.metadata_path.exists():
             raise FileNotFoundError(f"Plant metadata not found: {self.metadata_path}")
         
-        ***REMOVED*** Load plant configuration
+        # Load plant configuration
         with open(self.metadata_path, "r") as f:
             config = json.load(f)
         
@@ -114,20 +114,20 @@ class PVLibPredictor:
         self.tilt_deg = float(config["tilt_deg"])
         self.azimuth_deg = float(config["azimuth_deg"])
         
-        ***REMOVED*** Create PVLib Location object (for solar position calculations)
+        # Create PVLib Location object (for solar position calculations)
         self.location = Location(
             latitude=float(config["latitude"]),
             longitude=float(config["longitude"]),
             tz=config.get("timezone", "UTC"),
-            altitude=config.get("altitude_m", 0.0)  ***REMOVED*** Default sea level if not specified
+            altitude=config.get("altitude_m", 0.0)  # Default sea level if not specified
         )
         
-        ***REMOVED*** Create PVLib PVSystem object (for irradiance calculations)
-        ***REMOVED*** Note: PVLib uses 180° = south, 90° = east, 270° = west
+        # Create PVLib PVSystem object (for irradiance calculations)
+        # Note: PVLib uses 180° = south, 90° = east, 270° = west
         self.system = PVSystem(
             surface_tilt=float(config["tilt_deg"]),
             surface_azimuth=float(config["azimuth_deg"]),
-            ***REMOVED*** Simple model: no inverter, no temperature effects (can be extended later)
+            # Simple model: no inverter, no temperature effects (can be extended later)
         )
     
     def predict_from_weather(
@@ -155,23 +155,23 @@ class PVLibPredictor:
         """
         df = weather_df.copy()
         
-        ***REMOVED*** Ensure timestamps are timezone-aware
+        # Ensure timestamps are timezone-aware
         if time_col not in df.columns:
             raise ValueError(f"Time column '{time_col}' not found in weather_df")
         df[time_col] = pd.to_datetime(df[time_col], utc=True)
         
-        ***REMOVED*** Check required irradiance columns
+        # Check required irradiance columns
         required_cols = [ghi_col, dni_col, dhi_col]
         missing = [c for c in required_cols if c not in df.columns]
         if missing:
             raise ValueError(f"Missing required irradiance columns: {missing}")
         
-        ***REMOVED*** Step 1: Calculate solar position for each timestamp
-        ***REMOVED*** Returns: apparent_zenith, zenith, apparent_elevation, elevation, azimuth, equation_of_time
+        # Step 1: Calculate solar position for each timestamp
+        # Returns: apparent_zenith, zenith, apparent_elevation, elevation, azimuth, equation_of_time
         solar_position = self.location.get_solarposition(df[time_col])
         
-        ***REMOVED*** Step 2: Calculate plane-of-array (POA) irradiance
-        ***REMOVED*** Transforms horizontal irradiance (GHI/DNI/DHI) to tilted plane
+        # Step 2: Calculate plane-of-array (POA) irradiance
+        # Transforms horizontal irradiance (GHI/DNI/DHI) to tilted plane
         poa_irradiance = pvlib.irradiance.get_total_irradiance(
             surface_tilt=self.tilt_deg,
             surface_azimuth=self.azimuth_deg,
@@ -181,25 +181,25 @@ class PVLibPredictor:
             solar_zenith=solar_position["apparent_zenith"],
             solar_azimuth=solar_position["azimuth"]
         )
-        ***REMOVED*** Returns dict with keys: poa_global, poa_direct, poa_diffuse, poa_sky_diffuse, poa_ground_diffuse
+        # Returns dict with keys: poa_global, poa_direct, poa_diffuse, poa_sky_diffuse, poa_ground_diffuse
         
-        ***REMOVED*** Step 3: Convert POA irradiance to DC power
-        ***REMOVED*** Simple model: P_dc = (Irradiance / 1000 W/m²) × Capacity_dc
-        ***REMOVED*** This assumes:
-        ***REMOVED*** - Standard Test Conditions (STC): 1000 W/m² irradiance
-        ***REMOVED*** - No temperature derating (can be added with temp_air)
-        ***REMOVED*** - No soiling, aging, or mismatch losses
-        poa_global = poa_irradiance["poa_global"].values  ***REMOVED*** W/m²
+        # Step 3: Convert POA irradiance to DC power
+        # Simple model: P_dc = (Irradiance / 1000 W/m²) × Capacity_dc
+        # This assumes:
+        # - Standard Test Conditions (STC): 1000 W/m² irradiance
+        # - No temperature derating (can be added with temp_air)
+        # - No soiling, aging, or mismatch losses
+        poa_global = poa_irradiance["poa_global"].values  # W/m²
         
-        ***REMOVED*** Convert to kW/m² and multiply by capacity
+        # Convert to kW/m² and multiply by capacity
         dc_power_kw = (poa_global / 1000.0) * self.capacity_dc
         
-        ***REMOVED*** Step 4: Normalize to [0, 1] scale (matches TFT training data)
+        # Step 4: Normalize to [0, 1] scale (matches TFT training data)
         dc_power_norm = dc_power_kw / self.capacity_dc
         
-        ***REMOVED*** Step 5: Clip to valid range [0, 1]
-        ***REMOVED*** Negative values can occur at night or with bad weather data
-        ***REMOVED*** Values > 1.0 should not occur with correct capacity, but clip as safety
+        # Step 5: Clip to valid range [0, 1]
+        # Negative values can occur at night or with bad weather data
+        # Values > 1.0 should not occur with correct capacity, but clip as safety
         dc_power_norm = np.clip(dc_power_norm, 0.0, 1.0)
         
         return dc_power_norm
@@ -226,21 +226,21 @@ class PVLibPredictor:
         Returns:
             dc_power_norm: Normalized DC power [0, 1], shape (num_steps,)
         """
-        ***REMOVED*** Create timestamp range
+        # Create timestamp range
         if isinstance(start_time, str):
             start_time = pd.Timestamp(start_time, tz="UTC")
         
         timestamps = pd.date_range(start=start_time, periods=num_steps, freq=freq)
         
-        ***REMOVED*** Step 1: Calculate solar position
+        # Step 1: Calculate solar position
         solar_position = self.location.get_solarposition(timestamps)
         
-        ***REMOVED*** Step 2: Calculate clear-sky irradiance
-        ***REMOVED*** Uses Ineichen clear-sky model (simplified model, no atmospheric turbidity needed)
+        # Step 2: Calculate clear-sky irradiance
+        # Uses Ineichen clear-sky model (simplified model, no atmospheric turbidity needed)
         clearsky = self.location.get_clearsky(timestamps, model="ineichen")
-        ***REMOVED*** Returns DataFrame with columns: ghi, dni, dhi
+        # Returns DataFrame with columns: ghi, dni, dhi
         
-        ***REMOVED*** Step 3: Calculate POA irradiance for tilted panel
+        # Step 3: Calculate POA irradiance for tilted panel
         poa_irradiance = pvlib.irradiance.get_total_irradiance(
             surface_tilt=self.tilt_deg,
             surface_azimuth=self.azimuth_deg,
@@ -251,7 +251,7 @@ class PVLibPredictor:
             solar_azimuth=solar_position["azimuth"]
         )
         
-        ***REMOVED*** Step 4: Convert to DC power (same as predict_from_weather)
+        # Step 4: Convert to DC power (same as predict_from_weather)
         poa_global = poa_irradiance["poa_global"].values
         dc_power_kw = (poa_global / 1000.0) * self.capacity_dc
         dc_power_norm = dc_power_kw / self.capacity_dc
@@ -278,7 +278,7 @@ class PVLibPredictor:
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        ***REMOVED*** Build output DataFrame
+        # Build output DataFrame
         df = pd.DataFrame({
             "timestamp_utc": timestamps,
             "plant_id": self.plant_id,
@@ -286,12 +286,12 @@ class PVLibPredictor:
             "power_kw_pvlib": power * self.capacity_dc
         })
         
-        ***REMOVED*** Add metadata columns if provided
+        # Add metadata columns if provided
         if metadata:
             for key, val in metadata.items():
                 df[key] = val
         
-        ***REMOVED*** Save to parquet
+        # Save to parquet
         df.to_parquet(output_path, index=False, engine="pyarrow")
         print(f"[INFO] Saved PVLib predictions: {output_path}")
         print(f"       Rows: {len(df):,}, Columns: {len(df.columns)}")
@@ -305,7 +305,7 @@ def demo_usage():
     """
     import sys
     
-    ***REMOVED*** Example plant metadata path
+    # Example plant metadata path
     metadata_path = "data/metadata/germany/plant_03.json"
     
     if not Path(metadata_path).exists():
@@ -313,7 +313,7 @@ def demo_usage():
         print("[INFO] Please run from repository root: python -m src.inference.pvlib_predictor")
         sys.exit(1)
     
-    ***REMOVED*** Initialize predictor
+    # Initialize predictor
     print("[INFO] Initializing PVLibPredictor...")
     predictor = PVLibPredictor(metadata_path)
     print(f"       Plant: {predictor.plant_id}")
@@ -321,7 +321,7 @@ def demo_usage():
     print(f"       Tilt: {predictor.tilt_deg}°, Azimuth: {predictor.azimuth_deg}°")
     print(f"       Capacity: {predictor.capacity_dc:.1f} kW")
     
-    ***REMOVED*** Example 1: Clear-sky prediction
+    # Example 1: Clear-sky prediction
     print("\n[DEMO 1] Clear-sky prediction (30 days @ 15-min)")
     start_time = pd.Timestamp("2023-11-01 00:00:00", tz="UTC")
     timestamps = pd.date_range(start=start_time, periods=2880, freq="15min")
@@ -332,7 +332,7 @@ def demo_usage():
     print(f"         Min: {power_clearsky.min():.4f}, Max: {power_clearsky.max():.4f}, Mean: {power_clearsky.mean():.4f}")
     print(f"         Non-zero steps: {(power_clearsky > 0.01).sum()} / {len(power_clearsky)}")
     
-    ***REMOVED*** Save clear-sky output
+    # Save clear-sky output
     output_dir = Path("outputs/pvlib_forecasted")
     output_dir.mkdir(parents=True, exist_ok=True)
     
@@ -343,12 +343,12 @@ def demo_usage():
         metadata={"model": "clear_sky_ineichen", "forecast_start": str(start_time)}
     )
     
-    ***REMOVED*** Example 2: From synthetic weather forecast
+    # Example 2: From synthetic weather forecast
     print("\n[DEMO 2] Prediction from synthetic weather forecast (7 days @ 1-hour)")
     timestamps_hourly = pd.date_range(start=start_time, periods=168, freq="1h")
     
-    ***REMOVED*** Create synthetic weather forecast (normally from API)
-    ***REMOVED*** Using clear-sky as synthetic "perfect forecast" for demo
+    # Create synthetic weather forecast (normally from API)
+    # Using clear-sky as synthetic "perfect forecast" for demo
     clearsky_hourly = predictor.location.get_clearsky(timestamps_hourly, model="ineichen")
     weather_df = pd.DataFrame({
         "timestamp_utc": timestamps_hourly,

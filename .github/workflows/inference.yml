@@ -1,24 +1,24 @@
-***REMOVED*** =============================================================================
-***REMOVED*** MiRACLE — Scheduled & On-Demand Inference
-***REMOVED*** =============================================================================
-***REMOVED*** Triggers:
-***REMOVED***   - Daily at 06:00 UTC (adjust cron to match your timezone / grid market)
-***REMOVED***   - Manual dispatch with optional date override
-***REMOVED***
-***REMOVED*** What it does:
-***REMOVED***   1. Pulls the latest miracle-inference image from GHCR
-***REMOVED***   2. Fetches live weather from OpenMeteo (free, no API key)
-***REMOVED***   3. Runs 30-day PV forecast for plant_03
-***REMOVED***   4. Uploads forecast parquet as a GitHub Actions artifact (retained 30 days)
-***REMOVED***
-***REMOVED*** View results: Actions tab → "Scheduled Inference" → Artifacts
-***REMOVED*** =============================================================================
+# =============================================================================
+# MiRACLE — Scheduled & On-Demand Inference
+# =============================================================================
+# Triggers:
+#   - Daily at 06:00 UTC (adjust cron to match your timezone / grid market)
+#   - Manual dispatch with optional date override
+#
+# What it does:
+#   1. Pulls the latest miracle-inference image from GHCR
+#   2. Fetches live weather from OpenMeteo (free, no API key)
+#   3. Runs 30-day PV forecast for plant_03
+#   4. Uploads forecast parquet as a GitHub Actions artifact (retained 30 days)
+#
+# View results: Actions tab → "Scheduled Inference" → Artifacts
+# =============================================================================
 
 name: Scheduled Inference
 
 on:
   schedule:
-    ***REMOVED*** Daily at 06:00 UTC — adjust to match market open / grid settlement
+    # Daily at 06:00 UTC — adjust to match market open / grid settlement
     - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
@@ -44,13 +44,13 @@ jobs:
 
     permissions:
       contents: read
-      packages: read  ***REMOVED*** to pull from GHCR
+      packages: read  # to pull from GHCR
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      ***REMOVED*** Resolve forecast date — use input if provided, else today in UTC
+      # Resolve forecast date — use input if provided, else today in UTC
       - name: Resolve forecast date
         id: date
         run: |
@@ -60,13 +60,13 @@ jobs:
             echo "date=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
           fi
 
-      ***REMOVED*** Pull from GHCR — uses GITHUB_TOKEN, no extra setup needed for public repos
+      # Pull from GHCR — uses GITHUB_TOKEN, no extra setup needed for public repos
       - name: Pull inference image
         run: docker pull ${{ env.IMAGE }}
 
-      ***REMOVED*** Verify checkpoint integrity before running inference.
-      ***REMOVED*** Uses Python hashlib inside the container — avoids path mismatch between
-      ***REMOVED*** the local manifest (freeze/...) and container paths (/app/checkpoints/...).
+      # Verify checkpoint integrity before running inference.
+      # Uses Python hashlib inside the container — avoids path mismatch between
+      # the local manifest (freeze/...) and container paths (/app/checkpoints/...).
       - name: Verify checkpoint integrity
         run: |
           docker run --rm ${{ env.IMAGE }} python -c "
@@ -98,7 +98,7 @@ jobs:
           print('All checkpoints verified.')
           "
 
-      ***REMOVED*** Run 30-day forecast — mounts outputs/ so the parquet is accessible on the host
+      # Run 30-day forecast — mounts outputs/ so the parquet is accessible on the host
       - name: Run 30-day PV forecast
         run: |
           mkdir -p outputs
@@ -110,7 +110,7 @@ jobs:
               --date ${{ steps.date.outputs.date }} \
               --output-dir /app/outputs
 
-      ***REMOVED*** Upload forecast as a downloadable artifact (retained 30 days)
+      # Upload forecast as a downloadable artifact (retained 30 days)
       - name: Upload forecast artifact
         uses: actions/upload-artifact@v4
         with:
@@ -120,7 +120,7 @@ jobs:
 
       - name: Print summary
         run: |
-          echo "***REMOVED******REMOVED*** MiRACLE Forecast Complete" >> $GITHUB_STEP_SUMMARY
+          echo "## MiRACLE Forecast Complete" >> $GITHUB_STEP_SUMMARY
           echo "- **Date:** ${{ steps.date.outputs.date }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Image:** ${{ env.IMAGE }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Artifact:** forecast-${{ steps.date.outputs.date }}" >> $GITHUB_STEP_SUMMARY

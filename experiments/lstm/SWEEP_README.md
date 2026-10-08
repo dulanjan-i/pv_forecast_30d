@@ -1,6 +1,6 @@
-***REMOVED*** LSTM Hyperparameter Sweep Guide
+# LSTM Hyperparameter Sweep Guide
 
-***REMOVED******REMOVED*** Overview
+## Overview
 
 This sweep system runs 12 experiments with different hyperparameter combinations:
 - **hidden_size**: 32, 64, 128
@@ -10,30 +10,30 @@ This sweep system runs 12 experiments with different hyperparameter combinations
 
 Each run trains for 20 epochs on a single GPU.
 
-***REMOVED******REMOVED*** Files Structure
+## Files Structure
 
 ```
 experiments/lstm/
-├── pretrain_farm2107.yaml          ***REMOVED*** Base template config
-├── sweeps/                          ***REMOVED*** Generated configs (12 files)
+├── pretrain_farm2107.yaml          # Base template config
+├── sweeps/                          # Generated configs (12 files)
 │   ├── pretrain_farm2107_h32_l1_lr5em4.yaml
 │   ├── pretrain_farm2107_h32_l1_lr1em3.yaml
 │   └── ...
-├── runs/                            ***REMOVED*** Training results
-│   ├── farm2107_h32_l1_lr5em4/     ***REMOVED*** Per-config outputs
+├── runs/                            # Training results
+│   ├── farm2107_h32_l1_lr5em4/     # Per-config outputs
 │   │   ├── checkpoints/
 │   │   │   ├── lstm_encoder_farm2107_h32_l1_lr5em4_last.ckpt
 │   │   │   └── lstm_encoder_farm2107_h32_l1_lr5em4_weights.pt
 │   │   └── farm2107_pretrain_sweep/
 │   │       └── version_0/
-│   │           └── metrics.csv     ***REMOVED*** Training metrics
+│   │           └── metrics.csv     # Training metrics
 │   └── ...
-└── pretrain_hparam_results.csv     ***REMOVED*** Final comparison table
+└── pretrain_hparam_results.csv     # Final comparison table
 ```
 
-***REMOVED******REMOVED*** How to Run
+## How to Run
 
-***REMOVED******REMOVED******REMOVED*** Option 1: Sequential (One GPU at a time)
+### Option 1: Sequential (One GPU at a time)
 Runs all 12 experiments one after another on GPU 0.
 **Time**: ~12 × training_time per run
 
@@ -44,7 +44,7 @@ cd ~/pv_forecast_30d
 python src/training/run_pretrain_sweep.py
 ```
 
-***REMOVED******REMOVED******REMOVED*** Option 2: Parallel (All 4 GPUs) ⚡ RECOMMENDED
+### Option 2: Parallel (All 4 GPUs) ⚡ RECOMMENDED
 Runs 4 experiments simultaneously, one per GPU.
 **Time**: ~3 × training_time per run (4x speedup!)
 
@@ -63,7 +63,7 @@ python src/training/run_pretrain_sweep.py --parallel --num-gpus 4
 
 Uses `CUDA_VISIBLE_DEVICES` environment variable to isolate each run.
 
-***REMOVED******REMOVED******REMOVED*** Monitor Progress
+### Monitor Progress
 
 **Check GPU usage:**
 ```bash
@@ -72,14 +72,14 @@ watch -n 1 nvidia-smi
 
 **Check specific run logs:**
 ```bash
-***REMOVED*** List all runs
+# List all runs
 ls experiments/lstm/runs/
 
-***REMOVED*** View metrics for a specific run
+# View metrics for a specific run
 cat experiments/lstm/runs/farm2107_h64_l2_lr1em3/farm2107_pretrain_sweep/version_0/metrics.csv
 ```
 
-***REMOVED******REMOVED*** Collect Results
+## Collect Results
 
 After sweep completes, aggregate all metrics:
 
@@ -101,45 +101,45 @@ This creates `experiments/lstm/pretrain_hparam_results.csv` with columns:
 
 Results are sorted by **best_val_rmse** (lower is better).
 
-***REMOVED******REMOVED*** Modify the Sweep
+## Modify the Sweep
 
 Edit `src/training/run_pretrain_sweep.py`:
 
 ```python
-***REMOVED*** Change hyperparameter grid
-hidden_sizes = [32, 64, 128]        ***REMOVED*** Try [64, 128, 256]
-num_layers_list = [1, 2]            ***REMOVED*** Try [1, 2, 3]
-lrs = [5e-4, 1e-3]                  ***REMOVED*** Try [1e-4, 5e-4, 1e-3]
+# Change hyperparameter grid
+hidden_sizes = [32, 64, 128]        # Try [64, 128, 256]
+num_layers_list = [1, 2]            # Try [1, 2, 3]
+lrs = [5e-4, 1e-3]                  # Try [1e-4, 5e-4, 1e-3]
 ```
 
 Or change epochs in `experiments/lstm/pretrain_farm2107.yaml`:
 ```yaml
 training:
-  max_epochs: 20  ***REMOVED*** Change to 30 for longer training
+  max_epochs: 20  # Change to 30 for longer training
 ```
 
-***REMOVED******REMOVED*** Troubleshooting
+## Troubleshooting
 
-***REMOVED******REMOVED******REMOVED*** Out of memory on GPU
+### Out of memory on GPU
 - Reduce `batch_size` in `pretrain_farm2107.yaml`
 - Use fewer parallel workers: `--num-gpus 2`
 
-***REMOVED******REMOVED******REMOVED*** Some runs fail
+### Some runs fail
 - Check failed run logs in `experiments/lstm/runs/farm2107_<tag>/`
 - The sweep continues even if one run fails
 - Failed runs are listed at the end
 
-***REMOVED******REMOVED******REMOVED*** Clean up and restart
+### Clean up and restart
 ```bash
-***REMOVED*** Remove all sweep results
+# Remove all sweep results
 rm -rf experiments/lstm/sweeps/
 rm -rf experiments/lstm/runs/
 
-***REMOVED*** Run again
+# Run again
 python scripts/run_pretrain_sweep.py --parallel --num-gpus 4
 ```
 
-***REMOVED******REMOVED*** Expected Timeline (calc02 with 4x L4 GPUs)
+## Expected Timeline (calc02 with 4x L4 GPUs)
 
 **Per run estimates:**
 - 20 epochs × ~2-3 min/epoch = ~40-60 min per run
@@ -151,7 +151,7 @@ python scripts/run_pretrain_sweep.py --parallel --num-gpus 4
 **Sequential execution (1 GPU):**
 - 12 runs × 60 min = **~12 hours** 🐌
 
-***REMOVED******REMOVED*** Next Steps
+## Next Steps
 
 1. Run the sweep (parallel recommended)
 2. Collect metrics

@@ -1,4 +1,4 @@
-***REMOVED***src/evaluation/run_full_eval.py
+#src/evaluation/run_full_eval.py
 
 from __future__ import annotations
 
@@ -15,9 +15,9 @@ import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** IO
-***REMOVED*** -----------------------------
+# -----------------------------
+# IO
+# -----------------------------
 def read_parquet(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Missing parquet: {path}")
@@ -29,9 +29,9 @@ def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Metrics
-***REMOVED*** -----------------------------
+# -----------------------------
+# Metrics
+# -----------------------------
 def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.mean(np.abs(y_pred - y_true)))
 
@@ -55,7 +55,7 @@ def r2(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def nrmse_capacity(y_true: np.ndarray, y_pred: np.ndarray, cap: float = 1.0) -> float:
-    ***REMOVED*** power_norm should already be cap-normalized, so cap=1 is fine
+    # power_norm should already be cap-normalized, so cap=1 is fine
     if cap == 0:
         return float("nan")
     return rmse(y_true, y_pred) / cap
@@ -72,11 +72,11 @@ def metrics_row(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
     }
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Buckets + helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Buckets + helpers
+# -----------------------------
 def lead_bucket(hours_ahead: float) -> str:
-    ***REMOVED*** Adjust if you want different bins
+    # Adjust if you want different bins
     if hours_ahead <= 24:
         return "0-24h"
     if hours_ahead <= 24 * 7:
@@ -85,7 +85,7 @@ def lead_bucket(hours_ahead: float) -> str:
 
 
 def to_utc_datetime(s: pd.Series) -> pd.Series:
-    ***REMOVED*** Keep timezone-aware UTC
+    # Keep timezone-aware UTC
     return pd.to_datetime(s, utc=True)
 
 
@@ -106,9 +106,9 @@ def bootstrap_mean_ci(deltas: np.ndarray, n_boot: int = 5000, seed: int = 42) ->
     return mean0, lo, hi
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Plotting
-***REMOVED*** -----------------------------
+# -----------------------------
+# Plotting
+# -----------------------------
 def save_fig(path: Path, dpi: int = 200) -> None:
     plt.tight_layout()
     plt.savefig(path.as_posix(), dpi=dpi, bbox_inches='tight')
@@ -116,16 +116,16 @@ def save_fig(path: Path, dpi: int = 200) -> None:
 
 
 def plot_monthly_rmse(monthly: pd.DataFrame, out: Path) -> None:
-    ***REMOVED*** monthly columns: month, RMSE_baseline, RMSE_policy
+    # monthly columns: month, RMSE_baseline, RMSE_policy
     x = monthly["month"].astype(str).tolist()
     yb = monthly["RMSE_baseline"].values
     yp = monthly["RMSE_policy"].values
 
     plt.figure(figsize=(10, 4))
-    ***REMOVED*** Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
-    plt.plot(x, yb, marker="o", label="MiRACLE v1.0 (Core)", color='***REMOVED***00AA00', linewidth=2.5, markersize=7, alpha=1.0)
-    ***REMOVED*** Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
-    plt.plot(x, yp, marker="s", label="MiRACLE v1.0 (Meta-control)", color='***REMOVED***6BA3D8', linewidth=1.5, markersize=5, alpha=0.9)
+    # Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(x, yb, marker="o", label="MiRACLE v1.0 (Core)", color='#00AA00', linewidth=2.5, markersize=7, alpha=1.0)
+    # Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
+    plt.plot(x, yp, marker="s", label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', linewidth=1.5, markersize=5, alpha=0.9)
     plt.xticks(rotation=45, ha="right")
     plt.xlabel("Month", fontsize=11)
     plt.ylabel("RMSE (power_norm)", fontsize=11)
@@ -136,12 +136,12 @@ def plot_monthly_rmse(monthly: pd.DataFrame, out: Path) -> None:
 
 
 def plot_error_hist(df: pd.DataFrame, out: Path, max_abs: float = 1.0) -> None:
-    ***REMOVED*** histogram of absolute error
+    # histogram of absolute error
     plt.figure(figsize=(8, 5))
-    ***REMOVED*** Policy first (behind, de-emphasized) = LIGHT BLUE
-    plt.hist(df["abs_err_policy"].clip(0, max_abs), bins=80, alpha=0.6, label="MiRACLE v1.0 (Meta-control)", color='***REMOVED***6BA3D8', edgecolor='black', linewidth=0.5)
-    ***REMOVED*** Baseline on top (HIGHLIGHTED) = BOLD GREEN
-    plt.hist(df["abs_err_baseline"].clip(0, max_abs), bins=80, alpha=0.7, label="MiRACLE v1.0 (Core)", color='***REMOVED***00AA00', edgecolor='black', linewidth=0.5)
+    # Policy first (behind, de-emphasized) = LIGHT BLUE
+    plt.hist(df["abs_err_policy"].clip(0, max_abs), bins=80, alpha=0.6, label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', edgecolor='black', linewidth=0.5)
+    # Baseline on top (HIGHLIGHTED) = BOLD GREEN
+    plt.hist(df["abs_err_baseline"].clip(0, max_abs), bins=80, alpha=0.7, label="MiRACLE v1.0 (Core)", color='#00AA00', edgecolor='black', linewidth=0.5)
     plt.xlabel("Absolute error (clipped)", fontsize=11)
     plt.ylabel("Count", fontsize=11)
     plt.legend(fontsize=10, framealpha=0.9)
@@ -156,10 +156,10 @@ def plot_cumulative_abs_error(df: pd.DataFrame, out: Path) -> None:
     cum_p = np.cumsum(dd["abs_err_policy"].values)
 
     plt.figure(figsize=(10, 4))
-    ***REMOVED*** Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
-    plt.plot(dd["timestamp_utc"].values, cum_b, label="MiRACLE v1.0 (Core)", color='***REMOVED***00AA00', linewidth=2.5, alpha=1.0)
-    ***REMOVED*** Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
-    plt.plot(dd["timestamp_utc"].values, cum_p, label="MiRACLE v1.0 (Meta-control)", color='***REMOVED***6BA3D8', linewidth=1.5, alpha=0.9)
+    # Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(dd["timestamp_utc"].values, cum_b, label="MiRACLE v1.0 (Core)", color='#00AA00', linewidth=2.5, alpha=1.0)
+    # Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
+    plt.plot(dd["timestamp_utc"].values, cum_p, label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', linewidth=1.5, alpha=0.9)
     plt.xlabel("Time", fontsize=11)
     plt.ylabel("Cumulative absolute error", fontsize=11)
     plt.legend(fontsize=10, framealpha=0.9)
@@ -169,7 +169,7 @@ def plot_cumulative_abs_error(df: pd.DataFrame, out: Path) -> None:
 
 
 def plot_daily_scatter(daily: pd.DataFrame, out: Path) -> None:
-    ***REMOVED*** daily columns: day, MAE_baseline, MAE_policy
+    # daily columns: day, MAE_baseline, MAE_policy
     x = daily["MAE_baseline"].values
     y = daily["MAE_policy"].values
 
@@ -208,17 +208,17 @@ def plot_case_study_stitched(
     if dd.empty:
         return
 
-    ***REMOVED*** pick smallest lead for each timestamp
+    # pick smallest lead for each timestamp
     dd = dd.sort_values(["timestamp_utc", "hours_ahead"])
     dd = dd.groupby("timestamp_utc", as_index=False).first()
 
     plt.figure(figsize=(12, 5))
-    ***REMOVED*** Ground truth = LIGHT GREY (subtle reference)
-    plt.plot(dd["timestamp_utc"].values, dd["y_true"].values, label="Ground Truth", color='***REMOVED***888888', linewidth=1.5, alpha=0.7)
-    ***REMOVED*** Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
-    plt.plot(dd["timestamp_utc"].values, dd["y_baseline"].values, label="MiRACLE v1.0 (Core)", color='***REMOVED***00AA00', linewidth=2.5, alpha=1.0)
-    ***REMOVED*** Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
-    plt.plot(dd["timestamp_utc"].values, dd["y_policy"].values, label="MiRACLE v1.0 (Meta-control)", color='***REMOVED***6BA3D8', linewidth=1.5, alpha=0.9)
+    # Ground truth = LIGHT GREY (subtle reference)
+    plt.plot(dd["timestamp_utc"].values, dd["y_true"].values, label="Ground Truth", color='#888888', linewidth=1.5, alpha=0.7)
+    # Baseline (MiRACLE Core) = BOLD GREEN (HIGHLIGHTED)
+    plt.plot(dd["timestamp_utc"].values, dd["y_baseline"].values, label="MiRACLE v1.0 (Core)", color='#00AA00', linewidth=2.5, alpha=1.0)
+    # Policy (MiRACLE Full) = LIGHT BLUE (de-emphasized)
+    plt.plot(dd["timestamp_utc"].values, dd["y_policy"].values, label="MiRACLE v1.0 (Meta-control)", color='#6BA3D8', linewidth=1.5, alpha=0.9)
     plt.xlabel("Time (UTC)", fontsize=11)
     plt.ylabel("Power (normalized)", fontsize=11)
     plt.legend(fontsize=10, framealpha=0.9)
@@ -227,9 +227,9 @@ def plot_case_study_stitched(
     save_fig(out, dpi=300)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main eval pipeline
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main eval pipeline
+# -----------------------------
 @dataclass
 class Paths:
     out_dir: Path
@@ -244,7 +244,7 @@ def write_csv_and_tex(df: pd.DataFrame, csv_path: Path, tex_path: Path, index: b
         tex = df.to_latex(index=index, float_format="%.6f")
         tex_path.write_text(tex)
     except Exception:
-        ***REMOVED*** latex is optional
+        # latex is optional
         pass
 
 
@@ -278,29 +278,29 @@ def main() -> None:
     ensure_dir(paths.figures_dir)
     ensure_dir(paths.text_dir)
 
-    ***REMOVED*** Load
+    # Load
     truth = read_parquet(truth_path)
     base = read_parquet(base_path)
     pol = read_parquet(pol_path)
 
-    ***REMOVED*** Standardize timestamps
+    # Standardize timestamps
     truth["timestamp_utc"] = to_utc_datetime(truth["timestamp_utc"])
     base["timestamp_utc"] = to_utc_datetime(base["timestamp_utc"])
     base["forecast_start"] = to_utc_datetime(base["forecast_start"])
     pol["timestamp_utc"] = to_utc_datetime(pol["timestamp_utc"])
     pol["forecast_start"] = to_utc_datetime(pol["forecast_start"])
 
-    ***REMOVED*** Rename truth target
+    # Rename truth target
     if "power_norm" not in truth.columns:
         raise ValueError("Truth parquet must contain power_norm")
 
     truth = truth[["timestamp_utc", "power_norm"]].rename(columns={"power_norm": "y_true"})
 
-    ***REMOVED*** Join baseline/policy with truth on timestamp
+    # Join baseline/policy with truth on timestamp
     base_join = base.merge(truth, on="timestamp_utc", how="inner")
     pol_join = pol.merge(truth, on="timestamp_utc", how="inner")
 
-    ***REMOVED*** Align baseline and policy rows by (forecast_start, step_ahead, timestamp_utc)
+    # Align baseline and policy rows by (forecast_start, step_ahead, timestamp_utc)
     key = ["forecast_start", "step_ahead", "timestamp_utc"]
     base_keep = base_join[key + ["hours_ahead", "predicted_power_norm", "y_true"]].rename(
         columns={"predicted_power_norm": "y_baseline"}
@@ -311,11 +311,11 @@ def main() -> None:
 
     df = base_keep.merge(pol_keep, on=key + ["hours_ahead", "y_true"], how="inner")
 
-    ***REMOVED*** Optional daylight filtering
+    # Optional daylight filtering
     if not args.include_night:
         df = df[df["y_true"] >= float(args.daylight_threshold)].copy()
 
-    ***REMOVED*** Derived columns
+    # Derived columns
     df["abs_err_baseline"] = (df["y_baseline"] - df["y_true"]).abs()
     df["abs_err_policy"] = (df["y_policy"] - df["y_true"]).abs()
     df["sq_err_baseline"] = (df["y_baseline"] - df["y_true"]) ** 2
@@ -343,9 +343,9 @@ def main() -> None:
 
     tail_tbl.to_csv((paths.tables_dir / "tail_abs_error.csv").as_posix(), index=False)
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Overall metrics
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Overall metrics
+    # -----------------------------
     overall = pd.DataFrame(
         [
             {"model": "baseline", **metrics_row(df["y_true"].values, df["y_baseline"].values)},
@@ -373,9 +373,9 @@ def main() -> None:
         index=False,
     )
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Monthly metrics
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Monthly metrics
+    # -----------------------------
     rows = []
     for m, g in df.groupby("month"):
         mb = metrics_row(g["y_true"].values, g["y_baseline"].values)
@@ -400,9 +400,9 @@ def main() -> None:
         index=False,
     )
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Lead bucket metrics
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Lead bucket metrics
+    # -----------------------------
     rows = []
     for b, g in df.groupby("lead_bucket"):
         mb = metrics_row(g["y_true"].values, g["y_baseline"].values)
@@ -430,9 +430,9 @@ def main() -> None:
         index=False,
     )
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Daily metrics (paired comparison)
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Daily metrics (paired comparison)
+    # -----------------------------
     daily_rows = []
     for d, g in df.groupby("day"):
         mb = metrics_row(g["y_true"].values, g["y_baseline"].values)
@@ -457,59 +457,59 @@ def main() -> None:
         index=False,
     )
 
-    ***REMOVED*** Worst days by baseline RMSE
+    # Worst days by baseline RMSE
     worst = daily.sort_values("RMSE_baseline", ascending=False).head(10)
     worst.to_csv((paths.tables_dir / "worst_10_days.csv").as_posix(), index=False)
 
-    ***REMOVED*** Significance style summary via bootstrap on daily delta_MAE
+    # Significance style summary via bootstrap on daily delta_MAE
     deltas = daily["delta_MAE"].values
     mean_delta, lo, hi = bootstrap_mean_ci(deltas, n_boot=5000, seed=int(args.seed))
     frac_improved = float(np.mean(deltas < 0))
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** RL diagnostics
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # RL diagnostics
+    # -----------------------------
     action_counts = df["policy_action"].value_counts().sort_index()
     action_tbl = action_counts.reset_index()
     action_tbl.columns = ["policy_action", "count"]
     action_tbl.to_csv((paths.tables_dir / "policy_action_distribution.csv").as_posix(), index=False)
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Plots
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Plots
+    # -----------------------------
     plot_monthly_rmse(monthly, paths.figures_dir / "monthly_rmse.png")
     plot_error_hist(df, paths.figures_dir / "abs_error_hist.png", max_abs=1.0)
     plot_cumulative_abs_error(df, paths.figures_dir / "cumulative_abs_error.png")
     plot_daily_scatter(daily, paths.figures_dir / "daily_mae_scatter.png")
     plot_action_distribution(df, paths.figures_dir / "policy_action_distribution.png")
 
-    ***REMOVED*** Case studies (stitched from most-recent forecast)
+    # Case studies (stitched from most-recent forecast)
     plot_case_study_stitched(df, args.case_summer_start, args.case_summer_end, paths.figures_dir / "case_summer_week.png")
     plot_case_study_stitched(df, args.case_winter_start, args.case_winter_end, paths.figures_dir / "case_winter_week.png")
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Results markdown
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Results markdown
+    # -----------------------------
     md = []
-    md.append("***REMOVED*** Evaluation summary\n")
+    md.append("# Evaluation summary\n")
     md.append(f"- Night filtering: {'OFF' if args.include_night else 'ON'} (threshold y_true >= {args.daylight_threshold})\n")
-    md.append("***REMOVED******REMOVED*** Overall\n")
+    md.append("## Overall\n")
     md.append(overall.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Lead buckets\n")
+    md.append("\n\n## Lead buckets\n")
     md.append(lead_tbl.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Monthly\n")
+    md.append("\n\n## Monthly\n")
     md.append(monthly.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Paired daily comparison\n")
+    md.append("\n\n## Paired daily comparison\n")
     md.append(f"- Mean daily delta MAE (policy - baseline): {mean_delta:.6f}\n")
     md.append(f"- 95% bootstrap CI for mean delta: [{lo:.6f}, {hi:.6f}]\n")
     md.append(f"- Fraction of days improved (delta_MAE < 0): {frac_improved:.3f}\n")
-    md.append("\n\n***REMOVED******REMOVED*** RL actions\n")
+    md.append("\n\n## RL actions\n")
     md.append(action_tbl.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Tail absolute error\n")
+    md.append("\n\n## Tail absolute error\n")
     md.append(tail_tbl.to_markdown(index=False))
     (paths.text_dir / "results.md").write_text("\n".join(md))
 
-    ***REMOVED*** Save the joined eval frame for reuse
+    # Save the joined eval frame for reuse
     df.to_parquet((paths.out_dir / "eval_joined.parquet").as_posix(), index=False)
 
     print(f"[OK] Wrote outputs to: {paths.out_dir}")

@@ -1,4 +1,4 @@
-***REMOVED*** Processed Parquet Timestamp Manifest
+# Processed Parquet Timestamp Manifest
 
 This table lists the requested processed parquet files with row counts and start/end timestamps (UTC).
 

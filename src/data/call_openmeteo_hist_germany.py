@@ -35,9 +35,9 @@ import requests_cache
 from retry_requests import retry
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Config
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------
 
 PLANTS: List[str] = [
     "plant_01",
@@ -86,20 +86,20 @@ HOURLY_VARS = [
 ]
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Open-Meteo client
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Open-Meteo client
+# ---------------------------------------------------------------------
 
 cache_session = requests_cache.CachedSession(".cache", expire_after=-1)
 retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
-***REMOVED*** Disable SSL verification for corporate proxy/firewall
+# Disable SSL verification for corporate proxy/firewall
 retry_session.verify = False
 openmeteo = openmeteo_requests.Client(session=retry_session)
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Helpers
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
 
 def load_metadata(plant_id: str) -> Dict:
     path = METADATA_DIR / f"{plant_id}.json"
@@ -133,7 +133,7 @@ def infer_date_range_from_pv(plant_id: str) -> Dict[str, str]:
 
 
 def build_params(meta: Dict, start_date: str, end_date: str) -> Dict:
-    ***REMOVED*** Convert azimuth from 0-360° (PVLib) to -180-180° (Open-Meteo)
+    # Convert azimuth from 0-360° (PVLib) to -180-180° (Open-Meteo)
     azimuth = meta["azimuth_deg"]
     if azimuth > 180:
         azimuth = azimuth - 360
@@ -147,7 +147,7 @@ def build_params(meta: Dict, start_date: str, end_date: str) -> Dict:
         "hourly": HOURLY_VARS,
         "models": MODEL,
         "timezone": TIMEZONE,
-        ***REMOVED*** PV geometry
+        # PV geometry
         "tilt": meta["tilt_deg"],
         "azimuth": azimuth,
     }
@@ -155,15 +155,15 @@ def build_params(meta: Dict, start_date: str, end_date: str) -> Dict:
 
 def response_to_dataframes(response) -> Dict[str, pd.DataFrame]:
     """Convert one Open-Meteo response into hourly and daily DataFrames."""
-    ***REMOVED*** Hourly
+    # Hourly
     hourly = response.Hourly()
     
-    ***REMOVED*** Build data dict first to get actual array lengths
+    # Build data dict first to get actual array lengths
     hourly_data = {}
     for i, var_name in enumerate(HOURLY_VARS):
         hourly_data[var_name] = hourly.Variables(i).ValuesAsNumpy()
     
-    ***REMOVED*** Create date_range matching the actual data length
+    # Create date_range matching the actual data length
     start_dt = pd.to_datetime(hourly.Time(), unit="s", utc=True).tz_convert(TIMEZONE).tz_localize(None)
     freq = pd.Timedelta(seconds=hourly.Interval())
     n_points = len(hourly_data[HOURLY_VARS[0]])
@@ -171,19 +171,19 @@ def response_to_dataframes(response) -> Dict[str, pd.DataFrame]:
     
     hourly_df = pd.DataFrame(hourly_data)
 
-    ***REMOVED*** Daily
+    # Daily
     daily = response.Daily()
     
-    ***REMOVED*** Build data dict first to get actual array lengths
+    # Build data dict first to get actual array lengths
     daily_data = {}
     for i, var_name in enumerate(DAILY_VARS):
-        ***REMOVED*** Sunrise and sunset are returned as int64 timestamps
+        # Sunrise and sunset are returned as int64 timestamps
         if var_name in ("sunrise", "sunset"):
             daily_data[var_name] = daily.Variables(i).ValuesInt64AsNumpy()
         else:
             daily_data[var_name] = daily.Variables(i).ValuesAsNumpy()
     
-    ***REMOVED*** Create date_range matching the actual data length
+    # Create date_range matching the actual data length
     start_dt = pd.to_datetime(daily.Time(), unit="s", utc=True).tz_convert(TIMEZONE).tz_localize(None)
     freq = pd.Timedelta(seconds=daily.Interval())
     n_points = len(daily_data[DAILY_VARS[0]])
@@ -203,7 +203,7 @@ def save_plant_weather(plant_id: str, dfs: Dict[str, pd.DataFrame]) -> None:
     hourly = dfs["hourly"]
     daily = dfs["daily"]
 
-    ***REMOVED*** CSV (raw)
+    # CSV (raw)
     hourly_csv = raw_dir / "historical_weather_hourly.csv"
     daily_csv = raw_dir / "historical_weather_daily.csv"
     hourly.to_csv(hourly_csv, index=False)
@@ -215,9 +215,9 @@ def save_plant_weather(plant_id: str, dfs: Dict[str, pd.DataFrame]) -> None:
     )
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Main
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------
 
 def main():
     for plant_id in PLANTS:

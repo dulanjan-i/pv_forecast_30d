@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Create perturbed 15-min weather parquet variants for counterfactual RL evaluation.
 
@@ -89,22 +89,22 @@ def apply_perturbation(df: pd.DataFrame, date: pd.Timestamp, magnitude: float) -
     if mask.sum() == 0:
         raise ValueError(f"No rows found for date {date.date()}")
 
-    ***REMOVED*** Columns to scale if present
+    # Columns to scale if present
     scale_cols = [c for c in ["ghi", "dni", "pvlib_ac_kw", "poa_global"] if c in out.columns]
 
     for c in scale_cols:
         out.loc[mask, c] = out.loc[mask, c].astype(float) * float(magnitude)
 
-    ***REMOVED*** Adjust cloud_cover inversely (more clouds -> higher cover)
+    # Adjust cloud_cover inversely (more clouds -> higher cover)
     if "cloud_cover" in out.columns:
         inv = 1.0 / max(magnitude, 1e-6)
         out.loc[mask, "cloud_cover"] = np.minimum(100.0, out.loc[mask, "cloud_cover"].astype(float) * inv)
 
-    ***REMOVED*** Optionally nudge temperature slightly (small decrease for cloudier)
+    # Optionally nudge temperature slightly (small decrease for cloudier)
     if "temperature" in out.columns:
         out.loc[mask, "temperature"] = out.loc[mask, "temperature"].astype(float) - (1.0 - magnitude) * 5.0
 
-    ***REMOVED*** Defensive clipping
+    # Defensive clipping
     if "pvlib_ac_kw" in out.columns:
         out["pvlib_ac_kw"] = out["pvlib_ac_kw"].clip(lower=0.0)
 
@@ -120,11 +120,11 @@ def main():
     df = pd.read_parquet(args.weather_in)
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True, errors="coerce")
 
-    ***REMOVED*** Filter by plant_id if present
+    # Filter by plant_id if present
     if "plant_id" in df.columns:
         df = df[df["plant_id"].astype(str) == args.plant_id].copy()
 
-    ***REMOVED*** Build list of candidate dates
+    # Build list of candidate dates
     unique_dates = pd.Series(sorted(df["timestamp_utc"].dt.normalize().unique()))
 
     dates_to_use = []

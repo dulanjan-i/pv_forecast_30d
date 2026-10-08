@@ -63,7 +63,7 @@ def _load_scaler_stats(path: Path) -> Dict[str, Dict[str, float]]:
     """
     raw = json.loads(path.read_text())
 
-    ***REMOVED*** If it has the expected top-level keys
+    # If it has the expected top-level keys
     if isinstance(raw, dict) and "stats" in raw:
         raw = raw["stats"]
 
@@ -71,18 +71,18 @@ def _load_scaler_stats(path: Path) -> Dict[str, Dict[str, float]]:
 
     def visit(obj) -> None:
         if isinstance(obj, dict):
-            ***REMOVED*** Leaf node: {"mean": x, "std": y}
+            # Leaf node: {"mean": x, "std": y}
             if "mean" in obj and "std" in obj and isinstance(obj["mean"], (int, float)) and isinstance(obj["std"], (int, float)):
-                ***REMOVED*** This leaf has no column name context, so ignore here.
+                # This leaf has no column name context, so ignore here.
                 return
             for k, v in obj.items():
-                ***REMOVED*** Column leaf: {"mean": x, "std": y}
+                # Column leaf: {"mean": x, "std": y}
                 if isinstance(v, dict) and "mean" in v and "std" in v:
                     m, s = v["mean"], v["std"]
                     if isinstance(m, (int, float)) and isinstance(s, (int, float)):
                         out[str(k)] = {"mean": float(m), "std": float(s)}
                         continue
-                ***REMOVED*** Column leaf: [mean, std]
+                # Column leaf: [mean, std]
                 if isinstance(v, (list, tuple)) and len(v) == 2 and all(isinstance(x, (int, float)) for x in v):
                     out[str(k)] = {"mean": float(v[0]), "std": float(v[1])}
                     continue
@@ -108,7 +108,7 @@ def read_parquet(p: Path) -> pd.DataFrame:
     if not p.exists():
         raise FileNotFoundError(str(p))
     df = pd.read_parquet(p)
-    ***REMOVED*** Normalize timestamp dtype
+    # Normalize timestamp dtype
     df[KEY_TIME] = pd.to_datetime(df[KEY_TIME], utc=True)
     return df
 
@@ -149,12 +149,12 @@ def main() -> None:
     assert_no_dup_keys(base, "base")
     assert_no_dup_keys(enc, "enc")
 
-    ***REMOVED*** Rename power_norm in enc to avoid duplicate column name on merge
+    # Rename power_norm in enc to avoid duplicate column name on merge
     enc = enc.rename(columns={TARGET: f"{TARGET}__enc"})
 
     merged = base.merge(enc, on=[KEY_TIME, KEY_PLANT], how="inner")
 
-    ***REMOVED*** Validate power_norm consistency
+    # Validate power_norm consistency
     if f"{TARGET}__enc" in merged.columns:
         diff = (merged[TARGET].astype(float) - merged[f"{TARGET}__enc"].astype(float)).abs()
         max_diff = float(diff.max()) if len(diff) else 0.0
@@ -162,7 +162,7 @@ def main() -> None:
             raise ValueError(f"power_norm mismatch too large after merge, max_abs_diff={max_diff}")
         merged = merged.drop(columns=[f"{TARGET}__enc"])
 
-    ***REMOVED*** Optional inverse scaling into *_raw columns
+    # Optional inverse scaling into *_raw columns
     if args.scaler_json:
         stats = _load_scaler_stats(Path(args.scaler_json))
         raw_cols = [c.strip() for c in args.raw_cols.split(",") if c.strip()]
@@ -174,7 +174,7 @@ def main() -> None:
             else:
                 print(f"[WARN] Cannot inverse-scale '{c}': present_in_df={c in merged.columns}, present_in_scaler={c in stats}")
 
-    ***REMOVED*** Final sanity checks
+    # Final sanity checks
     assert_no_dup_keys(merged, "merged")
     nan_count = int(merged.isna().sum().sum())
     if nan_count:

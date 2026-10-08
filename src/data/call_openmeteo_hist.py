@@ -1,4 +1,4 @@
-***REMOVED*** Code to call Open-Meteo Historical Weather API and process the response
+# Code to call Open-Meteo Historical Weather API and process the response
 
 import openmeteo_requests
 
@@ -6,13 +6,13 @@ import pandas as pd
 import requests_cache
 from retry_requests import retry
 
-***REMOVED*** Setup the Open-Meteo API client with cache and retry on error
+# Setup the Open-Meteo API client with cache and retry on error
 cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
 retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
 openmeteo = openmeteo_requests.Client(session = retry_session)
 
-***REMOVED*** Make sure all required weather variables are listed here
-***REMOVED*** The order of variables in hourly or daily is important to assign them correctly below
+# Make sure all required weather variables are listed here
+# The order of variables in hourly or daily is important to assign them correctly below
 url = "https://archive-api.open-meteo.com/v1/archive"
 params = {
 	"latitude": 38.996306,
@@ -28,14 +28,14 @@ params = {
 }
 responses = openmeteo.weather_api(url, params=params)
 
-***REMOVED*** Process first location. Add a for-loop for multiple locations or weather models
+# Process first location. Add a for-loop for multiple locations or weather models
 response = responses[0]
 print(f"Coordinates: {response.Latitude()}°N {response.Longitude()}°E")
 print(f"Elevation: {response.Elevation()} m asl")
 print(f"Timezone: {response.Timezone()}{response.TimezoneAbbreviation()}")
 print(f"Timezone difference to GMT+0: {response.UtcOffsetSeconds()}s")
 
-***REMOVED*** Process hourly data. The order of variables needs to be the same as requested.
+# Process hourly data. The order of variables needs to be the same as requested.
 hourly = response.Hourly()
 hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
 hourly_relative_humidity_2m = hourly.Variables(1).ValuesAsNumpy()
@@ -75,7 +75,7 @@ hourly_data["surface_pressure"] = hourly_surface_pressure
 hourly_dataframe = pd.DataFrame(data = hourly_data)
 print("\nHourly data\n", hourly_dataframe)
 
-***REMOVED*** Process daily data. The order of variables needs to be the same as requested.
+# Process daily data. The order of variables needs to be the same as requested.
 daily = response.Daily()
 daily_sunrise = daily.Variables(0).ValuesInt64AsNumpy()
 daily_sunset = daily.Variables(1).ValuesInt64AsNumpy()
@@ -111,30 +111,30 @@ daily_data["apparent_temperature_max"] = daily_apparent_temperature_max
 daily_dataframe = pd.DataFrame(data = daily_data)
 print("\nDaily data\n", daily_dataframe)
 
-***REMOVED*** Create output directories
+# Create output directories
 import os
 raw_dir = "data/raw/farm_2107"
 interim_dir = "data/interim/farm_2107"
 os.makedirs(raw_dir, exist_ok=True)
 os.makedirs(interim_dir, exist_ok=True)
 
-***REMOVED*** Save hourly data as CSV (raw)
+# Save hourly data as CSV (raw)
 hourly_csv_path = os.path.join(raw_dir, "historical_weather_hourly.csv")
 hourly_dataframe.to_csv(hourly_csv_path, index=False)
 print(f"\n✓ Hourly CSV saved to: {hourly_csv_path}")
 
-***REMOVED*** Save daily data as CSV (raw)
+# Save daily data as CSV (raw)
 daily_csv_path = os.path.join(raw_dir, "historical_weather_daily.csv")
 daily_dataframe.to_csv(daily_csv_path, index=False)
 print(f"✓ Daily CSV saved to: {daily_csv_path}")
 
-***REMOVED*** Save hourly data as Parquet (interim)
+# Save hourly data as Parquet (interim)
 hourly_parquet_path = os.path.join(interim_dir, "historical_weather_hourly.parquet")
 hourly_dataframe.to_parquet(hourly_parquet_path, index=False, engine='pyarrow', compression='snappy')
 print(f"\n✓ Hourly Parquet saved to: {hourly_parquet_path}")
 print(f"  Rows: {len(hourly_dataframe):,}, Columns: {len(hourly_dataframe.columns)}")
 
-***REMOVED*** Save daily data as Parquet (interim)
+# Save daily data as Parquet (interim)
 daily_parquet_path = os.path.join(interim_dir, "historical_weather_daily.parquet")
 daily_dataframe.to_parquet(daily_parquet_path, index=False, engine='pyarrow', compression='snappy')
 print(f"✓ Daily Parquet saved to: {daily_parquet_path}")

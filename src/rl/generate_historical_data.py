@@ -32,9 +32,9 @@ import pandas as pd
 from src.rl.reward import compute_reward as canonical_compute_reward
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Metrics helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Metrics helpers
+# -----------------------------
 def rmse(y_hat: np.ndarray, y: np.ndarray) -> float:
     y_hat = np.asarray(y_hat, dtype=np.float32)
     y = np.asarray(y, dtype=np.float32)
@@ -56,34 +56,34 @@ def _floor_day_utc(ts: pd.Series) -> pd.Series:
     return dt.dt.floor("D")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Minimal blend mapping
-***REMOVED*** -----------------------------
+# -----------------------------
+# Minimal blend mapping
+# -----------------------------
 @dataclass(frozen=True)
 class BlendParams:
-    beta: float  ***REMOVED*** ML vs physics. y = beta*baseline + (1-beta)*pvlib
+    beta: float  # ML vs physics. y = beta*baseline + (1-beta)*pvlib
 
 
 def action_to_params(action: int, base: BlendParams) -> BlendParams:
     a = int(action)
     if a == 6:
-        return BlendParams(beta=0.5)  ***REMOVED*** more physics
+        return BlendParams(beta=0.5)  # more physics
     return base
 
 
 def params_to_weights(p: BlendParams) -> Tuple[float, float, float]:
-    ***REMOVED*** No short/long decomposition in minimal env.
-    ***REMOVED*** Keep fields for schema compatibility.
+    # No short/long decomposition in minimal env.
+    # Keep fields for schema compatibility.
     w_phys = 1.0 - p.beta
     w_ml = p.beta
     w_short = 0.0
-    w_long = float(w_ml)  ***REMOVED*** treat baseline forecast as "long/ML" for bookkeeping
+    w_long = float(w_ml)  # treat baseline forecast as "long/ML" for bookkeeping
     return float(w_short), float(w_long), float(w_phys)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** State builder (35-dim)
-***REMOVED*** -----------------------------
+# -----------------------------
+# State builder (35-dim)
+# -----------------------------
 def build_state_35(
     short_rmse_1h: float,
     long_rmse_30d: float,
@@ -114,21 +114,21 @@ def build_state_35(
     s[2] = float(physics_residual)
     s[3] = float(rmse_day1)
 
-    ***REMOVED*** blend weights
+    # blend weights
     s[10] = float(w_short)
     s[11] = float(w_long)
     s[12] = float(w_phys)
 
-    ***REMOVED*** time context
+    # time context
     s[16] = float(day_of_year)
     s[17] = float(month)
 
     return s
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main
+# -----------------------------
 def main() -> None:
     ap = argparse.ArgumentParser(description="Generate RL training data from historical test set (minimal env)")
     ap.add_argument("--test-data", required=True, help="Parquet with timestamp_utc, power_norm, predicted_power_norm, pvlib_power_norm")
@@ -178,7 +178,7 @@ def main() -> None:
         h1 = min(96, H)
         h1h = min(4, h1)
 
-        ***REMOVED*** State based on BASE (no action)
+        # State based on BASE (no action)
         p0 = base
         wS0, wL0, wP0 = params_to_weights(p0)
 

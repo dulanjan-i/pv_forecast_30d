@@ -1,18 +1,18 @@
-***REMOVED***!/bin/bash
-***REMOVED*** Script to generate thesis-ready benchmark plots with proper labels
-***REMOVED*** Usage: bash scripts/generate_thesis_plots.sh
+#!/bin/bash
+# Script to generate thesis-ready benchmark plots with proper labels
+# Usage: bash scripts/generate_thesis_plots.sh
 
 set -e
 
 echo "=== Generating Thesis-Ready Benchmark Plots ==="
 echo ""
 
-***REMOVED*** Paths (actual data locations from your working command)
+# Paths (actual data locations from your working command)
 TRUTH="/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/phase1_2024daily_final/processed/ground_truth_15min_utc_capnorm.parquet"
 BASELINE="/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet"
 OUT_DIR="/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/benchmarks/thesis_ready"
 
-***REMOVED*** Check if files exist
+# Check if files exist
 if [ ! -f "$TRUTH" ]; then
     echo "ERROR: Ground truth file not found: $TRUTH"
     echo "Please update the TRUTH path in this script"
@@ -25,13 +25,13 @@ if [ ! -f "$BASELINE" ]; then
     exit 1
 fi
 
-***REMOVED*** Additional model paths for comparison
+# Additional model paths for comparison
 PVLIB_ONLY="/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/derived_only/pvlib_only.parquet"
 TFT_ONLY="/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/derived_only/tft_only.parquet"
 SHORT_ONLY="/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/derived_only/short_only.parquet"
 LONG_ONLY="/home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/inference_v3_runs/derived_only/long_only.parquet"
 
-***REMOVED*** Run thesis-ready benchmark suite
+# Run thesis-ready benchmark suite
 echo "Running thesis-ready benchmark suite..."
 echo "  - Truth: $TRUTH"
 echo "  - Baseline (Core): $BASELINE"

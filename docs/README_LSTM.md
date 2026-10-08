@@ -1,8 +1,8 @@
-***REMOVED*** LSTM Branch Overview
+# LSTM Branch Overview
 
 This branch contains all files related to the development of the LSTM forecasting model.
 
-***REMOVED******REMOVED*** Structure
+## Structure
 - `notebooks/lstm/`: Prototyping and exploration notebooks
 - `src/models/lstm_model.py`: LSTM model definition
 - `src/training/train_lstm.py`: Training loop for LSTM
@@ -11,7 +11,7 @@ This branch contains all files related to the development of the LSTM forecastin
 - `experiments/lstm/`: Config files for reproducible runs
 - `reports/lstm_results.md`: Results and findings
 
-***REMOVED******REMOVED*** First Sprint Goal
+## First Sprint Goal
 1. Build baseline LSTM (notebook + simple training loop)
 2. Save experiment config + results
 3. Refactor into `src/` for reusability

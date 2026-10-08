@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Replay Phase-1 forecast_start timestamps and collect RL transitions.
 
@@ -136,7 +136,7 @@ def main() -> None:
     if "forecast_start" not in phase1_df.columns:
         raise ValueError("Phase1 transitions must contain a 'forecast_start' column")
 
-    ***REMOVED*** Unique starts as strings (tz-naive)
+    # Unique starts as strings (tz-naive)
     starts = (
         pd.to_datetime(phase1_df["forecast_start"], utc=True, errors="coerce")
         .dt.tz_convert(None)
@@ -178,7 +178,7 @@ def main() -> None:
         plant_config=plant_config,
     )
 
-    ***REMOVED*** past metrics for state building
+    # past metrics for state building
     past_metrics = {
         "short_rmse": 0.0,
         "long_rmse": 0.0,
@@ -187,7 +187,7 @@ def main() -> None:
         "seasonal_factor": 1.0,
     }
 
-    ***REMOVED*** Reuse actions if present in phase1
+    # Reuse actions if present in phase1
     action_map = {}
     if "action" in phase1_df.columns:
         tmp = phase1_df.dropna(subset=["action", "forecast_start"]).copy()
@@ -238,7 +238,7 @@ def main() -> None:
         forecast = np.asarray(forecast, dtype=np.float32)[:96]
         gt = np.asarray(gt, dtype=np.float32)
 
-        ***REMOVED*** Core fix: strict length check, else skip (no fake reward)
+        # Core fix: strict length check, else skip (no fake reward)
         if len(forecast) != 96 or len(gt) != 96:
             stats["skip_len_mismatch"] += 1
             continue

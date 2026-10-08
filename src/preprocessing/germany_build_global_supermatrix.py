@@ -127,18 +127,18 @@ def _load_one_plant(plant_id: str, base_dir: Path) -> pd.DataFrame:
 
     validate_required_columns(df.columns, REQUIRED_PRETRAIN_BASE, context=f"{plant_id} pretrain_base")
 
-    ***REMOVED*** Canonical timestamp parsing
+    # Canonical timestamp parsing
     df[TIME_COL] = pd.to_datetime(df[TIME_COL], utc=True)
 
-    ***REMOVED*** Add plant_id categorical column
+    # Add plant_id categorical column
     df[PLANT_ID_COL] = plant_id
 
-    ***REMOVED*** Create one-hot columns (all plants exist as columns, only one is 1)
+    # Create one-hot columns (all plants exist as columns, only one is 1)
     for col in PLANT_ONEHOT_COLS:
         df[col] = 0.0
     df.loc[:, plant_id] = 1.0
 
-    ***REMOVED*** Drop rows that would break the model (any NaN in required model columns)
+    # Drop rows that would break the model (any NaN in required model columns)
     required_for_model = set(GLOBAL_LSTM_INPUT_FEATURES + [TARGET_COL, TIME_COL, PLANT_ID_COL])
     missing_model_cols = sorted(required_for_model - set(df.columns))
     if missing_model_cols:
@@ -160,8 +160,8 @@ def main() -> None:
     paths = DataPaths(REPO_ROOT)
     germany_dir = paths.germany_pretraining
 
-    ***REMOVED*** Inputs live here:
-    ***REMOVED*** data/processed/pretraining/germany/plant_XX/plant_XX_pretrain_base.parquet
+    # Inputs live here:
+    # data/processed/pretraining/germany/plant_XX/plant_XX_pretrain_base.parquet
     input_base = germany_dir
     output_dir = germany_dir / "global"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -179,11 +179,11 @@ def main() -> None:
 
     df = pd.concat(frames, axis=0, ignore_index=True)
 
-    ***REMOVED*** Sort by plant then time, so windowing cannot cross plants unless code is wrong.
+    # Sort by plant then time, so windowing cannot cross plants unless code is wrong.
     df = df.sort_values([PLANT_ID_COL, TIME_COL]).reset_index(drop=True)
 
-    ***REMOVED*** Final sanity checks
-    ***REMOVED*** 1) one-hot correctness: exactly one hot per row
+    # Final sanity checks
+    # 1) one-hot correctness: exactly one hot per row
     onehot_sum = df[PLANT_ONEHOT_COLS].sum(axis=1)
     bad = (onehot_sum != 1.0).sum()
     if bad > 0:

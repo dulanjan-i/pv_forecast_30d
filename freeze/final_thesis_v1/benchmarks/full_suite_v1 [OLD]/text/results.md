@@ -1,8 +1,8 @@
-***REMOVED*** Benchmark suite summary
+# Benchmark suite summary
 
 - Night filtering: ON (y_true >= 0.01)
 
-***REMOVED******REMOVED*** Overall metrics (all horizons, all forecasts)
+## Overall metrics (all horizons, all forecasts)
 
 | model                |       MAE |     RMSE |    nRMSE |         MBE |        R2 |      N |
 |:---------------------|----------:|---------:|---------:|------------:|----------:|-------:|
@@ -14,7 +14,7 @@
 | Long_TFT_only        | 0.158866  | 0.223948 | 0.223948 | -0.15345    | -0.310184 | 394008 |
 
 
-***REMOVED******REMOVED*** Stitched metrics (most recent forecast per timestamp)
+## Stitched metrics (most recent forecast per timestamp)
 
 | model                |       MAE |     RMSE |    nRMSE |         MBE |        R2 |     N |
 |:---------------------|----------:|---------:|---------:|------------:|----------:|------:|
@@ -26,7 +26,7 @@
 | Long_TFT_only        | 0.152194  | 0.21661  | 0.21661  | -0.146458   | -0.242353 | 13869 |
 
 
-***REMOVED******REMOVED*** Tail absolute error
+## Tail absolute error
 
 | model                |       P50 |      P90 |      P95 |      P99 |      mean |
 |:---------------------|----------:|---------:|---------:|---------:|----------:|
@@ -38,7 +38,7 @@
 | Long_TFT_only        | 0.0937153 | 0.418962 | 0.47797  | 0.57093  | 0.158866  |
 
 
-***REMOVED******REMOVED*** Lead bucket metrics
+## Lead bucket metrics
 
 | lead_bucket   | model                |       MAE |     RMSE |    nRMSE |         MBE |        R2 |      N |
 |:--------------|:---------------------|----------:|---------:|---------:|------------:|----------:|-------:|
@@ -62,7 +62,7 @@
 | 8-30d         | Short_TFT_only       | 0.117854  | 0.166748 | 0.166748 |  0.0597918  |  0.273831 | 301590 |
 
 
-***REMOVED******REMOVED*** Files written
+## Files written
 
 - tables/: CSV + LaTeX tables
 

@@ -1,13 +1,13 @@
-***REMOVED*** experiments/lstm/germany/pretrain_plant_04.yaml
-***REMOVED*** 
-***REMOVED*** STAGE 2: Transfer Learning from Farm2107 → Germany Plant 04
-***REMOVED*** Initialized with: experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt
-***REMOVED*** Best config from stage 1: h64_l2_lr1em03 (RMSE=0.040388)
-***REMOVED***
-***REMOVED*** Purpose:
-***REMOVED*** - Transfer pretrained encoder to Germany plant_04 data
-***REMOVED*** - Fine-tune on local weather/irradiance patterns
-***REMOVED*** - Prepare encoder for downstream TFT ensemble
+# experiments/lstm/germany/pretrain_plant_04.yaml
+# 
+# STAGE 2: Transfer Learning from Farm2107 → Germany Plant 04
+# Initialized with: experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt
+# Best config from stage 1: h64_l2_lr1em03 (RMSE=0.040388)
+#
+# Purpose:
+# - Transfer pretrained encoder to Germany plant_04 data
+# - Fine-tune on local weather/irradiance patterns
+# - Prepare encoder for downstream TFT ensemble
 
 experiment:
   name: "germany_plant_04_pretrain"
@@ -15,47 +15,47 @@ experiment:
 
 paths:
   output_dir: "experiments/lstm/runs/germany/pretrain_plant_04/"
-  init_weights_path: "experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"  ***REMOVED*** ← STAGE 1 weights
+  init_weights_path: "experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"  # ← STAGE 1 weights
 
 data:
   train_path: "data/processed/pretraining/germany/plant_04/train.parquet"
   val_path: "data/processed/pretraining/germany/plant_04/val.parquet"
   time_col: "timestamp_utc"
-  id_col: null                ***REMOVED*** Single plant, no grouping needed
+  id_col: null                # Single plant, no grouping needed
   feature_cols:
-    ***REMOVED*** ⚠️ CRITICAL: Order LOCKED to match farm2107_CANONICAL pretrained weights!
-    - power_norm                              ***REMOVED*** autoregressive PV
-    - poa_irradiance                          ***REMOVED*** POA feature
-    - temperature_2m                          ***REMOVED*** weather
+    # ⚠️ CRITICAL: Order LOCKED to match farm2107_CANONICAL pretrained weights!
+    - power_norm                              # autoregressive PV
+    - poa_irradiance                          # POA feature
+    - temperature_2m                          # weather
     - relative_humidity_2m
-    - precipitation                           ***REMOVED*** ← Index 4 (pretrained expects this)
-    - weather_code                            ***REMOVED*** ← Index 5
-    - cloud_cover                             ***REMOVED*** ← Index 6
-    - wind_speed_10m                          ***REMOVED*** ← Index 7
-    - wind_direction_10m                      ***REMOVED*** ← Index 8
-    - shortwave_radiation_instant             ***REMOVED*** radiation
+    - precipitation                           # ← Index 4 (pretrained expects this)
+    - weather_code                            # ← Index 5
+    - cloud_cover                             # ← Index 6
+    - wind_speed_10m                          # ← Index 7
+    - wind_direction_10m                      # ← Index 8
+    - shortwave_radiation_instant             # radiation
     - direct_radiation_instant
     - diffuse_radiation_instant
     - direct_normal_irradiance_instant
     - global_tilted_irradiance_instant
-    - surface_pressure                        ***REMOVED*** ← Index 14 (last)
+    - surface_pressure                        # ← Index 14 (last)
   target_col: "power_norm"
-  window_size: 96          ***REMOVED*** encoder length (24h @ 15-min)
-  horizon: 1               ***REMOVED*** next-step prediction for pretraining
+  window_size: 96          # encoder length (24h @ 15-min)
+  horizon: 1               # next-step prediction for pretraining
 
 model:
-  hidden_size: 64          ***REMOVED*** ✓ Validated optimal from farm2107 canonical
-  num_layers: 2            ***REMOVED*** ✓ Validated optimal from farm2107 canonical
+  hidden_size: 64          # ✓ Validated optimal from farm2107 canonical
+  num_layers: 2            # ✓ Validated optimal from farm2107 canonical
   dropout: 0.1
 
 training:
-  batch_size: 512          ***REMOVED*** ✓ Optimized for L4 GPUs (24GB) - 2x stage 1
-  max_epochs: 20           ***REMOVED*** Stage 2 typically needs fewer epochs (fine-tuning)
-  learning_rate: 1e-4      ***REMOVED*** Conservative for transfer learning fine-tuning
+  batch_size: 512          # ✓ Optimized for L4 GPUs (24GB) - 2x stage 1
+  max_epochs: 20           # Stage 2 typically needs fewer epochs (fine-tuning)
+  learning_rate: 1e-4      # Conservative for transfer learning fine-tuning
   weight_decay: 1e-4
   gradient_clip_val: 1.0
-  gpus: 1                  ***REMOVED*** Single GPU per plant (parallel across 4 L4s on calc02)
+  gpus: 1                  # Single GPU per plant (parallel across 4 L4s on calc02)
   num_workers: 4
 
 save:
-  encoder_path: "experiments/lstm/encoders/lstm_encoder_plant_04.pt"  ***REMOVED*** ← Output for stage 2
+  encoder_path: "experiments/lstm/encoders/lstm_encoder_plant_04.pt"  # ← Output for stage 2

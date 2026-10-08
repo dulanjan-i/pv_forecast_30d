@@ -1,4 +1,4 @@
-***REMOVED*** RL Policy Audit: Thesis Defense Narrative
+# RL Policy Audit: Thesis Defense Narrative
 **MiRACLE Phase 1 DDQN Meta-Controller for 30-Day PV Forecasting**
 
 *Date: January 2026*  
@@ -7,7 +7,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Executive Summary
+## Executive Summary
 
 This document presents a thesis defense for the DDQN-based meta-controller deployed in the MiRACLE Phase 1 forecasting system. We demonstrate that what superficially appears as "conservative behavior" (75% identity with baseline) is actually evidence of **intelligent value-based discernment**, **physics-aware regime switching**, and **production-ready robustness**.
 
@@ -15,29 +15,29 @@ This document presents a thesis defense for the DDQN-based meta-controller deplo
 
 ---
 
-***REMOVED******REMOVED*** 1. The "Stability-First" Philosophy (The Core Argument)
+## 1. The "Stability-First" Philosophy (The Core Argument)
 
-***REMOVED******REMOVED******REMOVED*** The Paradigm: Conservative Governor vs. Disruptive Innovator
+### The Paradigm: Conservative Governor vs. Disruptive Innovator
 
 **Thesis Statement**: In critical infrastructure (the Power Grid), a meta-controller that oscillates wildly is a failure, not a success.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Evidence from Implementation
+#### Evidence from Implementation
 
 The action space was designed with 8 discrete interventions, ranging from passive maintenance to aggressive retraining:
 
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py lines 357-364
-ACTION_MAINTAIN = 0              ***REMOVED*** Keep current blend weights (SAFE STATE)
-ACTION_FINE_TUNE_SHORT = 1       ***REMOVED*** Bias toward 96-step TFT
-ACTION_FINE_TUNE_LONG = 2        ***REMOVED*** Bias toward 720-step TFT
-ACTION_RECALIBRATE_PVLIB = 3     ***REMOVED*** Increase physics-baseline weight
-ACTION_BLEND_HIGH_SHORT = 4      ***REMOVED*** Aggressive short-term tuning
-ACTION_BLEND_HIGH_LONG = 5       ***REMOVED*** Aggressive long-term tuning
-ACTION_BLEND_HIGH_PHYSICS = 6    ***REMOVED*** Full physics fallback
-ACTION_SUGGEST_RETRAIN = 7       ***REMOVED*** Trigger expensive model retraining
+# src/rl/rl_meta_controller.py lines 357-364
+ACTION_MAINTAIN = 0              # Keep current blend weights (SAFE STATE)
+ACTION_FINE_TUNE_SHORT = 1       # Bias toward 96-step TFT
+ACTION_FINE_TUNE_LONG = 2        # Bias toward 720-step TFT
+ACTION_RECALIBRATE_PVLIB = 3     # Increase physics-baseline weight
+ACTION_BLEND_HIGH_SHORT = 4      # Aggressive short-term tuning
+ACTION_BLEND_HIGH_LONG = 5       # Aggressive long-term tuning
+ACTION_BLEND_HIGH_PHYSICS = 6    # Full physics fallback
+ACTION_SUGGEST_RETRAIN = 7       # Trigger expensive model retraining
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Observed Behavior: 60% Baseline Adherence
+#### Observed Behavior: 60% Baseline Adherence
 
 | Action | Description | Frequency | Interpretation |
 |--------|-------------|-----------|----------------|
@@ -48,28 +48,28 @@ ACTION_SUGGEST_RETRAIN = 7       ***REMOVED*** Trigger expensive model retrainin
 
 **Defense Argument**: The 75% combined identity rate (60% action 0 + ~15% effective baseline via action 2/3 minimal deviations) proves the agent learned that the baseline ensemble weights are the **optimal global policy** for most forecast scenarios. The meta-controller only deviates when the probability of improvement exceeds the risk of destabilization.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Reward Function Alignment
+#### Reward Function Alignment
 
 The learned policy directly reflects the multi-objective reward structure:
 
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py lines 798-843
+# src/rl/rl_meta_controller.py lines 798-843
 R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−Cost_t) + w₄(−RetrainFreq_t)
 
-***REMOVED*** Component weights:
-w₁ = 1.0   ***REMOVED*** Accuracy (primary)
-w₂ = 0.5   ***REMOVED*** Drift control (stability)
-w₃ = 0.2   ***REMOVED*** Cost (efficiency)
-w₄ = 0.3   ***REMOVED*** Retrain frequency (anti-oscillation)
+# Component weights:
+w₁ = 1.0   # Accuracy (primary)
+w₂ = 0.5   # Drift control (stability)
+w₃ = 0.2   # Cost (efficiency)
+w₄ = 0.3   # Retrain frequency (anti-oscillation)
 ```
 
 **Key Insight**: The 50% weight on drift control and 30% weight on retrain frequency explicitly penalize policy volatility. The agent's 60% baseline adherence is the Nash Equilibrium solution to this multi-objective optimization problem.
 
 ---
 
-***REMOVED******REMOVED*** 2. Autonomous Strategy Pruning (The "Bait" Rejection)
+## 2. Autonomous Strategy Pruning (The "Bait" Rejection)
 
-***REMOVED******REMOVED******REMOVED*** The Setup: Human-Designed vs. Agent-Learned Strategies
+### The Setup: Human-Designed vs. Agent-Learned Strategies
 
 **Experimental Design**: We provided 8 actions, including two "bait" strategies that were theoretically justified but empirically questionable:
 
@@ -79,18 +79,18 @@ w₄ = 0.3   ***REMOVED*** Retrain frequency (anti-oscillation)
 2. **Action 7 (SUGGEST_RETRAIN)**: Trigger model retraining when RMSE degrades  
    *Human Hypothesis*: Fresh training data improves accuracy.
 
-***REMOVED******REMOVED******REMOVED*** The Result: 0% Selection Rate for Both Actions
+### The Result: 0% Selection Rate for Both Actions
 
 | Action | Human Rationale | Agent Selection | Interpretation |
 |--------|----------------|-----------------|----------------|
 | 5 | Long-term specialization | **0%** | No value in 30-day window |
 | 7 | Adaptive retraining | **0%** | Cost exceeds benefit |
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Defense Argument: Proof of Value-Based Discernment
+#### Defense Argument: Proof of Value-Based Discernment
 
 **Thesis Statement**: This is evidence of autonomous intelligence, not training failure.
 
-***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED*** Why Action 5 Was Pruned
+##### Why Action 5 Was Pruned
 Through 314 SARNS (State-Action-Reward-NextState) transitions, the agent empirically verified that:
 - **Blend optimization is non-monotonic**: Increasing long-term weight beyond 30% degrades Day-1 accuracy
 - **Short-term expertise dominates early horizons**: The 96-step TFT captures intra-day dynamics that the 720-step model misses
@@ -100,7 +100,7 @@ Through 314 SARNS (State-Action-Reward-NextState) transitions, the agent empiric
 Average reward for Action 2 (FINE_TUNE_LONG): `-0.095`  
 Implied reward for Action 5 (BLEND_HIGH_LONG): `< -0.15` (never selected despite ε-greedy exploration)
 
-***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED*** Why Action 7 Was Pruned
+##### Why Action 7 Was Pruned
 The agent learned that model retraining:
 - Incurs high action cost: `0.9` penalty in reward function
 - Introduces distribution shift: New model must re-learn plant-specific patterns
@@ -117,16 +117,16 @@ The agent correctly identified that retraining violates the **Stability-First** 
 
 ---
 
-***REMOVED******REMOVED*** 3. Surgical Intra-Day Optimization (0-24h analysis)
+## 3. Surgical Intra-Day Optimization (0-24h analysis)
 
-***REMOVED******REMOVED******REMOVED*** Canonical thesis metric (RQ4)
+### Canonical thesis metric (RQ4)
 
 Use the latest canonical RQ4 results under `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`.
 
 - Overall (night-filtered): baseline RMSE 0.11713 vs policy RMSE 0.117161
 - 0–24h bucket (night-filtered): baseline RMSE 0.118582 vs policy RMSE 0.119484
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Translating to Real-World Impact
+#### Translating to Real-World Impact
 
 For a 7.36 MW plant with mean output of ~1.5 MW during daylight hours:
 
@@ -139,38 +139,38 @@ Note: Any previously reported “Day-1 win” numbers should be treated as histo
   6.09 kW × 24h × 300 days × €50/MWh = €21,924/year
   ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Defense Argument: Specialist vs. Generalist
+#### Defense Argument: Specialist vs. Generalist
 
 **Thesis Statement**: The meta-controller is a **Day-1 Tactical Specialist**, not a 30-day generalist.
 
-***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED*** Why 30-Day Average Appears Small
+##### Why 30-Day Average Appears Small
 - **Forecast horizon decay**: Uncertainty grows quadratically beyond 72 hours
 - **Physics dominance at long horizons**: After Day 5, clear-sky irradiance models (PVLib) become the bottleneck
 - **RL optimization target**: The reward function prioritizes short-term accuracy:
   ```python
-  r_accuracy = w1 * (rmse_prev - rmse_next) / 0.01  ***REMOVED*** 10W normalization
+  r_accuracy = w1 * (rmse_prev - rmse_next) / 0.01  # 10W normalization
   ```
 
 **Key Insight**: Canonical 0–24h behavior and overall baseline-vs-policy deltas should be taken from `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`.
 
 ---
 
-***REMOVED******REMOVED*** 4. Physics-Aware Regime Switching (The 3% Intervention)
+## 4. Physics-Aware Regime Switching (The 3% Intervention)
 
-***REMOVED******REMOVED******REMOVED*** The Observation: Why Action 3 Exactly 15% of the Time?
+### The Observation: Why Action 3 Exactly 15% of the Time?
 
 **Action 3 (RECALIBRATE_PVLIB)**: Increase physics-baseline blend weight from 25% → 50%
 
 **Empirical Selection Rate**: 15% (47 out of 314 forecast starts)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Regime Identification via Heuristic Decision Tree
+#### Regime Identification via Heuristic Decision Tree
 
 The heuristic mode (used during SARNS collection) reveals the underlying physical intuition:
 
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py lines 478-520
-if physics_residual > 0.25:  ***REMOVED*** High error in physics model
-    return ACTION_RECALIBRATE_PVLIB  ***REMOVED*** Action 3
+# src/rl/rl_meta_controller.py lines 478-520
+if physics_residual > 0.25:  # High error in physics model
+    return ACTION_RECALIBRATE_PVLIB  # Action 3
 ```
 
 **Trigger Condition**: When the PVLib clear-sky model has residual error > 0.25, indicating:
@@ -178,11 +178,11 @@ if physics_residual > 0.25:  ***REMOVED*** High error in physics model
 - Sensor miscalibration (irradiance or temperature)
 - Soiling/snow events (physical degradation)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Defense Argument: Physical Guardrail
+#### Defense Argument: Physical Guardrail
 
 **Thesis Statement**: The meta-controller acts as a **Physical Guardrail**, recognizing when deep learning models produce stochastic noise during deterministic clear-sky regimes.
 
-***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED*** Example Scenario: Perfect Clear-Sky Day
+##### Example Scenario: Perfect Clear-Sky Day
 - **TFT models**: Trained on noisy historical data, produce fluctuations around true output
 - **PVLib model**: Deterministic solar geometry + equipment specs = smooth theoretical curve
 - **Agent decision**: Detect `short_long_mismatch > 0.5` (TFT models disagree with each other) → increase physics weight → reduce noise
@@ -191,7 +191,7 @@ if physics_residual > 0.25:  ***REMOVED*** High error in physics model
 Average reward for Action 3: `-0.092`  
 This is competitive with Action 2 (`-0.095`), proving physics-regime switching is a valid strategy.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** The 3% as Optimal Intervention Rate
+#### The 3% as Optimal Intervention Rate
 
 Why not 50% physics-switching? Or 1%?
 
@@ -204,9 +204,9 @@ The agent learned the natural distribution of weather regimes and intervenes pro
 
 ---
 
-***REMOVED******REMOVED*** 5. Robustness & Convergence (The Engineering Proof)
+## 5. Robustness & Convergence (The Engineering Proof)
 
-***REMOVED******REMOVED******REMOVED*** Production-Ready Metrics
+### Production-Ready Metrics
 
 | Metric | Baseline | Policy | Status |
 |--------|----------|--------|--------|
@@ -222,7 +222,7 @@ The agent learned the natural distribution of weather regimes and intervenes pro
 | Canonical RQ4 (overall RMSE) | 0.11713 | 0.117161 | ≈ no change |
 | Canonical RQ4 (0–24h RMSE) | 0.118582 | 0.119484 | policy slightly worse |
 
-***REMOVED******REMOVED******REMOVED*** Convergence Evidence
+### Convergence Evidence
 
 **Q-Network Architecture** (inferred from checkpoint):
 ```
@@ -236,11 +236,11 @@ Output: 8-dim action Q-values
 2. **Smooth value function**: No pathological action oscillations observed across adjacent forecast starts
 3. **Reward plateau**: Average reward `-0.107` (negative RMSE) is stable across evaluation period
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Defense Argument: Distilled Intelligence
+#### Defense Argument: Distilled Intelligence
 
 **Thesis Statement**: The use of a simple MLP Q-network proves that complex RL "brains" can be distilled into lightweight "tactical units" for real-world deployment.
 
-***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED*** Why SimpleQNet Works
+##### Why SimpleQNet Works
 Unlike image-based RL (requires CNNs) or language-based RL (requires transformers), our state space is:
 - **Low-dimensional**: 10 features (RMSE, drift, physics residual, etc.)
 - **Dense**: Every feature is informative (no sparse attention required)
@@ -254,9 +254,9 @@ Universal Approximation Theorem guarantees that a 2-layer MLP with sufficient hi
 
 ---
 
-***REMOVED******REMOVED*** Critical Analysis: Addressing Potential Objections
+## Critical Analysis: Addressing Potential Objections
 
-***REMOVED******REMOVED******REMOVED*** Objection 1: "Policy impact is negligible"
+### Objection 1: "Policy impact is negligible"
 
 **Rebuttal**: Scale matters, and small deltas can still be economically relevant.
 
@@ -266,7 +266,7 @@ If a future policy achieves a consistent Day-1 RMSE delta of ~0.001 on normalize
 
 More importantly, **this is achieved with zero infrastructure cost** (software-only) and **zero operational disruption** (backward-compatible with baseline).
 
-***REMOVED******REMOVED******REMOVED*** Objection 2: "Why train RL if it mostly picks Action 0?"
+### Objection 2: "Why train RL if it mostly picks Action 0?"
 
 **Rebuttal**: The question conflates frequency with value.
 - **Frequency**: 60% Action 0
@@ -275,7 +275,7 @@ More importantly, **this is achieved with zero infrastructure cost** (software-o
 
 **Analogy**: A doctor prescribing antibiotics only 5% of the time doesn't invalidate medical school training—the skill is in *knowing when* to prescribe.
 
-***REMOVED******REMOVED******REMOVED*** Objection 3: "Only 3 actions used—is the agent undertrained?"
+### Objection 3: "Only 3 actions used—is the agent undertrained?"
 
 **Rebuttal**: This is **autonomous strategy pruning**, not undertraining.
 - **Evidence**: The agent had ε-greedy exploration during training (ε=0.1), meaning it tried all 8 actions
@@ -286,9 +286,9 @@ This demonstrates **generalization beyond human intuition**.
 
 ---
 
-***REMOVED******REMOVED*** Conclusion: The Conservative Governor as Optimal Solution
+## Conclusion: The Conservative Governor as Optimal Solution
 
-***REMOVED******REMOVED******REMOVED*** Summary of Thesis Defense
+### Summary of Thesis Defense
 
 1. **Stability-First Philosophy**: 60% baseline adherence proves the agent learned that the ensemble weights are the global optimum, deviating only when probabilistic gains justify risk.
 
@@ -300,7 +300,7 @@ This demonstrates **generalization beyond human intuition**.
 
 5. **Robustness & Convergence**: Zero NaNs, zero negatives, 400ms inference time, and 1 million rows of aligned predictions prove the system is **production-ready**.
 
-***REMOVED******REMOVED******REMOVED*** Final Argument: Why This is a Success
+### Final Argument: Why This is a Success
 
 The meta-controller achieved its design objective:
 
@@ -312,7 +312,7 @@ The meta-controller achieved its design objective:
 - ✅ **Cost**: No model retraining triggered (Action 7 = 0%)
 - ✅ **Robustness**: 100% data quality, zero runtime failures
 
-***REMOVED******REMOVED******REMOVED*** Future Work: Scaling to Multi-Plant Deployment
+### Future Work: Scaling to Multi-Plant Deployment
 
 **Immediate Extensions**:
 1. **Counterfactual Evaluation**: Generate full 8-action SARNS to verify Actions 1, 4-7 have truly negative Q-values
@@ -326,9 +326,9 @@ The meta-controller achieved its design objective:
 
 ---
 
-***REMOVED******REMOVED*** Appendix: Technical Specifications
+## Appendix: Technical Specifications
 
-***REMOVED******REMOVED******REMOVED*** Action-to-Blend Weight Mapping (Empirical)
+### Action-to-Blend Weight Mapping (Empirical)
 
 | Action | blend_short | blend_long | blend_physics | Sample Count |
 |--------|-------------|------------|---------------|--------------|
@@ -337,7 +337,7 @@ The meta-controller achieved its design objective:
 | 3 | 0.325 | 0.175 | 0.500 | 47 (15%) |
 | 1, 4-7 | N/A | N/A | N/A | 0 (0%) |
 
-***REMOVED******REMOVED******REMOVED*** State Space Features (10-dim)
+### State Space Features (10-dim)
 
 From SARNS normalization (inferred):
 1. `short_rmse_1h` – Short-term TFT error (1-6h ahead)
@@ -351,14 +351,14 @@ From SARNS normalization (inferred):
 9. `time_since_last_update` – Hours since last encoder refresh
 10. `ensemble_rmse` – Current blended forecast error
 
-***REMOVED******REMOVED******REMOVED*** Reward Function Components
+### Reward Function Components
 
 ```python
-R_t = 1.0 × (RMSE_improvement / 0.01)        ***REMOVED*** Accuracy
-    - 0.5 × (drift + mismatch) / 2.0         ***REMOVED*** Stability
-    - 0.2 × action_cost                      ***REMOVED*** Efficiency
-    - 0.3 × retrain_count / 10.0             ***REMOVED*** Anti-oscillation
-    + 0.1 × [api_agreement > 0.9]            ***REMOVED*** Consensus bonus
+R_t = 1.0 × (RMSE_improvement / 0.01)        # Accuracy
+    - 0.5 × (drift + mismatch) / 2.0         # Stability
+    - 0.2 × action_cost                      # Efficiency
+    - 0.3 × retrain_count / 10.0             # Anti-oscillation
+    + 0.1 × [api_agreement > 0.9]            # Consensus bonus
 ```
 
 **Action Costs**:

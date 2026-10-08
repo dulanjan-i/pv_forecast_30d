@@ -1,12 +1,12 @@
-***REMOVED***!/bin/bash
-***REMOVED*** setup_lstm_branch.sh
-***REMOVED*** Script to scaffold LSTM branch with sample files and commits
+#!/bin/bash
+# setup_lstm_branch.sh
+# Script to scaffold LSTM branch with sample files and commits
 
 set -e
 
 echo "⚡ Setting up LSTM branch structure..."
 
-***REMOVED*** Create directories
+# Create directories
 mkdir -p notebooks/lstm
 mkdir -p src/models
 mkdir -p src/training
@@ -15,14 +15,14 @@ mkdir -p src/utils
 mkdir -p experiments/lstm
 mkdir -p reports
 
-***REMOVED*** Add __init__.py so folders are packages
+# Add __init__.py so folders are packages
 touch src/__init__.py src/models/__init__.py src/training/__init__.py src/features/__init__.py src/utils/__init__.py
 
-***REMOVED*** Notebooks (placeholders)
+# Notebooks (placeholders)
 cat > notebooks/lstm/01_lstm_baseline.ipynb <<EOL
 {
  "cells": [
-  {"cell_type": "markdown", "metadata": {}, "source": ["***REMOVED*** Baseline LSTM Model Notebook"]},
+  {"cell_type": "markdown", "metadata": {}, "source": ["# Baseline LSTM Model Notebook"]},
   {"cell_type": "markdown", "metadata": {}, "source": ["This notebook explores a simple LSTM baseline on sample PV data."]}
  ],
  "metadata": {"kernelspec": {"name": "python3", "language": "python"}},
@@ -31,7 +31,7 @@ cat > notebooks/lstm/01_lstm_baseline.ipynb <<EOL
 }
 EOL
 
-***REMOVED*** Source files (placeholders with docstrings)
+# Source files (placeholders with docstrings)
 cat > src/models/lstm_model.py <<EOL
 """
 LSTM model definition for PV power forecasting.
@@ -47,7 +47,7 @@ class LSTMForecast(nn.Module):
 
     def forward(self, x):
         out, _ = self.lstm(x)
-        out = self.fc(out[:, -1, :])  ***REMOVED*** last time step
+        out = self.fc(out[:, -1, :])  # last time step
         return out
 EOL
 
@@ -55,26 +55,26 @@ cat > src/training/train_lstm.py <<EOL
 """
 Training loop for LSTM model.
 """
-***REMOVED*** Placeholder: load data, define model, optimizer, loss, train, save checkpoints
+# Placeholder: load data, define model, optimizer, loss, train, save checkpoints
 EOL
 
 cat > src/features/sequence_generator.py <<EOL
 """
 Utility to create sliding windows for time series.
 """
-***REMOVED*** Placeholder: function to generate input/output sequences
+# Placeholder: function to generate input/output sequences
 EOL
 
 cat > src/utils/metrics.py <<EOL
 """
 Custom metrics for PV forecasting.
 """
-***REMOVED*** Placeholder: RMSE, MAE, R²
+# Placeholder: RMSE, MAE, R²
 EOL
 
-***REMOVED*** Experiment config
+# Experiment config
 cat > experiments/lstm/exp01.yaml <<EOL
-***REMOVED*** Experiment 01: Baseline LSTM
+# Experiment 01: Baseline LSTM
 model:
   input_size: 10
   hidden_size: 64
@@ -88,22 +88,22 @@ data:
   source: data/processed/sample.csv
 EOL
 
-***REMOVED*** Reports placeholder
+# Reports placeholder
 cat > reports/lstm_results.md <<EOL
-***REMOVED*** LSTM Experiment Results
+# LSTM Experiment Results
 
 This document will track results from LSTM experiments.
 
 - **exp01**: Baseline LSTM (config in experiments/lstm/exp01.yaml)
 EOL
 
-***REMOVED*** README specific to LSTM branch
+# README specific to LSTM branch
 cat > README_LSTM.md <<EOL
-***REMOVED*** LSTM Branch Overview
+# LSTM Branch Overview
 
 This branch contains all files related to the development of the LSTM forecasting model.
 
-***REMOVED******REMOVED*** Structure
+## Structure
 - \`notebooks/lstm/\`: Prototyping and exploration notebooks
 - \`src/models/lstm_model.py\`: LSTM model definition
 - \`src/training/train_lstm.py\`: Training loop for LSTM
@@ -112,14 +112,14 @@ This branch contains all files related to the development of the LSTM forecastin
 - \`experiments/lstm/\`: Config files for reproducible runs
 - \`reports/lstm_results.md\`: Results and findings
 
-***REMOVED******REMOVED*** First Sprint Goal
+## First Sprint Goal
 1. Build baseline LSTM (notebook + simple training loop)
 2. Save experiment config + results
 3. Refactor into \`src/\` for reusability
 4. Merge back to \`main\` when baseline is stable
 EOL
 
-***REMOVED*** Git add + commit step-by-step
+# Git add + commit step-by-step
 git add notebooks/lstm/01_lstm_baseline.ipynb
 git commit -m "notebooks: add baseline LSTM exploration notebook"
 

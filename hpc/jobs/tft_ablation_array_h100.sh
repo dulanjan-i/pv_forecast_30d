@@ -1,13 +1,13 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --job-name=tft_ablate
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --cpus-per-task=24
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=06:00:00
-***REMOVED***SBATCH --array=0-3
-***REMOVED***SBATCH --output=/shared/%u/miracle/logs/%x_%A_%a.out
-***REMOVED***SBATCH --error=/shared/%u/miracle/logs/%x_%A_%a.err
+#!/bin/bash
+#SBATCH --job-name=tft_ablate
+#SBATCH --partition=gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=24
+#SBATCH --mem=64G
+#SBATCH --time=06:00:00
+#SBATCH --array=0-3
+#SBATCH --output=/shared/%u/miracle/logs/%x_%A_%a.out
+#SBATCH --error=/shared/%u/miracle/logs/%x_%A_%a.err
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ MODE="${MODES[$SLURM_ARRAY_TASK_ID]}"
 SRC_TRAIN="$ABL_DIR/train_${MODE}.parquet"
 SRC_VAL="$ABL_DIR/val_${MODE}.parquet"
 
-***REMOVED*** ---- hard checks so we fail with a useful message (instead of silent ExitCode=1) ----
+# ---- hard checks so we fail with a useful message (instead of silent ExitCode=1) ----
 echo "MODE=$MODE"
 echo "REPO=$REPO"
 echo "IMG=$IMG"
@@ -56,7 +56,7 @@ if [[ "$MODE" == "full" || "$MODE" == "tft_lstm" ]]; then
   EXTRA="--use_lstm_encodings --enc_lag 96"
 fi
 
-***REMOVED*** IMPORTANT: expand $EXTRA in the outer shell (do NOT escape it with a backslash)
+# IMPORTANT: expand $EXTRA in the outer shell (do NOT escape it with a backslash)
 singularity exec --nv "$IMG" bash -lc "
   set -euo pipefail
   cd $REPO

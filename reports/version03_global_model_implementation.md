@@ -1,4 +1,4 @@
-***REMOVED*** Version 3 - Global Forecasting Model Implementation
+# Version 3 - Global Forecasting Model Implementation
 
 **Status:** ✅ **COMPLETE** - All 5 files created with detailed docstrings  
 **Date:** December 18, 2024  
@@ -6,7 +6,7 @@
 
 ---
 
-***REMOVED******REMOVED*** 📋 Overview
+## 📋 Overview
 
 Version 3 addresses Version 02 overfitting (train/val ratio 2.0-2.5) through **architectural changes** rather than hyperparameter tuning:
 
@@ -23,9 +23,9 @@ Version 3 addresses Version 02 overfitting (train/val ratio 2.0-2.5) through **a
 
 ---
 
-***REMOVED******REMOVED*** 🗂️ Files Created (5/5)
+## 🗂️ Files Created (5/5)
 
-***REMOVED******REMOVED******REMOVED*** 1. **Schema Updates** ✅
+### 1. **Schema Updates** ✅
 **File:** `src/data/schema.py` (modified)
 
 **Added Constants:**
@@ -33,10 +33,10 @@ Version 3 addresses Version 02 overfitting (train/val ratio 2.0-2.5) through **a
 PLANT_IDS: List[str] = ["plant_01", "plant_02", "plant_03", "plant_05", "plant_06"]
 PLANT_ID_COL: str = "plant_id"
 PLANT_ONEHOT_COLS: List[str] = PLANT_IDS
-GLOBAL_LSTM_INPUT_FEATURES: List[str] = LSTM_INPUT_FEATURES + PLANT_ONEHOT_COLS  ***REMOVED*** 20 features
+GLOBAL_LSTM_INPUT_FEATURES: List[str] = LSTM_INPUT_FEATURES + PLANT_ONEHOT_COLS  # 20 features
 ```
 
-***REMOVED******REMOVED******REMOVED*** 2. **Super Matrix Builder** ✅
+### 2. **Super Matrix Builder** ✅
 **File:** `src/preprocessing/germany_build_global_supermatrix.py` (280 lines)
 
 **Purpose:** Concatenate 5 plants into single dataset with one-hot plant IDs
@@ -53,7 +53,7 @@ GLOBAL_LSTM_INPUT_FEATURES: List[str] = LSTM_INPUT_FEATURES + PLANT_ONEHOT_COLS 
 python src/preprocessing/germany_build_global_supermatrix.py
 ```
 
-***REMOVED******REMOVED******REMOVED*** 3. **Rolling Origin Splitter** ✅
+### 3. **Rolling Origin Splitter** ✅
 **File:** `src/preprocessing/germany_global_rolling_origin_split.py` (340 lines)
 
 **Purpose:** Create 4 temporal folds for cross-validation
@@ -82,7 +82,7 @@ python src/preprocessing/germany_build_global_supermatrix.py
 python src/preprocessing/germany_global_rolling_origin_split.py
 ```
 
-***REMOVED******REMOVED******REMOVED*** 4. **Global LSTM Encoder** ✅
+### 4. **Global LSTM Encoder** ✅
 **File:** `src/models/global_lstm_encoder.py` (420 lines)
 
 **Purpose:** LSTM encoder with 20-feature input + zero-padding transfer learning
@@ -91,8 +91,8 @@ python src/preprocessing/germany_global_rolling_origin_split.py
 - `GlobalLSTMEncoder`: Inherits from LSTMEncoder, expects input_size=20
 - `transfer_from_farm2107()`: Zero-pad weights (15→20 features)
   ```python
-  new_weight[:, 0:15] = farm2107_weight  ***REMOVED*** Copy first 15 columns
-  new_weight[:, 15:20] = 0.0              ***REMOVED*** Initialize plant_id weights to zero
+  new_weight[:, 0:15] = farm2107_weight  # Copy first 15 columns
+  new_weight[:, 15:20] = 0.0              # Initialize plant_id weights to zero
   ```
 
 **Transfer Learning Rationale:**
@@ -100,7 +100,7 @@ python src/preprocessing/germany_global_rolling_origin_split.py
 - Last 5 features: Zero-initialized (model learns plant IDs from scratch)
 - Conservative approach: no plant-specific bias at initialization
 
-***REMOVED******REMOVED******REMOVED*** 5. **Training Script** ✅
+### 5. **Training Script** ✅
 **File:** `src/training/train_global_lstm_v3.py` (480 lines)
 
 **Purpose:** Train one fold with transfer learning
@@ -113,14 +113,14 @@ python src/preprocessing/germany_global_rolling_origin_split.py
 
 **Hyperparameters:**
 ```python
-window_size = 96       ***REMOVED*** 24 hours at 15-min resolution
-batch_size = 128       ***REMOVED*** Balance memory and gradient noise
-hidden_size = 64       ***REMOVED*** Match Farm2107
-num_layers = 2         ***REMOVED*** Match Farm2107
-dropout = 0.1          ***REMOVED*** Regularization
-lr = 1e-4              ***REMOVED*** Conservative for fine-tuning (Farm2107 used 1e-3)
-max_epochs = 30        ***REMOVED*** Early stopping prevents waste
-patience = 5           ***REMOVED*** Allow 5 epochs for val_loss improvement
+window_size = 96       # 24 hours at 15-min resolution
+batch_size = 128       # Balance memory and gradient noise
+hidden_size = 64       # Match Farm2107
+num_layers = 2         # Match Farm2107
+dropout = 0.1          # Regularization
+lr = 1e-4              # Conservative for fine-tuning (Farm2107 used 1e-3)
+max_epochs = 30        # Early stopping prevents waste
+patience = 5           # Allow 5 epochs for val_loss improvement
 ```
 
 **Output per Fold:**
@@ -133,7 +133,7 @@ patience = 5           ***REMOVED*** Allow 5 epochs for val_loss improvement
 python src/training/train_global_lstm_v3.py --fold 1
 ```
 
-***REMOVED******REMOVED******REMOVED*** 6. **Shell Wrapper** ✅
+### 6. **Shell Wrapper** ✅
 **File:** `run_stage3_global_training.sh` (180 lines)
 
 **Purpose:** Automate training of all 4 folds sequentially
@@ -156,45 +156,45 @@ python src/training/train_global_lstm_v3.py --fold 1
 
 ---
 
-***REMOVED******REMOVED*** 🚀 Execution Workflow
+## 🚀 Execution Workflow
 
-***REMOVED******REMOVED******REMOVED*** Step 1: Preprocessing (Quick - ~3 minutes total)
+### Step 1: Preprocessing (Quick - ~3 minutes total)
 
 ```bash
-***REMOVED*** Build Super Matrix (~2 min)
+# Build Super Matrix (~2 min)
 python src/preprocessing/germany_build_global_supermatrix.py
 
-***REMOVED*** Output: global/supermatrix_base.parquet (~150K rows, 21 cols)
-***REMOVED*** Validates: one-hot sum = 1.0, plant distribution
+# Output: global/supermatrix_base.parquet (~150K rows, 21 cols)
+# Validates: one-hot sum = 1.0, plant distribution
 
-***REMOVED*** Create Rolling Origin Splits (~1 min)
+# Create Rolling Origin Splits (~1 min)
 python src/preprocessing/germany_global_rolling_origin_split.py
 
-***REMOVED*** Output: 12 files (fold_X_{train,val}.parquet + fold_X_scaler.json × 4)
-***REMOVED*** Validates: temporal overlap (no leakage), NaN checks
+# Output: 12 files (fold_X_{train,val}.parquet + fold_X_scaler.json × 4)
+# Validates: temporal overlap (no leakage), NaN checks
 ```
 
-***REMOVED******REMOVED******REMOVED*** Step 2: Training (Long - ~2-3 hours)
+### Step 2: Training (Long - ~2-3 hours)
 
 ```bash
-***REMOVED*** Option A: Train all folds (recommended)
+# Option A: Train all folds (recommended)
 ./run_stage3_global_training.sh
 
-***REMOVED*** Option B: Train single fold (for testing)
+# Option B: Train single fold (for testing)
 python src/training/train_global_lstm_v3.py --fold 1 --gpus 1
 ```
 
 **GPU Memory:** ~2-3 GB per fold (batch_size=128, hidden_size=64)  
 **Adjust batch_size if OOM:** `--batch_size 64`
 
-***REMOVED******REMOVED******REMOVED*** Step 3: Validation Analysis
+### Step 3: Validation Analysis
 
 After training, analyze results:
 
 ```python
 import pandas as pd
 
-***REMOVED*** Load metrics for all folds
+# Load metrics for all folds
 folds = [1, 2, 3, 4]
 metrics = []
 
@@ -225,9 +225,9 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 
 ---
 
-***REMOVED******REMOVED*** 🎯 Design Decisions
+## 🎯 Design Decisions
 
-***REMOVED******REMOVED******REMOVED*** 1. One-Hot vs Learned Embedding
+### 1. One-Hot vs Learned Embedding
 **Chosen:** One-hot encoding (5 binary columns)  
 **Rationale:**
 - Simpler to implement and debug
@@ -235,21 +235,21 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 - 5 plants is small enough (not 100s)
 - Can upgrade to learned embedding (5→3D) in Version 3.1 if needed
 
-***REMOVED******REMOVED******REMOVED*** 2. Rolling Origin Type
+### 2. Rolling Origin Type
 **Chosen:** Walk-forward (train on past, test on future)  
 **Rationale:**
 - Respects temporal causality (no leakage)
 - Simulates real-world deployment (retrain with new data)
 - Seasonal k-fold would violate causality (test on past)
 
-***REMOVED******REMOVED******REMOVED*** 3. Zero-Padding vs Random Init
+### 3. Zero-Padding vs Random Init
 **Chosen:** Zero-padding for plant_id columns  
 **Rationale:**
 - Conservative: no plant-specific bias at start
 - Model learns optimal weights during training
 - Alternative: Small random (Normal(0, 0.01)) if zeros underperform
 
-***REMOVED******REMOVED******REMOVED*** 4. Learning Rate
+### 4. Learning Rate
 **Chosen:** 1e-4 (lower than Farm2107's 1e-3)  
 **Rationale:**
 - Fine-tuning requires smaller LR to preserve pretrained knowledge
@@ -258,9 +258,9 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 
 ---
 
-***REMOVED******REMOVED*** 📊 Expected Outcomes
+## 📊 Expected Outcomes
 
-***REMOVED******REMOVED******REMOVED*** Success Case (Version 3 Works)
+### Success Case (Version 3 Works)
 - Train/val ratio: **1.2-1.5** ✅
 - Val RMSE: **0.05-0.07** ✅
 - Winter fold likely hardest (low production, short days)
@@ -271,7 +271,7 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 - Proceed to **Stage 2B: TFT Ensemble**
 - Use global encoders for downstream tasks
 
-***REMOVED******REMOVED******REMOVED*** Partial Success (Improved but Not Enough)
+### Partial Success (Improved but Not Enough)
 - Train/val ratio: **1.5-1.8** (better than 2.0-2.5, but not <1.5)
 
 **Next Steps (Version 3.1+):**
@@ -279,7 +279,7 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 - **Version 3.2:** Add plant metadata (capacity, lat/lon, tilt)
 - **Version 3.3:** Hierarchical model (global encoder + plant-specific heads)
 
-***REMOVED******REMOVED******REMOVED*** Failure Case (Still Overfitting >1.8)
+### Failure Case (Still Overfitting >1.8)
 - Train/val ratio: **>1.8**
 
 **Fallback:**
@@ -289,9 +289,9 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 
 ---
 
-***REMOVED******REMOVED*** 🧠 Key Insights
+## 🧠 Key Insights
 
-***REMOVED******REMOVED******REMOVED*** Why Global Model?
+### Why Global Model?
 **Problem:** Small per-plant datasets (18K-43K samples) → easy to memorize  
 **Solution:** Pool all 5 plants (150K samples) → harder to memorize, more generalizable
 
@@ -300,7 +300,7 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 - Amazon (sales forecasting across products)
 - Walmart (inventory forecasting across stores)
 
-***REMOVED******REMOVED******REMOVED*** Why Transfer Learning?
+### Why Transfer Learning?
 **Problem:** Farm2107 is single-site, Germany is multi-site  
 **Solution:** Preserve weather/power knowledge, learn plant-specific patterns
 
@@ -309,7 +309,7 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 - Global model adds: "plant_01 has higher capacity than plant_05"
 - Gradual adaptation vs full retrain
 
-***REMOVED******REMOVED******REMOVED*** Why Rolling Origin?
+### Why Rolling Origin?
 **Problem:** Seasonal k-fold violates causality (train on future, test on past)  
 **Solution:** Walk-forward respects time (train on past, test on near future)
 
@@ -320,7 +320,7 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 
 ---
 
-***REMOVED******REMOVED*** 📝 Thesis Value
+## 📝 Thesis Value
 
 **Complete Research Arc:**
 1. **Version 01:** Seasonal bias discovered and fixed
@@ -343,7 +343,7 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 
 ---
 
-***REMOVED******REMOVED*** ✅ Completion Checklist
+## ✅ Completion Checklist
 
 - ✅ **Schema updates** (`src/data/schema.py`)
 - ✅ **Super Matrix builder** (`src/preprocessing/germany_build_global_supermatrix.py`)
@@ -358,7 +358,7 @@ print(f"\nAverage train/val ratio: {results['ratio'].mean():.2f}")
 
 ---
 
-***REMOVED******REMOVED*** 🎉 Next Actions
+## 🎉 Next Actions
 
 1. **Run preprocessing** (~3 min):
    ```bash

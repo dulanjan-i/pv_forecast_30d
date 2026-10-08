@@ -35,9 +35,9 @@ import pandas as pd
 
 from src.data.schema import TIME_COL, PLANT_ID_COL
 
-***REMOVED*** Weather columns expected in interim weather_15min files.
-***REMOVED*** Keep this list aligned with what you actually have from OpenMeteo processing.
-***REMOVED*** IMPORTANT: no poa_irradiance here.
+# Weather columns expected in interim weather_15min files.
+# Keep this list aligned with what you actually have from OpenMeteo processing.
+# IMPORTANT: no poa_irradiance here.
 WEATHER_COLS: List[str] = [
     "temperature_2m",
     "relative_humidity_2m",
@@ -83,21 +83,21 @@ def _load_weather_one(path: Path) -> pd.DataFrame:
     df = pd.read_parquet(path)
     df[TIME_COL] = pd.to_datetime(df[TIME_COL], utc=True)
 
-    ***REMOVED*** Add plant_id derived from filename if missing
+    # Add plant_id derived from filename if missing
     if PLANT_ID_COL not in df.columns:
         pid = _infer_plant_id_from_filename(path)
         df[PLANT_ID_COL] = pid
 
-    ***REMOVED*** Validate expected cols
+    # Validate expected cols
     missing = [c for c in WEATHER_COLS if c not in df.columns]
     if missing:
         raise ValueError(f"{df[PLANT_ID_COL].iloc[0]}: weather parquet missing columns: {missing} in {path}")
 
-    ***REMOVED*** Keep only the required set plus keys
+    # Keep only the required set plus keys
     keep = [TIME_COL, PLANT_ID_COL] + WEATHER_COLS
     df = df[keep].copy()
 
-    ***REMOVED*** Basic sanity: no duplicated keys
+    # Basic sanity: no duplicated keys
     dups = df.duplicated([PLANT_ID_COL, TIME_COL]).sum()
     if dups:
         raise ValueError(f"{path.name}: duplicated (plant_id, timestamp) rows: {int(dups)}")
@@ -117,12 +117,12 @@ def _build_weather_for_split(base: pd.DataFrame, weather_dir: Path) -> pd.DataFr
         w_path = weather_dir / f"{pid}_weather_15min.parquet"
         w = _load_weather_one(w_path)
 
-        ***REMOVED*** Filter to only keys present in base for that plant (fast and correct)
+        # Filter to only keys present in base for that plant (fast and correct)
         k = base_keys[base_keys[PLANT_ID_COL] == pid]
         merged = k.merge(w, on=[PLANT_ID_COL, TIME_COL], how="inner", validate="one_to_one")
 
         if len(merged) != len(k):
-            ***REMOVED*** This is important to see. It means you have missing weather timestamps for that base universe.
+            # This is important to see. It means you have missing weather timestamps for that base universe.
             miss = len(k) - len(merged)
             print(f"[WARN] {pid}: base rows={len(k)} weather matched={len(merged)} missing={miss}")
 
@@ -131,7 +131,7 @@ def _build_weather_for_split(base: pd.DataFrame, weather_dir: Path) -> pd.DataFr
     out = pd.concat(parts, axis=0, ignore_index=True)
     out = out.sort_values([PLANT_ID_COL, TIME_COL]).reset_index(drop=True)
 
-    ***REMOVED*** Final sanity
+    # Final sanity
     if out.isna().any().any():
         n = int(out.isna().sum().sum())
         raise ValueError(f"Weather output contains NaNs (count={n}). Fix preprocessing before TFT.")

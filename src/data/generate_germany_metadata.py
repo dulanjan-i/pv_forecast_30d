@@ -5,11 +5,11 @@ from pathlib import Path
 import pandas as pd
 
 
-***REMOVED*** Adjust if your Excel is elsewhere
+# Adjust if your Excel is elsewhere
 BASE_DATA_PATH = Path("data/metadata/germany/Base_Data_exc_Dulan.xlsx")
 OUTPUT_DIR = Path("data/metadata/germany")
 
-***REMOVED*** Mapping from provider internal ID to your anonymized plant IDs
+# Mapping from provider internal ID to your anonymized plant IDs
 ID_TO_PLANT = {
     "1_AMS": "plant_01",
     "2_FAB": "plant_02",
@@ -17,7 +17,7 @@ ID_TO_PLANT = {
     "4_SAD": "plant_04",
     "5_SCW": "plant_05",
     "6_TER1": "plant_06",
-    "6_TER2": "plant_06",  ***REMOVED*** merge 6_TER1 and 6_TER2
+    "6_TER2": "plant_06",  # merge 6_TER1 and 6_TER2
 }
 
 
@@ -66,7 +66,7 @@ def parse_sy_azimuth(alpha_val):
     vals = []
     for p in parts:
         p = p.replace(",", ".")
-        p = p.replace("−", "-")  ***REMOVED*** just in case
+        p = p.replace("−", "-")  # just in case
         try:
             vals.append(float(p))
         except ValueError:
@@ -116,30 +116,30 @@ def main():
 
     df = pd.read_excel(BASE_DATA_PATH, sheet_name="Basedata")
 
-    ***REMOVED*** Keep only rows with INT_ID
+    # Keep only rows with INT_ID
     df = df[df["INT_ID [Dulan]"].notna()].copy()
 
-    ***REMOVED*** Attach your plant_id mapping
+    # Attach your plant_id mapping
     df["provider_internal_id"] = df["INT_ID [Dulan]"].astype(str)
     df["plant_id"] = df["provider_internal_id"].map(ID_TO_PLANT)
 
-    ***REMOVED*** Drop anything unmapped, just in case
+    # Drop anything unmapped, just in case
     df = df[df["plant_id"].notna()].copy()
 
-    ***REMOVED*** Fix decimal commas in coordinates and capacity
+    # Fix decimal commas in coordinates and capacity
     df["installed_capacity_kw"] = df["Installierte Leistung"].map(to_float)
     df["lat"] = df["Geographische Lage"].map(to_float)
     df["lon"] = df["Unnamed: 5"].map(to_float)
     df["tilt_deg"] = df["Neigungswinkel (β)"].map(parse_tilt)
     df["azimuth_deg_sy"] = df["Ausrichtungs-winkel (α)"].map(parse_sy_azimuth)
 
-    ***REMOVED*** Group by your plant_id to merge 6_TER1 and 6_TER2 into plant_06
+    # Group by your plant_id to merge 6_TER1 and 6_TER2 into plant_06
     groups = df.groupby("plant_id")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     for plant_id, g in groups:
-        ***REMOVED*** Capacity for weighting
+        # Capacity for weighting
         caps = g["installed_capacity_kw"].values
         cap_total = caps.sum()
 
@@ -163,11 +163,11 @@ def main():
         azimuth_deg_sy = round(cap_weighted("azimuth_deg_sy"), 2) if cap_weighted("azimuth_deg_sy") is not None else None
         azimuth_deg = round(sy_to_pvlib_azimuth(azimuth_deg_sy), 2) if azimuth_deg_sy is not None else None
 
-        ***REMOVED*** Assume timezone and country for all
+        # Assume timezone and country for all
         country = "DE"
         timezone = "Europe/Berlin"
 
-        ***REMOVED*** Use first row's mount and tracker and raw metadata
+        # Use first row's mount and tracker and raw metadata
         first = g.iloc[0]
 
         mount_type = parse_mount_type(first["Freifläche / Aufdach"])
@@ -185,7 +185,7 @@ def main():
             "netzbetreiber": to_str_or_none(first["Übertragungs-netzbetreiber"]),
         }
 
-        ***REMOVED*** If multiple provider IDs (TER1 + TER2), store them all
+        # If multiple provider IDs (TER1 + TER2), store them all
         provider_ids = sorted(set(g["provider_internal_id"].astype(str).tolist()))
         if len(provider_ids) == 1:
             provider_internal_id = provider_ids[0]

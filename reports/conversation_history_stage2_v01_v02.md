@@ -1,10 +1,10 @@
-***REMOVED*** Stage 2 Transfer Learning - Conversation History
+# Stage 2 Transfer Learning - Conversation History
 **Date**: December 16, 2025  
 **Session**: Version 01 Failure Analysis → Version 02 Implementation & Overfitting Discovery
 
 ---
 
-***REMOVED******REMOVED*** Session Overview
+## Session Overview
 
 This conversation documents the complete journey from discovering validation bias in Version 01 through implementing and validating Version 02's stratified temporal split, which revealed severe overfitting requiring Version 2.1 hyperparameter tuning.
 
@@ -18,9 +18,9 @@ This conversation documents the complete journey from discovering validation bia
 
 ---
 
-***REMOVED******REMOVED*** Key Decisions Made
+## Key Decisions Made
 
-***REMOVED******REMOVED******REMOVED*** Decision 1: Document Version 01 as Failed Experiment
+### Decision 1: Document Version 01 as Failed Experiment
 **Context**: Initial metrics looked promising (mean RMSE -14% vs baseline), but deeper analysis showed this was measurement error, not true generalization.
 
 **Evidence**:
@@ -32,15 +32,15 @@ This conversation documents the complete journey from discovering validation bia
 
 **Outcome**: Created `reports/stage2_version01_failed_chronological_split.md`
 
-***REMOVED******REMOVED******REMOVED*** Decision 2: Implement Stratified Temporal Split
+### Decision 2: Implement Stratified Temporal Split
 **Context**: Chronological split assumes uniform temporal coverage, but Germany plants had uneven seasonal representation (456-639 days, different end dates).
 
 **Solution Design**:
 ```python
 def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, random_seed=42):
-    ***REMOVED*** Classify timestamps by season
-    ***REMOVED*** Sample proportionally from each season
-    ***REMOVED*** Maintain temporal ordering
+    # Classify timestamps by season
+    # Sample proportionally from each season
+    # Maintain temporal ordering
     return sorted(train_idx), sorted(val_idx), sorted(test_idx)
 ```
 
@@ -51,7 +51,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 **Outcome**: Perfect balance achieved (std_ratio 0.989-1.011)
 
-***REMOVED******REMOVED******REMOVED*** Decision 3: Exclude Plant 04
+### Decision 3: Exclude Plant 04
 **Context**: Plant 04 showed 100% zeros during Mar-Jun 2024 (spring/summer) - not a seasonal bias but data quality issue.
 
 **Evidence**: Should be high-production season, but got all zeros → plant offline or data corrupted
@@ -60,7 +60,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 **Outcome**: Updated 4 preprocessing scripts to remove plant_04
 
-***REMOVED******REMOVED******REMOVED*** Decision 4: Add NaN Dropping
+### Decision 4: Add NaN Dropping
 **Context**: Some plants had significant NaN values in power_norm column.
 
 **Implementation**: Added explicit `dropna(subset=['power_norm'])` in `germany_build_pretrain_base.py`
@@ -70,7 +70,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 - plant_05: 39.8% dropped (17,480 rows)
 - Others: <0.1% dropped
 
-***REMOVED******REMOVED******REMOVED*** Decision 5: Retrain with Version 02 Corrections
+### Decision 5: Retrain with Version 02 Corrections
 **Context**: Version 01 artifacts invalid due to biased validation, need clean retrain.
 
 **Cleanup Steps**:
@@ -82,7 +82,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 **Outcome**: Training completed, all 5 plants finished 20 epochs
 
-***REMOVED******REMOVED******REMOVED*** Decision 6: Version 02 Analysis Reveals Overfitting
+### Decision 6: Version 02 Analysis Reveals Overfitting
 **Context**: With balanced validation sets, true performance became visible.
 
 **Results**:
@@ -100,7 +100,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 - Secondary problem discovery
 - Critical thinking about measurement vs reality
 
-***REMOVED******REMOVED******REMOVED*** Decision 7: Plan Version 2.1 Hyperparameter Tuning
+### Decision 7: Plan Version 2.1 Hyperparameter Tuning
 **Context**: Cannot proceed to Stage 2B with overfitted encoders. Need to fix regularization before ensemble training.
 
 **Strategy**:
@@ -116,9 +116,9 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 ---
 
-***REMOVED******REMOVED*** Technical Findings
+## Technical Findings
 
-***REMOVED******REMOVED******REMOVED*** Finding 1: std_ratio as Validation Quality Metric
+### Finding 1: std_ratio as Validation Quality Metric
 **Discovery**: `std_ratio = val_std / train_std` is excellent proxy for split quality.
 
 **Thresholds**:
@@ -128,7 +128,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 **Application**: All Version 02 plants showed 0.99-1.01, proving balance.
 
-***REMOVED******REMOVED******REMOVED*** Finding 2: Train/Val Ratio Interpretation
+### Finding 2: Train/Val Ratio Interpretation
 **Discovery**: Ratio alone insufficient - must consider validation trustworthiness.
 
 **Version 01 Misinterpretation**:
@@ -141,7 +141,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 **Lesson**: Context matters. Good metrics on bad data = bad conclusions.
 
-***REMOVED******REMOVED******REMOVED*** Finding 3: Chronological Split Failure Mode
+### Finding 3: Chronological Split Failure Mode
 **Discovery**: Simple percentage slicing fails when:
 - Source data has uneven temporal coverage
 - Different entities have different time ranges
@@ -154,7 +154,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 **Solution**: Stratify by season, not just time.
 
-***REMOVED******REMOVED******REMOVED*** Finding 4: Transfer Learning Overfitting Pattern
+### Finding 4: Transfer Learning Overfitting Pattern
 **Discovery**: All 5 plants show similar overfitting degree (2.0-2.5 ratio), suggesting **systematic issue**, not plant-specific.
 
 **Hypotheses**:
@@ -167,9 +167,9 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
 
 ---
 
-***REMOVED******REMOVED*** Code Changes Summary
+## Code Changes Summary
 
-***REMOVED******REMOVED******REMOVED*** Modified Files
+### Modified Files
 
 1. **`src/data/preprocess_germany_pv.py`**
    - Removed plant_04 from `plant_ids` list
@@ -191,7 +191,7 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
    - Updated `process_one()` to use new split
    - Confirmed test split creation
 
-***REMOVED******REMOVED******REMOVED*** Created Files
+### Created Files
 
 1. **`reports/stage2_version01_failed_chronological_split.md`**
    - Comprehensive thesis-format failure documentation
@@ -210,17 +210,17 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
    - Comparison tables with Version 01
    - Go/no-go criteria for Stage 2B
 
-***REMOVED******REMOVED******REMOVED*** Preprocessing Pipeline Execution
+### Preprocessing Pipeline Execution
 
 **Commands Run**:
 ```bash
-***REMOVED*** Step 1: Build pretrain base (with NaN dropping)
+# Step 1: Build pretrain base (with NaN dropping)
 python src/preprocessing/germany_build_pretrain_base.py
 
-***REMOVED*** Step 2: Stratified split + normalization
+# Step 2: Stratified split + normalization
 python src/preprocessing/germany_pretrain_normalize_split.py
 
-***REMOVED*** Output: data/processed/pretraining/germany/plant_XX/{train,val,test}.parquet
+# Output: data/processed/pretraining/germany/plant_XX/{train,val,test}.parquet
 ```
 
 **Results**:
@@ -230,7 +230,7 @@ python src/preprocessing/germany_pretrain_normalize_split.py
 - plant_05: 18,469 train, 3,956 val, 3,960 test | Winter=32.7% Spring=11.6% Summer=22.6% Fall=33.1%
 - plant_06: 30,704 train, 6,577 val, 6,584 test | Winter=32.8% Spring=27.1% Summer=20.1% Fall=19.9%
 
-***REMOVED******REMOVED******REMOVED*** Training Execution
+### Training Execution
 
 **Script**: `./run_stage2_transfer_learning.sh`
 
@@ -253,9 +253,9 @@ max_epochs: 20
 
 ---
 
-***REMOVED******REMOVED*** Artifacts & Reproducibility
+## Artifacts & Reproducibility
 
-***REMOVED******REMOVED******REMOVED*** Preserved Artifacts
+### Preserved Artifacts
 
 **Version 01 Evidence** (Documented but artifacts cleaned):
 - Analysis notebook: `notebooks/lstm/stage2_validation_metrics.ipynb` (15 cells)
@@ -271,13 +271,13 @@ max_epochs: 20
 **Baseline Reference**:
 - Farm2107 encoder: `experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt` (233KB, Nov 24, RMSE=0.040388)
 
-***REMOVED******REMOVED******REMOVED*** Random Seeds
+### Random Seeds
 
 **Reproducibility**:
 - Stratified split: `random_seed=42` (in `stratified_temporal_split()`)
 - PyTorch Lightning: (seed set in training script)
 
-***REMOVED******REMOVED******REMOVED*** Validation Criteria
+### Validation Criteria
 
 **Version 02 Checklist**:
 - ✅ std_ratio 0.9-1.1: 5/5 plants PASS
@@ -290,9 +290,9 @@ max_epochs: 20
 
 ---
 
-***REMOVED******REMOVED*** Lessons for Future Work
+## Lessons for Future Work
 
-***REMOVED******REMOVED******REMOVED*** Methodological Lessons
+### Methodological Lessons
 
 1. **Always verify split balance** before trusting metrics
    - Use std_ratio, mean differences, % zeros
@@ -314,7 +314,7 @@ max_epochs: 20
    - Clear paper trail for thesis
    - Evidence-based conclusions
 
-***REMOVED******REMOVED******REMOVED*** Technical Lessons
+### Technical Lessons
 
 1. **Chronological ≠ valid for time-series**
    - Needs uniform coverage or stratification
@@ -336,7 +336,7 @@ max_epochs: 20
    - Makes validation sets trustworthy
    - Enables fair comparison across entities
 
-***REMOVED******REMOVED******REMOVED*** Research Strategy Lessons
+### Research Strategy Lessons
 
 1. **Iterative refinement works**
    - V01: Identify problem
@@ -356,9 +356,9 @@ max_epochs: 20
 
 ---
 
-***REMOVED******REMOVED*** Next Session Plan (Version 2.1)
+## Next Session Plan (Version 2.1)
 
-***REMOVED******REMOVED******REMOVED*** Immediate Tasks
+### Immediate Tasks
 
 1. **Update training script** with hyperparameter options:
    - Add command-line args for dropout, lr, weight_decay
@@ -381,7 +381,7 @@ max_epochs: 20
    - IF not improved: Try Exp 2 (Aggressive)
    - IF still fails: Version 2.2 (train from scratch)
 
-***REMOVED******REMOVED******REMOVED*** Long-term Goals
+### Long-term Goals
 
 - Version 2.1: Fix overfitting with hyperparameter tuning
 - Version 2.2 (if needed): Train from scratch (no transfer learning)
@@ -391,7 +391,7 @@ max_epochs: 20
 
 ---
 
-***REMOVED******REMOVED*** Questions Answered During Session
+## Questions Answered During Session
 
 **Q: "What is wrong with the validation metrics?"**
 A: Version 01 used chronological split which gave different plants different seasons in validation. Plants 03, 06 got winter (84% zeros) → artificially good metrics.
@@ -416,7 +416,7 @@ A: Conservative hyperparameter tuning: dropout 0.3, lr 5e-5, weight_decay 1e-4. 
 
 ---
 
-***REMOVED******REMOVED*** User's Working Style Observations
+## User's Working Style Observations
 
 **Preferences**:
 - Systematic, evidence-based approach

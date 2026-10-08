@@ -87,7 +87,7 @@ def _cast_numeric_float32(df: pd.DataFrame) -> pd.DataFrame:
     for c in df.columns:
         if pd.api.types.is_float_dtype(df[c]) or pd.api.types.is_integer_dtype(df[c]):
             if df[c].dtype != np.float32 and df[c].dtype != np.int64:
-                ***REMOVED*** keep int64 as is (time_idx etc), cast floats to float32
+                # keep int64 as is (time_idx etc), cast floats to float32
                 if pd.api.types.is_float_dtype(df[c]):
                     df[c] = df[c].astype(np.float32, copy=False)
     return df
@@ -135,7 +135,7 @@ def _rewrite_with_pca(
     for table in _iter_row_groups(in_path, columns=None):
         df = table.to_pandas()
 
-        ***REMOVED*** Keep original columns, but cast floats if requested
+        # Keep original columns, but cast floats if requested
         if cast_float32:
             df = _cast_numeric_float32(df)
 
@@ -145,7 +145,7 @@ def _rewrite_with_pca(
 
         Z = pca.transform(X).astype(np.float32, copy=False)
 
-        ***REMOVED*** Drop original encodings and add PCA columns
+        # Drop original encodings and add PCA columns
         df = df.drop(columns=enc_cols)
         for j, c in enumerate(out_cols):
             df[c] = Z[:, j]

@@ -54,7 +54,7 @@ def _fake_step_on_gpu(batch, device: torch.device) -> float:
     torch.cuda.synchronize()
     t0 = time.perf_counter()
 
-    ***REMOVED*** crude batch-size proxy
+    # crude batch-size proxy
     bsz = None
     if isinstance(batch, (list, tuple)) and len(batch) > 0 and torch.is_tensor(batch[0]):
         bsz = batch[0].shape[0]
@@ -79,15 +79,15 @@ def main() -> None:
     ap.add_argument("--sleep", type=float, default=0.0, help="Optional sleep between steps")
     args = ap.parse_args()
 
-    ***REMOVED*** You need to plug your real dataloader here.
-    ***REMOVED*** For MiRACLE/TFT you already create it in train_tft_v1.py via make_datasets + make_dataloaders.
-    ***REMOVED*** The clean way is to import and reuse those functions.
-    ***REMOVED***
-    ***REMOVED*** If your train_tft_v1.py exposes a helper to build loaders, use that.
-    ***REMOVED*** If not, create a small helper function there and import it here.
+    # You need to plug your real dataloader here.
+    # For MiRACLE/TFT you already create it in train_tft_v1.py via make_datasets + make_dataloaders.
+    # The clean way is to import and reuse those functions.
+    #
+    # If your train_tft_v1.py exposes a helper to build loaders, use that.
+    # If not, create a small helper function there and import it here.
 
     try:
-        from src.training.train_tft_v1 import make_loaders_for_debug  ***REMOVED*** type: ignore
+        from src.training.train_tft_v1 import make_loaders_for_debug  # type: ignore
     except Exception as e:
         raise SystemExit(
             "You need to add a helper in src/training/train_tft_v1.py called "
@@ -108,7 +108,7 @@ def main() -> None:
     last = time.perf_counter()
 
     for i in range(args.steps):
-        ***REMOVED*** loader timing = time waiting for next batch
+        # loader timing = time waiting for next batch
         t1 = time.perf_counter()
         try:
             batch = next(it)
@@ -117,7 +117,7 @@ def main() -> None:
             batch = next(it)
         loader_s = time.perf_counter() - t1
 
-        ***REMOVED*** compute timing
+        # compute timing
         compute_s = 0.0
         if device.type == "cuda":
             compute_s = _fake_step_on_gpu(batch, device)

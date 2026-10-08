@@ -1,10 +1,10 @@
-***REMOVED*** Chapter 4 — Experimental Design & Ablation Studies
+# Chapter 4 — Experimental Design & Ablation Studies
 
-***REMOVED******REMOVED*** 4.1 Datasets
+## 4.1 Datasets
 
 MiRACLE is validated through a combination of (i) pretraining/transfer datasets used to learn temporal representations and (ii) a target-plant backtest protocol used for thesis headline performance.
 
-***REMOVED******REMOVED******REMOVED*** 4.1.1 PVDAQ dataset (US, Farm2107)
+### 4.1.1 PVDAQ dataset (US, Farm2107)
 
 **Role in the thesis:** exploratory pretraining + hyperparameter selection for the LSTM encoder.
 
@@ -14,7 +14,7 @@ MiRACLE is validated through a combination of (i) pretraining/transfer datasets 
 
 This dataset is used to validate that the encoder objective learns stable temporal structure, and to produce a robust initialization point for transfer.
 
-***REMOVED******REMOVED******REMOVED*** 4.1.2 Germany regional dataset
+### 4.1.2 Germany regional dataset
 
 **Role in the thesis:** regional domain adaptation to reduce distribution shift when transferring to the target plant.
 
@@ -28,7 +28,7 @@ This dataset is used to validate that the encoder objective learns stable tempor
 
 **No-leak constraints:** windows are built per-plant, scalers are fold-safe, and time regularity checks exclude windows spanning gaps.
 
-***REMOVED******REMOVED******REMOVED*** 4.1.3 Target plant dataset
+### 4.1.3 Target plant dataset
 
 **Role in the thesis:** end-to-end system backtest for 2024 (canonical thesis headline evaluation).
 
@@ -37,14 +37,14 @@ This dataset is used to validate that the encoder objective learns stable tempor
 
 The benchmark suite evaluates MiRACLE and baselines against **Ground Truth Plant 03** using a fixed join/filter protocol.
 
-***REMOVED******REMOVED******REMOVED*** 4.1.4 Weather API data
+### 4.1.4 Weather API data
 
 MiRACLE consumes weather inputs via an API layer (historical reanalysis/archives for backtests, forecast endpoints for real-time). The Phase-1 report enumerates the weather variable set and derived PVLib features:
 
 - `THESIS_RESULTS_PHASE1.md`
 
 
-***REMOVED******REMOVED******REMOVED*** 4.1.5 Dataset summary table (thesis-ready)
+### 4.1.5 Dataset summary table (thesis-ready)
 
 | Dataset | Region | Purpose | Notes |
 | --- | ---: | --- | --- |
@@ -56,7 +56,7 @@ MiRACLE consumes weather inputs via an API layer (historical reanalysis/archives
 (If desired, this table can be expanded with exact time ranges and sample counts extracted from the processed parquet metadata.)
 
 
-***REMOVED******REMOVED*** 4.2 Evaluation metrics
+## 4.2 Evaluation metrics
 
 MiRACLE uses standard regression metrics on normalized capacity output $y$:
 
@@ -82,7 +82,7 @@ $$
 
 - Coefficient of determination $R^2$.
 
-***REMOVED******REMOVED******REMOVED*** Canonical filtering and protocol
+### Canonical filtering and protocol
 
 For the thesis headline backtests:
 
@@ -92,7 +92,7 @@ For the thesis headline backtests:
 See `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/text/results.md`.
 
 
-***REMOVED******REMOVED*** 4.3 Systematic ablation study methodology
+## 4.3 Systematic ablation study methodology
 
 MiRACLE’s development is framed as systematic elimination and integration testing:
 
@@ -103,9 +103,9 @@ MiRACLE’s development is framed as systematic elimination and integration test
 Ablations are therefore defined at the **system level** (end-to-end inference backtest), not only at the model training loop level.
 
 
-***REMOVED******REMOVED*** 4.4 Ablation Study 1: Component contribution analysis
+## 4.4 Ablation Study 1: Component contribution analysis
 
-***REMOVED******REMOVED******REMOVED*** 4.4.1 Experiment design
+### 4.4.1 Experiment design
 
 We compare the following system configurations under the same 2024 inference backtest:
 
@@ -115,7 +115,7 @@ We compare the following system configurations under the same 2024 inference bac
 4. **Long-TFT-only**: isolated long-head forecaster (no hierarchical blending).
 5. **MiRACLE v1.0 Core**: full integration (hybrid, physics-aware, hierarchical).
 
-***REMOVED******REMOVED******REMOVED*** 4.4.2 Results and analysis (canonical thesis evidence)
+### 4.4.2 Results and analysis (canonical thesis evidence)
 
 **Primary source (canonical):**
 
@@ -145,20 +145,20 @@ Headline result (overall RMSE, night-filtered):
 
 This paired-delta view provides bootstrap confidence intervals for mean daily deltas, enabling rigorous significance discussion without relying on training-loop losses.
 
-***REMOVED******REMOVED******REMOVED*** 4.4.3 Interpretation
+### 4.4.3 Interpretation
 
 - **LSTM contribution:** the encoder supplies a stable temporal representation that reduces dependence on raw autoregressive power signals alone.
 - **PVLib contribution:** physics features and constraints provide strong priors (e.g., nighttime=0, plausible peak limits).
 - **Synergy:** the best overall performance arises from the joint use of (i) learned temporal embeddings and (ii) physics-aware hierarchical inference.
 
-***REMOVED******REMOVED******REMOVED*** 4.4.4 Reproducibility note on training-loop ablation logs
+### 4.4.4 Reproducibility note on training-loop ablation logs
 
 The repository also contains `experiments/tft/runs/germany/ablations/ablation_summary_extended.csv`, which summarizes training job metadata (hardware, wallclock, best validation loss). These values are retained for reproducibility, but **thesis performance claims are anchored to the canonical end-to-end backtests under `freeze/`**, not to training-loop validation losses.
 
 
-***REMOVED******REMOVED*** 4.5 Ablation Study 2: Transfer learning impact
+## 4.5 Ablation Study 2: Transfer learning impact
 
-***REMOVED******REMOVED******REMOVED*** 4.5.1 Experiment design
+### 4.5.1 Experiment design
 
 We compare **warm-start** (pretrained/regionalized encoder and system) against a **cold-start** variant under the same backtest protocol.
 
@@ -166,7 +166,7 @@ Canonical evaluation artifact:
 
 - `freeze/final_thesis_v1/eval/rq2_warm_vs_cold/text/results.md`
 
-***REMOVED******REMOVED******REMOVED*** 4.5.2 Results
+### 4.5.2 Results
 
 Overall (night-filtered):
 
@@ -175,7 +175,7 @@ Overall (night-filtered):
 
 Lead-bucket deltas show warm-start advantages across near-, mid-, and long-term buckets (see the `Lead buckets` table in the canonical RQ2 artifact).
 
-***REMOVED******REMOVED******REMOVED*** 4.5.3 Data efficiency and convergence
+### 4.5.3 Data efficiency and convergence
 
 Training-time efficiency and convergence speed are supported by the LSTM experiment tracking artifacts:
 
@@ -185,7 +185,7 @@ Training-time efficiency and convergence speed are supported by the LSTM experim
 (Additional learning-curve plots can be generated directly from the logged `metrics.csv` files in the corresponding run directories if required for the thesis figures list.)
 
 
-***REMOVED******REMOVED*** 4.6 Experimental justification summary
+## 4.6 Experimental justification summary
 
 MiRACLE’s final architecture is justified by:
 

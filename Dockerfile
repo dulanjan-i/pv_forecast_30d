@@ -1,11 +1,11 @@
-***REMOVED*** =============================================================================
-***REMOVED*** MiRACLE v1.0 — 30-Day PV Forecast Inference Container
-***REMOVED*** =============================================================================
-***REMOVED*** Build:  docker build -t miracle-inference:v1.0 .
-***REMOVED*** Run:    docker run miracle-inference:v1.0 /app/scripts/run_inference.sh --date 2026-01-02
-***REMOVED*** Shell:  docker run -it miracle-inference:v1.0 bash
-***REMOVED*** Verify: docker run --rm miracle-inference:v1.0 shasum -a 256 -c /app/checkpoints/CHECKPOINT_MANIFEST.sha256
-***REMOVED*** =============================================================================
+# =============================================================================
+# MiRACLE v1.0 — 30-Day PV Forecast Inference Container
+# =============================================================================
+# Build:  docker build -t miracle-inference:v1.0 .
+# Run:    docker run miracle-inference:v1.0 /app/scripts/run_inference.sh --date 2026-01-02
+# Shell:  docker run -it miracle-inference:v1.0 bash
+# Verify: docker run --rm miracle-inference:v1.0 shasum -a 256 -c /app/checkpoints/CHECKPOINT_MANIFEST.sha256
+# =============================================================================
 
 FROM python:3.11-slim
 
@@ -18,10 +18,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-***REMOVED*** Copy requirements before code so pip install layer is cached independently
+# Copy requirements before code so pip install layer is cached independently
 COPY requirements/requirements_docker.txt /app/requirements_docker.txt
 
-***REMOVED*** CPU-only torch — +cpu suffix only available from 2.6.0+ on ARM64 (aarch64)
+# CPU-only torch — +cpu suffix only available from 2.6.0+ on ARM64 (aarch64)
 RUN pip install --no-cache-dir \
         torch==2.7.1+cpu \
     --index-url https://download.pytorch.org/whl/cpu

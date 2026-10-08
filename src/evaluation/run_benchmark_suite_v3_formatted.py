@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** IO
-***REMOVED*** -----------------------------
+# -----------------------------
+# IO
+# -----------------------------
 def read_parquet(path: Path, columns: Optional[List[str]] = None) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Missing parquet: {path}")
@@ -31,9 +31,9 @@ def to_utc_datetime(s: pd.Series) -> pd.Series:
     return pd.to_datetime(s, utc=True, errors="coerce")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Metrics
-***REMOVED*** -----------------------------
+# -----------------------------
+# Metrics
+# -----------------------------
 def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.mean(np.abs(y_pred - y_true)))
 
@@ -108,18 +108,18 @@ def bootstrap_mean_ci(deltas: np.ndarray, n_boot: int = 5000, seed: int = 42) ->
     return mean0, lo, hi
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Pred schema helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Pred schema helpers
+# -----------------------------
 REQUIRED_KEY_COLS = ["timestamp_utc", "forecast_start", "step_ahead", "hours_ahead"]
 
 
 def detect_pred_col(df: pd.DataFrame) -> str:
-    ***REMOVED*** Preferred
+    # Preferred
     for c in ["predicted_power_norm", "y_pred", "pred", "prediction", "power_pred", "power_norm_pred"]:
         if c in df.columns:
             return c
-    ***REMOVED*** Fallback: choose a float-like column that is not an obvious feature
+    # Fallback: choose a float-like column that is not an obvious feature
     bad = set(REQUIRED_KEY_COLS + ["policy_action", "blend_short", "blend_long", "blend_physics"])
     candidates = [c for c in df.columns if c not in bad]
     numeric = []
@@ -128,13 +128,13 @@ def detect_pred_col(df: pd.DataFrame) -> str:
             numeric.append(c)
     if len(numeric) == 0:
         raise ValueError(f"Could not detect prediction column. Columns={list(df.columns)[:80]}")
-    ***REMOVED*** Prefer something with "pred" in name
+    # Prefer something with "pred" in name
     predish = [c for c in numeric if "pred" in c.lower()]
     return predish[0] if predish else numeric[0]
 
 
 def standardize_preds(df: pd.DataFrame, name: str) -> pd.DataFrame:
-    ***REMOVED*** Validate keys
+    # Validate keys
     for c in REQUIRED_KEY_COLS:
         if c not in df.columns:
             raise ValueError(f"[{name}] Missing required col: {c}. Has={list(df.columns)[:80]}")
@@ -147,11 +147,11 @@ def standardize_preds(df: pd.DataFrame, name: str) -> pd.DataFrame:
     if pred_col != "predicted_power_norm":
         df = df.rename(columns={pred_col: "predicted_power_norm"})
 
-    ***REMOVED*** Ensure types
+    # Ensure types
     df["step_ahead"] = pd.to_numeric(df["step_ahead"], errors="coerce").astype("Int64")
     df["hours_ahead"] = pd.to_numeric(df["hours_ahead"], errors="coerce")
 
-    ***REMOVED*** Drop rows with broken keys
+    # Drop rows with broken keys
     df = df.dropna(subset=["timestamp_utc", "forecast_start", "step_ahead", "hours_ahead", "predicted_power_norm"])
     df["step_ahead"] = df["step_ahead"].astype(int)
 
@@ -170,11 +170,11 @@ def standardize_truth(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Joining and stitched series
-***REMOVED*** -----------------------------
+# -----------------------------
+# Joining and stitched series
+# -----------------------------
 def join_with_truth(preds: pd.DataFrame, truth: pd.DataFrame, name: str) -> pd.DataFrame:
-    ***REMOVED*** join only on timestamp_utc, truth is single series
+    # join only on timestamp_utc, truth is single series
     out = preds.merge(truth, on="timestamp_utc", how="inner")
     if out.empty:
         raise RuntimeError(f"[{name}] Join with truth produced 0 rows. Check timestamp overlap and tz.")
@@ -188,14 +188,14 @@ def daylight_filter(df: pd.DataFrame, include_night: bool, threshold: float) -> 
 
 
 def make_stitched(df_joined: pd.DataFrame) -> pd.DataFrame:
-    ***REMOVED*** choose smallest lead for each timestamp, approximates "most recent forecast available"
+    # choose smallest lead for each timestamp, approximates "most recent forecast available"
     dd = df_joined.sort_values(["timestamp_utc", "hours_ahead"]).groupby("timestamp_utc", as_index=False).first()
     return dd
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Output helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Output helpers
+# -----------------------------
 @dataclass
 class Paths:
     out_dir: Path
@@ -215,13 +215,13 @@ def write_csv_and_tex(df: pd.DataFrame, csv_path: Path, tex_path: Path, index: b
 
 def save_fig(path: Path) -> None:
     plt.tight_layout()
-    plt.savefig(path.as_posix(), dpi=300)  ***REMOVED*** FORMATTING FIX: 200 -> 300 DPI
+    plt.savefig(path.as_posix(), dpi=300)  # FORMATTING FIX: 200 -> 300 DPI
     plt.close()
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Plotting: facet grids
-***REMOVED*** -----------------------------
+# -----------------------------
+# Plotting: facet grids
+# -----------------------------
 def grid_shape(n: int) -> Tuple[int, int]:
     if n <= 0:
         return 1, 1
@@ -238,8 +238,8 @@ def plot_facets_case_week(
     end: str,
     out: Path,
     title: str,
-    truth_label: str = "Ground Truth Plant 03",  ***REMOVED*** FORMATTING FIX: configurable truth label
-    baseline_label: str = "MiRACLE v1.0 Core",  ***REMOVED*** FORMATTING FIX: configurable baseline label
+    truth_label: str = "Ground Truth Plant 03",  # FORMATTING FIX: configurable truth label
+    baseline_label: str = "MiRACLE v1.0 Core",  # FORMATTING FIX: configurable baseline label
 ) -> None:
     s = pd.to_datetime(start, utc=True)
     e = pd.to_datetime(end, utc=True)
@@ -252,7 +252,7 @@ def plot_facets_case_week(
     names = list(stitched_models.keys())
     rows, cols = grid_shape(len(names))
 
-    ***REMOVED*** FORMATTING FIX: larger figure for better readability
+    # FORMATTING FIX: larger figure for better readability
     fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 4 * rows), squeeze=False)
     fig.suptitle(title, fontsize=14, fontweight='bold')
 
@@ -268,39 +268,39 @@ def plot_facets_case_week(
             ax.axis("off")
             continue
 
-        ***REMOVED*** FORMATTING FIX: Consistent color mapping across all graphs
-        ***REMOVED*** Ground truth = LIGHT GREY (subtle reference, not focal point)
+        # FORMATTING FIX: Consistent color mapping across all graphs
+        # Ground truth = LIGHT GREY (subtle reference, not focal point)
         ax.plot(tt["timestamp_utc"].values, tt["y_true"].values, label=truth_label, 
-                linewidth=1.5, alpha=0.7, color='***REMOVED***888888')
-        ***REMOVED*** Baseline (MiRACLE Core) = BOLD GREEN, thicker to HIGHLIGHT final result
+                linewidth=1.5, alpha=0.7, color='#888888')
+        # Baseline (MiRACLE Core) = BOLD GREEN, thicker to HIGHLIGHT final result
         ax.plot(bt["timestamp_utc"].values, bt["y_pred"].values, label=baseline_label, 
-                linewidth=2.5, alpha=1.0, color='***REMOVED***00AA00')
-        ***REMOVED*** Comparison models = LIGHT BLUE, thinner, de-emphasized
+                linewidth=2.5, alpha=1.0, color='#00AA00')
+        # Comparison models = LIGHT BLUE, thinner, de-emphasized
         ax.plot(mm["timestamp_utc"].values, mm["y_pred"].values, label=name, 
-                linewidth=1.0, alpha=0.9, color='***REMOVED***6BA3D8')
+                linewidth=1.0, alpha=0.9, color='#6BA3D8')
 
         ax.set_title(name, fontsize=11, fontweight='semibold')
         ax.set_xlabel("Time (UTC)", fontsize=10)
         ax.set_ylabel("Power (normalized)", fontsize=10)
         
-        ***REMOVED*** FORMATTING FIX: Better date formatting
+        # FORMATTING FIX: Better date formatting
         locator = mdates.AutoDateLocator(minticks=4, maxticks=7)
         ax.xaxis.set_major_locator(locator)
         ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
         ax.tick_params(axis='x', rotation=0, labelsize=9)
         
-        ***REMOVED*** FORMATTING FIX: Improved legend
+        # FORMATTING FIX: Improved legend
         ax.legend(fontsize=9, loc='best', framealpha=0.9)
         ax.grid(True, alpha=0.3, linestyle=':')
 
-    ***REMOVED*** Turn off unused axes
+    # Turn off unused axes
     for j in range(len(names), rows * cols):
         r = j // cols
         c = j % cols
         axes[r][c].axis("off")
 
     plt.tight_layout(rect=(0, 0, 1, 0.96))
-    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  ***REMOVED*** FORMATTING FIX: 200 -> 300 DPI
+    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  # FORMATTING FIX: 200 -> 300 DPI
     plt.close()
 
 
@@ -310,11 +310,11 @@ def plot_facets_abs_error_hist(
     out: Path,
     title: str,
     max_abs: float = 1.0,
-    baseline_label: str = "MiRACLE v1.0 Core",  ***REMOVED*** FORMATTING FIX: configurable baseline label
+    baseline_label: str = "MiRACLE v1.0 Core",  # FORMATTING FIX: configurable baseline label
 ) -> None:
     names = list(joined_models.keys())
     rows, cols = grid_shape(len(names))
-    ***REMOVED*** FORMATTING FIX: larger figure
+    # FORMATTING FIX: larger figure
     fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 4 * rows), squeeze=False)
     fig.suptitle(title, fontsize=14, fontweight='bold')
 
@@ -333,16 +333,16 @@ def plot_facets_abs_error_hist(
 
         m_abs = (mm["y_pred"] - mm["y_true"]).abs().clip(0, max_abs).values
 
-        ***REMOVED*** FORMATTING FIX: Consistent colors, MiRACLE HIGHLIGHTED
-        ***REMOVED*** Comparison model first (behind, de-emphasized) = LIGHT BLUE
-        ax.hist(m_abs, bins=80, alpha=0.6, label=name, edgecolor='black', linewidth=0.5, color='***REMOVED***6BA3D8')
-        ***REMOVED*** Baseline (MiRACLE Core) on top (HIGHLIGHTED) = BOLD GREEN
-        ax.hist(b_abs, bins=80, alpha=0.7, label=baseline_label, edgecolor='black', linewidth=0.5, color='***REMOVED***00AA00')
+        # FORMATTING FIX: Consistent colors, MiRACLE HIGHLIGHTED
+        # Comparison model first (behind, de-emphasized) = LIGHT BLUE
+        ax.hist(m_abs, bins=80, alpha=0.6, label=name, edgecolor='black', linewidth=0.5, color='#6BA3D8')
+        # Baseline (MiRACLE Core) on top (HIGHLIGHTED) = BOLD GREEN
+        ax.hist(b_abs, bins=80, alpha=0.7, label=baseline_label, edgecolor='black', linewidth=0.5, color='#00AA00')
         ax.set_title(name, fontsize=11, fontweight='semibold')
         ax.set_xlabel("Abs error (clipped)", fontsize=10)
         ax.set_ylabel("Count", fontsize=10)
         
-        ***REMOVED*** FORMATTING FIX: Improved legend
+        # FORMATTING FIX: Improved legend
         ax.legend(fontsize=9, loc='best', framealpha=0.9)
         ax.grid(True, alpha=0.3, linestyle=':', axis='y')
 
@@ -352,7 +352,7 @@ def plot_facets_abs_error_hist(
         axes[r][c].axis("off")
 
     plt.tight_layout(rect=(0, 0, 1, 0.96))
-    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  ***REMOVED*** FORMATTING FIX: 200 -> 300 DPI
+    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  # FORMATTING FIX: 200 -> 300 DPI
     plt.close()
 
 
@@ -373,11 +373,11 @@ def plot_facets_leadtime_rmse_curve(
     out: Path,
     title: str,
     max_h: float = 24.0,
-    baseline_label: str = "MiRACLE v1.0 Core",  ***REMOVED*** FORMATTING FIX: configurable baseline label
+    baseline_label: str = "MiRACLE v1.0 Core",  # FORMATTING FIX: configurable baseline label
 ) -> None:
     names = list(joined_models.keys())
     rows, cols = grid_shape(len(names))
-    ***REMOVED*** FORMATTING FIX: larger figure
+    # FORMATTING FIX: larger figure
     fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 4 * rows), squeeze=False)
     fig.suptitle(title, fontsize=14, fontweight='bold')
 
@@ -400,18 +400,18 @@ def plot_facets_leadtime_rmse_curve(
             ax.axis("off")
             continue
 
-        ***REMOVED*** FORMATTING FIX: Consistent color mapping
-        ***REMOVED*** Baseline (MiRACLE Core) = BOLD GREEN, thicker to HIGHLIGHT
+        # FORMATTING FIX: Consistent color mapping
+        # Baseline (MiRACLE Core) = BOLD GREEN, thicker to HIGHLIGHT
         ax.plot(b_curve["hours_ahead"].values, b_curve["RMSE"].values, label=baseline_label, 
-                linewidth=2.5, marker='o', markersize=6, alpha=1.0, color='***REMOVED***00AA00')
-        ***REMOVED*** Comparison model = LIGHT BLUE, thinner, de-emphasized
+                linewidth=2.5, marker='o', markersize=6, alpha=1.0, color='#00AA00')
+        # Comparison model = LIGHT BLUE, thinner, de-emphasized
         ax.plot(m_curve["hours_ahead"].values, m_curve["RMSE"].values, label=name, 
-                linewidth=1.0, marker='s', markersize=5, alpha=0.8, color='***REMOVED***6BA3D8')
+                linewidth=1.0, marker='s', markersize=5, alpha=0.8, color='#6BA3D8')
         ax.set_title(name, fontsize=11, fontweight='semibold')
         ax.set_xlabel("Hours ahead", fontsize=10)
         ax.set_ylabel("RMSE", fontsize=10)
         
-        ***REMOVED*** FORMATTING FIX: Improved legend
+        # FORMATTING FIX: Improved legend
         ax.legend(fontsize=9, loc='best', framealpha=0.9)
         ax.grid(True, alpha=0.3, linestyle=':')
 
@@ -421,24 +421,24 @@ def plot_facets_leadtime_rmse_curve(
         axes[r][c].axis("off")
 
     plt.tight_layout(rect=(0, 0, 1, 0.96))
-    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  ***REMOVED*** FORMATTING FIX: 200 -> 300 DPI
+    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  # FORMATTING FIX: 200 -> 300 DPI
     plt.close()
 
 
 def plot_monthly_rmse_all(monthly_long: pd.DataFrame, out: Path, baseline_label: str = "MiRACLE v1.0 Core") -> None:
-    ***REMOVED*** monthly_long: columns = month, model, RMSE
-    ***REMOVED*** FORMATTING FIX: larger figure, better styling, SEPARATE colors per model
+    # monthly_long: columns = month, model, RMSE
+    # FORMATTING FIX: larger figure, better styling, SEPARATE colors per model
     plt.figure(figsize=(12, 5))
-    ***REMOVED*** Color palette for comparison models (light blue, orange, purple, pink, teal)
-    comparison_colors = ['***REMOVED***6BA3D8', '***REMOVED***FAA43A', '***REMOVED***B276B2', '***REMOVED***F17CB0', '***REMOVED***60BD68']
+    # Color palette for comparison models (light blue, orange, purple, pink, teal)
+    comparison_colors = ['#6BA3D8', '#FAA43A', '#B276B2', '#F17CB0', '#60BD68']
     comparison_idx = 0
     
     for model, g in monthly_long.groupby("model"):
         x = g["month"].astype(str).tolist()
         y = g["RMSE"].values
-        ***REMOVED*** MiRACLE gets BOLD GREEN to HIGHLIGHT, others get distinct colors for clarity
+        # MiRACLE gets BOLD GREEN to HIGHLIGHT, others get distinct colors for clarity
         if model == baseline_label:
-            plt.plot(x, y, marker="o", label=model, linewidth=2.5, markersize=7, alpha=1.0, color='***REMOVED***00AA00')
+            plt.plot(x, y, marker="o", label=model, linewidth=2.5, markersize=7, alpha=1.0, color='#00AA00')
         else:
             color = comparison_colors[comparison_idx % len(comparison_colors)]
             comparison_idx += 1
@@ -449,13 +449,13 @@ def plot_monthly_rmse_all(monthly_long: pd.DataFrame, out: Path, baseline_label:
     plt.legend(fontsize=10, loc='best', framealpha=0.9)
     plt.grid(True, alpha=0.3, linestyle=':')
     plt.tight_layout()
-    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  ***REMOVED*** FORMATTING FIX: 200 -> 300 DPI
+    plt.savefig(out.as_posix(), dpi=300, bbox_inches='tight')  # FORMATTING FIX: 200 -> 300 DPI
     plt.close()
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main
+# -----------------------------
 def parse_models(args_models: List[str]) -> Dict[str, Path]:
     """
     --model name:/abs/or/rel/path.parquet   (repeatable)
@@ -484,7 +484,7 @@ def main() -> None:
     ap.add_argument("--daylight-threshold", type=float, default=0.01, help="Filter out y_true < threshold (daytime only)")
     ap.add_argument("--include-night", action="store_true", help="Include nighttime data")
 
-    ***REMOVED*** FORMATTING FIX: Add truth-label argument
+    # FORMATTING FIX: Add truth-label argument
     ap.add_argument("--truth-label", type=str, default="Ground Truth Plant 03", help="Label for ground truth in plots")
 
     ap.add_argument("--case-summer-start", type=str, default="2024-07-01T00:00:00Z")
@@ -506,17 +506,17 @@ def main() -> None:
     baseline = standardize_preds(read_parquet(Path(args.baseline)), args.baseline_name)
     models = parse_models(args.model)
 
-    ***REMOVED*** Load and standardize contenders
+    # Load and standardize contenders
     contenders: Dict[str, pd.DataFrame] = {}
     for name, p in models.items():
         contenders[name] = standardize_preds(read_parquet(p), name)
 
-    ***REMOVED*** Join baseline with truth, filter
+    # Join baseline with truth, filter
     base_join = join_with_truth(baseline, truth, args.baseline_name)
     base_join = daylight_filter(base_join, include_night=args.include_night, threshold=args.daylight_threshold)
     base_join = base_join.rename(columns={"predicted_power_norm": "y_pred"})
 
-    ***REMOVED*** Join contenders with truth, filter, then align to baseline keys for fair paired comparisons
+    # Join contenders with truth, filter, then align to baseline keys for fair paired comparisons
     key = ["forecast_start", "step_ahead", "timestamp_utc", "hours_ahead"]
 
     base_keys = base_join[key + ["y_true", "y_pred"]].copy()
@@ -526,26 +526,26 @@ def main() -> None:
         jj = join_with_truth(dfp, truth, name)
         jj = daylight_filter(jj, include_night=args.include_night, threshold=args.daylight_threshold)
         jj = jj.rename(columns={"predicted_power_norm": "y_pred"})
-        ***REMOVED*** Align to baseline sample set
+        # Align to baseline sample set
         jj2 = jj.merge(base_keys[key + ["y_true"]], on=key + ["y_true"], how="inner")
         joined_models[name] = jj2
 
-    ***REMOVED*** Also align baseline to itself (already filtered), for safety
+    # Also align baseline to itself (already filtered), for safety
     base_aligned = base_join.merge(base_keys[key + ["y_true"]], on=key + ["y_true"], how="inner")
     base_aligned = base_aligned[key + ["y_true", "y_pred"]].copy()
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Overall metrics table (all models including baseline)
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Overall metrics table (all models including baseline)
+    # -----------------------------
     overall_rows = []
     tail_rows = []
     stitched_rows = []
 
-    ***REMOVED*** baseline overall
+    # baseline overall
     overall_rows.append({"model": args.baseline_name, **metrics_row(base_aligned["y_true"].values, base_aligned["y_pred"].values)})
     tail_rows.append({"model": args.baseline_name, **tail_stats_abs((base_aligned["y_pred"] - base_aligned["y_true"]).abs().values)})
 
-    ***REMOVED*** contenders overall
+    # contenders overall
     for name, jj in joined_models.items():
         overall_rows.append({"model": name, **metrics_row(jj["y_true"].values, jj["y_pred"].values)})
         tail_rows.append({"model": name, **tail_stats_abs((jj["y_pred"] - jj["y_true"]).abs().values)})
@@ -556,16 +556,16 @@ def main() -> None:
     write_csv_and_tex(overall, paths.tables_dir / "overall_metrics.csv", paths.tables_dir / "overall_metrics.tex", index=False)
     write_csv_and_tex(tail_tbl, paths.tables_dir / "tail_abs_error.csv", paths.tables_dir / "tail_abs_error.tex", index=False)
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Stitched overall (all models)
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Stitched overall (all models)
+    # -----------------------------
     stitched_truth = truth.sort_values("timestamp_utc").copy()
     stitched_baseline = make_stitched(base_join.rename(columns={"predicted_power_norm": "y_pred"}))
     stitched_baseline = stitched_baseline[["timestamp_utc", "y_true", "y_pred"]].copy()
 
     stitched_models: Dict[str, pd.DataFrame] = {}
     for name, jj in joined_models.items():
-        ***REMOVED*** Need original hours_ahead series in jj for stitching, it exists
+        # Need original hours_ahead series in jj for stitching, it exists
         st = make_stitched(jj)
         st = st[["timestamp_utc", "y_true", "y_pred"]].copy()
         stitched_models[name] = st
@@ -582,9 +582,9 @@ def main() -> None:
         index=False,
     )
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Monthly, lead buckets, daily (all models)
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Monthly, lead buckets, daily (all models)
+    # -----------------------------
     def add_time_cols(df: pd.DataFrame) -> pd.DataFrame:
         dd = df.copy()
         dd["month"] = dd["timestamp_utc"].dt.to_period("M").astype(str)
@@ -595,7 +595,7 @@ def main() -> None:
     base2 = add_time_cols(base_aligned.copy())
     models2: Dict[str, pd.DataFrame] = {name: add_time_cols(jj.copy()) for name, jj in joined_models.items()}
 
-    ***REMOVED*** Monthly metrics long form
+    # Monthly metrics long form
     monthly_long_rows = []
     for m, g in base2.groupby("month"):
         monthly_long_rows.append({"month": m, "model": args.baseline_name, **metrics_row(g["y_true"].values, g["y_pred"].values)})
@@ -606,7 +606,7 @@ def main() -> None:
     monthly_long = pd.DataFrame(monthly_long_rows).sort_values(["month", "model"])
     write_csv_and_tex(monthly_long, paths.tables_dir / "monthly_metrics_long.csv", paths.tables_dir / "monthly_metrics_long.tex", index=False)
 
-    ***REMOVED*** Lead bucket metrics long form
+    # Lead bucket metrics long form
     lead_long_rows = []
     for b, g in base2.groupby("lead_bucket"):
         lead_long_rows.append({"lead_bucket": b, "model": args.baseline_name, **metrics_row(g["y_true"].values, g["y_pred"].values)})
@@ -620,7 +620,7 @@ def main() -> None:
     lead_long = lead_long.sort_values(["__ord", "model"]).drop(columns="__ord")
     write_csv_and_tex(lead_long, paths.tables_dir / "lead_bucket_metrics_long.csv", paths.tables_dir / "lead_bucket_metrics_long.tex", index=False)
 
-    ***REMOVED*** Daily metrics, used for worst days and paired deltas
+    # Daily metrics, used for worst days and paired deltas
     daily_rows = []
     for d, g in base2.groupby("day"):
         daily_rows.append({"day": d, "model": args.baseline_name, **metrics_row(g["y_true"].values, g["y_pred"].values)})
@@ -631,7 +631,7 @@ def main() -> None:
     daily_long = pd.DataFrame(daily_rows).sort_values(["day", "model"])
     write_csv_and_tex(daily_long, paths.tables_dir / "daily_metrics_long.csv", paths.tables_dir / "daily_metrics_long.tex", index=False)
 
-    ***REMOVED*** Worst days per model (top 10 by RMSE)
+    # Worst days per model (top 10 by RMSE)
     worst_rows = []
     for model in daily_long["model"].unique():
         dm = daily_long[daily_long["model"] == model].copy()
@@ -641,7 +641,7 @@ def main() -> None:
     worst_tbl = pd.concat(worst_rows, axis=0, ignore_index=True)
     worst_tbl.to_csv((paths.tables_dir / "worst_10_days_per_model.csv").as_posix(), index=False)
 
-    ***REMOVED*** Paired deltas vs baseline (daily MAE and RMSE)
+    # Paired deltas vs baseline (daily MAE and RMSE)
     base_daily = daily_long[daily_long["model"] == args.baseline_name][["day", "MAE", "RMSE"]].rename(
         columns={"MAE": "MAE_baseline", "RMSE": "RMSE_baseline"}
     )
@@ -669,17 +669,17 @@ def main() -> None:
     paired_tbl = pd.DataFrame(paired_rows).sort_values("model")
     write_csv_and_tex(paired_tbl, paths.tables_dir / "paired_daily_deltas_vs_baseline.csv", paths.tables_dir / "paired_daily_deltas_vs_baseline.tex", index=False)
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Plots (FORMATTED)
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Monthly RMSE (all models)
+    # -----------------------------
+    # Plots (FORMATTED)
+    # -----------------------------
+    # Monthly RMSE (all models)
     plot_monthly_rmse_all(monthly_long[["month", "model", "RMSE"]], paths.figures_dir / "monthly_rmse_all_models.png", baseline_label=args.baseline_name)
 
-    ***REMOVED*** Facet grids: case studies
+    # Facet grids: case studies
     stitched_truth2 = stitched_truth.rename(columns={"y_true": "y_true"}).copy()
     stitched_truth2 = stitched_truth2[["timestamp_utc", "y_true"]].copy()
 
-    ***REMOVED*** FORMATTING FIX: Pass truth_label and baseline_label
+    # FORMATTING FIX: Pass truth_label and baseline_label
     plot_facets_case_week(
         stitched_truth=stitched_truth2,
         stitched_baseline=stitched_baseline,
@@ -704,11 +704,11 @@ def main() -> None:
         baseline_label=args.baseline_name,
     )
 
-    ***REMOVED*** Facet grid: abs error hist baseline vs each model
+    # Facet grid: abs error hist baseline vs each model
     joined_models_simple = {name: dfm[["timestamp_utc", "hours_ahead", "y_true", "y_pred"]].copy() for name, dfm in joined_models.items()}
     base_simple = base_aligned[["timestamp_utc", "hours_ahead", "y_true", "y_pred"]].copy()
 
-    ***REMOVED*** FORMATTING FIX: Pass baseline_label
+    # FORMATTING FIX: Pass baseline_label
     plot_facets_abs_error_hist(
         joined_baseline=base_simple,
         joined_models=joined_models_simple,
@@ -718,8 +718,8 @@ def main() -> None:
         baseline_label=args.baseline_name,
     )
 
-    ***REMOVED*** Facet grid: lead-time RMSE curve up to 24h
-    ***REMOVED*** FORMATTING FIX: Pass baseline_label
+    # Facet grid: lead-time RMSE curve up to 24h
+    # FORMATTING FIX: Pass baseline_label
     plot_facets_leadtime_rmse_curve(
         joined_baseline=base_simple,
         joined_models=joined_models_simple,
@@ -729,27 +729,27 @@ def main() -> None:
         baseline_label=args.baseline_name,
     )
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Results markdown summary
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Results markdown summary
+    # -----------------------------
     md = []
-    md.append("***REMOVED*** Benchmark suite summary (v3 - FORMATTED)\n")
+    md.append("# Benchmark suite summary (v3 - FORMATTED)\n")
     md.append(f"- Truth: {Path(args.truth)}\n")
     md.append(f"- Baseline: {args.baseline_name} = {Path(args.baseline)}\n")
     md.append(f"- Models: {', '.join(models2.keys()) if len(models2) else '(none)'}\n")
     md.append(f"- Night filtering: {'OFF' if args.include_night else 'ON'} (y_true >= {args.daylight_threshold})\n")
     md.append(f"- Truth label: {args.truth_label}\n")
-    md.append("\n***REMOVED******REMOVED*** Overall metrics\n")
+    md.append("\n## Overall metrics\n")
     md.append(overall.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Stitched overall metrics\n")
+    md.append("\n\n## Stitched overall metrics\n")
     md.append(stitched_overall.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Tail abs error\n")
+    md.append("\n\n## Tail abs error\n")
     md.append(tail_tbl.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Paired daily deltas vs baseline\n")
+    md.append("\n\n## Paired daily deltas vs baseline\n")
     md.append(paired_tbl.to_markdown(index=False))
     (paths.text_dir / "results.md").write_text("\n".join(md))
 
-    ***REMOVED*** Save eval joins for reuse
+    # Save eval joins for reuse
     base_aligned.to_parquet((paths.out_dir / "baseline_eval_joined.parquet").as_posix(), index=False)
     for name, jj in joined_models.items():
         safe_name = name.replace("/", "_").replace(" ", "_")

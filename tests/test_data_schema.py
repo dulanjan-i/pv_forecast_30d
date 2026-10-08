@@ -12,10 +12,10 @@ import numpy as np
 import pandas as pd
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Expected schema for the 15-min PV forecast pipeline
-***REMOVED*** (mirrors docs/final_data_cols.md)
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Expected schema for the 15-min PV forecast pipeline
+# (mirrors docs/final_data_cols.md)
+# ---------------------------------------------------------------------------
 
 REQUIRED_FEATURE_COLS = [
     "temperature_2m",
@@ -32,9 +32,9 @@ REQUIRED_TARGET_COLS = ["power_kw"]
 REQUIRED_INDEX_FREQ = "15min"
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Helpers
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 def make_forecast_df(
     n_steps: int = 96 * 30,
@@ -72,9 +72,9 @@ def validate_schema(df: pd.DataFrame) -> list[str]:
     return errors
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Index and time-series structure tests
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Index and time-series structure tests
+# ---------------------------------------------------------------------------
 
 class TestIndexStructure:
     def test_datetimeindex_type(self):
@@ -105,9 +105,9 @@ class TestIndexStructure:
         assert df.index.is_unique
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Column presence and type tests
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Column presence and type tests
+# ---------------------------------------------------------------------------
 
 class TestColumnSchema:
     def test_all_feature_columns_present(self):
@@ -131,9 +131,9 @@ class TestColumnSchema:
         assert errors == []
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Data quality / contract tests
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Data quality / contract tests
+# ---------------------------------------------------------------------------
 
 class TestDataQuality:
     def test_no_nulls_in_valid_frame(self):
@@ -173,9 +173,9 @@ class TestDataQuality:
         assert validate_schema(df) == []
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Daylight / night masking contract
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Daylight / night masking contract
+# ---------------------------------------------------------------------------
 
 class TestDaylightMask:
     def test_shortwave_zero_at_night(self):
@@ -183,7 +183,7 @@ class TestDaylightMask:
         rng = np.random.default_rng(1)
         idx = pd.date_range("2026-01-01", periods=96, freq="15min", tz="UTC")
         sw = np.zeros(96)
-        ***REMOVED*** Simulate daytime 06:00–18:00 UTC
+        # Simulate daytime 06:00–18:00 UTC
         daytime = (idx.hour >= 6) & (idx.hour < 18)
         sw[daytime] = rng.uniform(0.0, 800.0, daytime.sum())
         df = pd.DataFrame({"shortwave_radiation": sw}, index=idx)

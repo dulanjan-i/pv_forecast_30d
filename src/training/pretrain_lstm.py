@@ -1,4 +1,4 @@
-***REMOVED*** src/training/pretrain_lstm.py
+# src/training/pretrain_lstm.py
 """
 Pretraining script for LSTMEncoder on global PVDAQ/NSRDB data.
 We use the Farm Solar Array (PVDAQ System 2107) dataset for this pretraining.
@@ -44,7 +44,7 @@ training:
   max_epochs: 30
   learning_rate: 1e-3
   weight_decay: 1e-4
-  gpus: auto         ***REMOVED***depends on runtime environment and availability,
+  gpus: auto         #depends on runtime environment and availability,
                      [M2 Mac: 0, Mira's RTX: 1, DBFZ Calc: 4, HPC: auto] 
 
 This trains LSTMEncoder to do next-step prediction on sliding windows.
@@ -56,7 +56,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-***REMOVED*** Add project root to Python path
+# Add project root to Python path
 project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
@@ -124,10 +124,10 @@ def build_dataloader(
 
 
 def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
-    ***REMOVED*** 1) Load config
+    # 1) Load config
     cfg = load_config(config_path)
 
-    ***REMOVED*** Extract experiment tracking info
+    # Extract experiment tracking info
     exp_cfg = cfg.get("experiment", {})
     paths_cfg = cfg.get("paths", {})
     save_cfg = cfg.get("save", {})
@@ -135,8 +135,8 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     exp_name = exp_cfg.get("name", "pretrain")
     exp_tag = exp_cfg.get("tag", "default")
     output_dir = paths_cfg.get("output_dir", f"experiments/lstm/runs/{exp_tag}")
-    init_weights_path = paths_cfg.get("init_weights_path", None)  ***REMOVED*** ← Stage 2 support
-    encoder_save_path = save_cfg.get("encoder_path", None)  ***REMOVED*** ← Custom output path
+    init_weights_path = paths_cfg.get("init_weights_path", None)  # ← Stage 2 support
+    encoder_save_path = save_cfg.get("encoder_path", None)  # ← Custom output path
     
     data_cfg = cfg["data"]
     model_cfg = cfg["model"]
@@ -163,7 +163,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
     num_layers = int(model_cfg["num_layers"])
     dropout = float(model_cfg["dropout"])
 
-    ***REMOVED*** 2) Build dataloaders
+    # 2) Build dataloaders
     train_loader = build_dataloader(
         csv_path=train_path,
         time_col=time_col,
@@ -190,7 +190,7 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         shuffle=False,
     )
 
-    ***REMOVED*** 3) Instantiate LSTMEncoder
+    # 3) Instantiate LSTMEncoder
     input_size = len(feature_cols)
 
     enc_cfg = LSTMEncoderConfig(
@@ -199,13 +199,13 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         num_layers=num_layers,
         dropout=dropout,
         lr=lr,
-        weight_decay=weight_decay,  ***REMOVED*** Pass weight_decay from config
-        aux_predict=True,  ***REMOVED*** we want next-step prediction head during pretraining
+        weight_decay=weight_decay,  # Pass weight_decay from config
+        aux_predict=True,  # we want next-step prediction head during pretraining
     )
 
     model = LSTMEncoder(enc_cfg)
 
-    ***REMOVED*** 3.5) Load pretrained weights if specified (Stage 2 transfer learning)
+    # 3.5) Load pretrained weights if specified (Stage 2 transfer learning)
     if init_weights_path:
         init_path = Path(init_weights_path)
         if init_path.exists():
@@ -217,13 +217,13 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
             print(f"[Pretrain] WARNING: init_weights_path specified but not found: {init_path}")
             print(f"[Pretrain] Training from scratch instead.")
 
-    ***REMOVED*** 4) Set up Logger
+    # 4) Set up Logger
     logger = pl.loggers.CSVLogger(
         save_dir=output_dir,
         name=exp_name,
     )
 
-    ***REMOVED*** 5) Set up Trainer (Lightning 2.x)
+    # 5) Set up Trainer (Lightning 2.x)
     if isinstance(gpus, str) and gpus == "auto":
         accelerator = "auto"
         devices = "auto"
@@ -244,21 +244,21 @@ def main(config_path: str = "experiments/lstm/pretrain_farm2107.yaml") -> None:
         log_every_n_steps=50,
     )
 
-    ***REMOVED*** 6) Train
+    # 6) Train
     print(f"[Pretrain] Experiment: {exp_name} | Tag: {exp_tag}")
     print(f"[Pretrain] Output dir: {output_dir}")
     print(f"[Pretrain] Training LSTMEncoder for {max_epochs} epochs on {train_path.name}")
     trainer.fit(model, train_loader, val_loader)
 
-    ***REMOVED*** 7) Save checkpoints / encoder weights
+    # 7) Save checkpoints / encoder weights
     ckpt_dir = Path(output_dir) / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Use config-driven naming instead of hardcoded "farm2107"
-    ***REMOVED*** Default to using exp_tag for backward compatibility
+    # Use config-driven naming instead of hardcoded "farm2107"
+    # Default to using exp_tag for backward compatibility
     last_ckpt = ckpt_dir / f"lstm_encoder_{exp_tag}_last.ckpt"
     
-    ***REMOVED*** If encoder_save_path is specified, use it; otherwise use default in checkpoints
+    # If encoder_save_path is specified, use it; otherwise use default in checkpoints
     if encoder_save_path:
         state_dict_path = Path(encoder_save_path)
         state_dict_path.parent.mkdir(parents=True, exist_ok=True)

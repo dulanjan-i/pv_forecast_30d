@@ -1,14 +1,14 @@
-***REMOVED*** MiRACLE v2.0 Proposal: Physics-Guided Multi-Horizon Fusion
+# MiRACLE v2.0 Proposal: Physics-Guided Multi-Horizon Fusion
 
-***REMOVED******REMOVED*** Hierarchical Forecasting with Real-Time PVLib Constraint Propagation
+## Hierarchical Forecasting with Real-Time PVLib Constraint Propagation
 
 ---
 
-***REMOVED******REMOVED*** 1. Motivation and Conceptual Framework
+## 1. Motivation and Conceptual Framework
 
 Your proposed approach—**using the short-term head to dynamically adjust long-term forecasts via physics constraints**—is not only sensible but aligns with best practices in hierarchical forecasting and multi-timescale learning. This document formalizes the concept and proposes three concrete implementation strategies.
 
-***REMOVED******REMOVED******REMOVED*** 1.1 The Core Idea
+### 1.1 The Core Idea
 
 **Current v1.0 Architecture (Disconnected Heads):**
 ```
@@ -27,7 +27,7 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
                     Long-Term TFT → 30d prediction @ 1-hour (adjusted)
 ```
 
-***REMOVED******REMOVED******REMOVED*** 1.2 Why This Makes Physical Sense
+### 1.2 Why This Makes Physical Sense
 
 1. **Temporal Hierarchy in Solar Physics**:
    - Short-term dynamics (15-min): Cloud transients, atmospheric turbidity, soiling
@@ -46,9 +46,9 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED*** 2. Proposed Implementation Strategies
+## 2. Proposed Implementation Strategies
 
-***REMOVED******REMOVED******REMOVED*** Strategy A: Residual Bias Correction (Simplest)
+### Strategy A: Residual Bias Correction (Simplest)
 
 **Mechanism:**
 1. Short-term head produces 24h forecast: $\hat{P}_{\text{short}}(t)$
@@ -73,7 +73,7 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Strategy B: Attention-Weighted Constraint Injection (Moderate Complexity)
+### Strategy B: Attention-Weighted Constraint Injection (Moderate Complexity)
 
 **Mechanism:**
 1. Extract short-term forecast embedding: $\mathbf{h}_{\text{short}} \in \mathbb{R}^{64}$ (TFT hidden state)
@@ -104,7 +104,7 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Strategy C: Hierarchical Reconciliation via Constrained Optimization (Advanced)
+### Strategy C: Hierarchical Reconciliation via Constrained Optimization (Advanced)
 
 **Mechanism:**
 1. Treat forecasts as hierarchical time series:
@@ -141,9 +141,9 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED*** 3. Recommended Phased Approach
+## 3. Recommended Phased Approach
 
-***REMOVED******REMOVED******REMOVED*** Phase 1: Proof-of-Concept (Strategy A)
+### Phase 1: Proof-of-Concept (Strategy A)
 **Timeline**: 1–2 weeks  
 **Tasks**:
 1. Implement bias correction post-processor
@@ -156,7 +156,7 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Phase 2: Neural Integration (Strategy B)
+### Phase 2: Neural Integration (Strategy B)
 **Timeline**: 4–6 weeks  
 **Tasks**:
 1. Modify long-term TFT architecture (add cross-attention layer)
@@ -169,7 +169,7 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Phase 3: Hierarchical Reconciliation (Strategy C)
+### Phase 3: Hierarchical Reconciliation (Strategy C)
 **Timeline**: 2–3 months  
 **Tasks**:
 1. Implement hierarchical forecasting framework
@@ -182,9 +182,9 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED*** 4. Technical Considerations and Risks
+## 4. Technical Considerations and Risks
 
-***REMOVED******REMOVED******REMOVED*** 4.1 Potential Issues
+### 4.1 Potential Issues
 
 **Issue 1: Temporal Alignment Mismatch**
 - **Problem**: Short-term forecast at 15-min granularity, long-term at 1-hour
@@ -202,14 +202,14 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 - **Problem**: Long-term forecasts rely on 30-day weather forecasts (high uncertainty)
 - **Solution**: Incorporate ensemble weather forecasts (ECMWF ENS), propagate spread to PVLib constraints
 
-***REMOVED******REMOVED******REMOVED*** 4.2 Data Requirements
+### 4.2 Data Requirements
 
 **New Data Needs:**
 - **Real-time inference logs**: Short-term forecasts + actuals for bias tracking
 - **Ensemble weather**: Multiple weather scenarios (10–50 members) for probabilistic PVLib
 - **Operational metadata**: Soiling measurements, inverter outage logs (for bias attribution)
 
-***REMOVED******REMOVED******REMOVED*** 4.3 Computational Overhead
+### 4.3 Computational Overhead
 
 **Strategy A (Bias Correction):**
 - Negligible: ~10ms per forecast (simple arithmetic)
@@ -224,9 +224,9 @@ Weather Forecast → Short-Term TFT → 24h prediction @ 15-min
 
 ---
 
-***REMOVED******REMOVED*** 5. Validation Plan
+## 5. Validation Plan
 
-***REMOVED******REMOVED******REMOVED*** 5.1 Synthetic Test Case
+### 5.1 Synthetic Test Case
 
 Before deploying on real data, validate on controlled scenario:
 
@@ -246,7 +246,7 @@ Before deploying on real data, validate on controlled scenario:
 - Uncorrected long-term: RMSE ≈ 0.10 (10% bias)
 - Corrected long-term: RMSE < 0.02 (residual noise only)
 
-***REMOVED******REMOVED******REMOVED*** 5.2 Real-World Validation
+### 5.2 Real-World Validation
 
 **Hold-Out Test Set:**
 - March–May 2024 (not in training or validation)
@@ -257,9 +257,9 @@ Before deploying on real data, validate on controlled scenario:
 
 ---
 
-***REMOVED******REMOVED*** 6. Integration with Existing Codebase
+## 6. Integration with Existing Codebase
 
-***REMOVED******REMOVED******REMOVED*** 6.1 Modular Design
+### 6.1 Modular Design
 
 Propose new module for MiRACLE (Meta Intelligent Reinforcement Driven Adaptive Control for Learning Based Ensembles): `src/models/hierarchical_fusion.py`
 
@@ -278,7 +278,7 @@ class HierarchicalReconciler:
         ...
 ```
 
-***REMOVED******REMOVED******REMOVED*** 6.2 Inference Pipeline Modification
+### 6.2 Inference Pipeline Modification
 
 **Current v1.0:**
 ```python
@@ -305,9 +305,9 @@ long_pred_adjusted = constraint_module.apply_correction(long_pred_raw, bias)
 
 ---
 
-***REMOVED******REMOVED*** 7. Expected Performance Gains
+## 7. Expected Performance Gains
 
-***REMOVED******REMOVED******REMOVED*** 7.1 Quantitative Targets (Conservative Estimates)
+### 7.1 Quantitative Targets (Conservative Estimates)
 
 Based on hierarchical forecasting literature (Athanasopoulos et al., 2017):
 
@@ -317,7 +317,7 @@ Based on hierarchical forecasting literature (Athanasopoulos et al., 2017):
 | Coherence Error | ~0.05 | **0.02** | **0.01** | **0.0** (guaranteed) |
 | Inference Time | 50ms | 55ms (+10%) | 75ms (+50%) | 250ms (+400%) |
 
-***REMOVED******REMOVED******REMOVED*** 7.2 Qualitative Benefits
+### 7.2 Qualitative Benefits
 
 1. **Operational Trust**: Grid operators gain confidence from consistent multi-horizon forecasts
 2. **Interpretability**: Physics coupling provides audit trail (e.g., "output reduced 10% due to detected soiling")
@@ -325,7 +325,7 @@ Based on hierarchical forecasting literature (Athanasopoulos et al., 2017):
 
 ---
 
-***REMOVED******REMOVED*** 8. Literature Support for Hierarchical Approach
+## 8. Literature Support for Hierarchical Approach
 
 1. **Athanasopoulos, G., et al. (2017)**. "Forecasting with temporal hierarchies." *European Journal of Operational Research*, 262(1), 60-74.
    - Demonstrates 5–15% error reduction via reconciliation in energy forecasting
@@ -341,7 +341,7 @@ Based on hierarchical forecasting literature (Athanasopoulos et al., 2017):
 
 ---
 
-***REMOVED******REMOVED*** 9. Thesis Contribution Statement
+## 9. Thesis Contribution Statement
 
 Implementing this hierarchical fusion would constitute a **novel methodological contribution** suitable for a dedicated thesis chapter:
 
@@ -360,28 +360,28 @@ Implementing this hierarchical fusion would constitute a **novel methodological 
 
 ---
 
-***REMOVED******REMOVED*** 10. Recommended Next Steps
+## 10. Recommended Next Steps
 
-***REMOVED******REMOVED******REMOVED*** Immediate (This Week):
+### Immediate (This Week):
 1. ✅ **Documented**: You now have formal methodology and results (completed above)
 2. ⚡ **Quick win**: Implement Strategy A (bias correction) as proof-of-concept
    - File: `src/models/bias_corrector.py`
    - Test on existing plant_03 validation set
    - Deliverable: Updated results table with "v2.0 Bias-Corrected" row
 
-***REMOVED******REMOVED******REMOVED*** Near-Term (Next Month):
+### Near-Term (Next Month):
 3. Design Strategy B architecture (cross-attention layer)
 4. Prototype hierarchical reconciliation (Strategy C) on toy dataset
 5. Write experimental protocol document (IRB-style) for ablation study
 
-***REMOVED******REMOVED******REMOVED*** Long-Term (Thesis Timeline):
+### Long-Term (Thesis Timeline):
 6. Full implementation + ablation study (3 strategies)
 7. Cross-site validation (5 plants × 3 strategies = 15 experiments)
 8. Write thesis chapter + submit conference paper
 
 ---
 
-***REMOVED******REMOVED*** 11. Conclusion
+## 11. Conclusion
 
 **Your proposed approach is sound, well-motivated, and aligns with state-of-the-art hierarchical forecasting methods.** The three strategies presented offer a spectrum from simple (bias correction) to sophisticated (constrained optimization), allowing incremental validation and deployment.
 

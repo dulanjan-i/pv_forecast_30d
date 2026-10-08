@@ -10,9 +10,9 @@ import pandas as pd
 import torch
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Helpers
+# -----------------------------
 def to_utc(series: pd.Series) -> pd.Series:
     return pd.to_datetime(series, utc=True, errors="coerce")
 
@@ -103,14 +103,14 @@ def batched_encode(model: torch.nn.Module, windows: np.ndarray, batch_size: int,
         for i in range(0, windows.shape[0], batch_size):
             xb = torch.from_numpy(windows[i : i + batch_size]).to(device)
             out, (h, c) = model(xb)
-            emb = h[-1]  ***REMOVED*** (B, H)
+            emb = h[-1]  # (B, H)
             outs.append(emb.detach().cpu().numpy().astype(np.float32))
     return np.vstack(outs)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main
+# -----------------------------
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--phase1-in", required=True, type=str)
@@ -126,7 +126,7 @@ def main() -> None:
     ap.add_argument("--batch-size", default=2048, type=int)
     ap.add_argument("--device", default="cuda", type=str)
 
-    ***REMOVED*** EXACT 15-feature schema from your YAML, order locked
+    # EXACT 15-feature schema from your YAML, order locked
     ap.add_argument(
         "--feature-cols",
         default="power_norm,poa_irradiance,temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,shortwave_radiation_instant,direct_radiation_instant,diffuse_radiation_instant,direct_normal_irradiance_instant,global_tilted_irradiance_instant,surface_pressure",
@@ -148,7 +148,7 @@ def main() -> None:
     hist_p = Path(args.hist_stream)
     ensure_exists(hist_p, "hist stream parquet")
 
-    ***REMOVED*** Load data
+    # Load data
     w = pd.read_parquet(weather_in, engine="pyarrow")
     h = pd.read_parquet(hist_p, engine="pyarrow")
 
@@ -158,7 +158,7 @@ def main() -> None:
     w[args.time_col] = to_utc(w[args.time_col])
     h[args.time_col] = to_utc(h[args.time_col])
 
-    ***REMOVED*** Filter plant if possible
+    # Filter plant if possible
     if args.plant_col in h.columns:
         h = h[h[args.plant_col].astype(str) == str(args.plant_id)].copy()
     if args.plant_col in w.columns:
@@ -167,7 +167,7 @@ def main() -> None:
 
     h = h.sort_values(args.time_col).reset_index(drop=True)
 
-    ***REMOVED*** Feature cols (exact order)
+    # Feature cols (exact order)
     feature_cols: List[str] = [c.strip() for c in args.feature_cols.split(",") if c.strip()]
     missing = [c for c in feature_cols if c not in h.columns]
     if missing:
@@ -180,18 +180,18 @@ def main() -> None:
 
     X = h[feature_cols].to_numpy(dtype=np.float32)
 
-    ***REMOVED*** Check input_size matches encoder
+    # Check input_size matches encoder
     device = torch.device(args.device if (args.device == "cpu" or torch.cuda.is_available()) else "cpu")
     model = load_lstm_encoder(enc_ckpt, device=device)
 
-    ***REMOVED*** Build windows and align to window end time
+    # Build windows and align to window end time
     L = int(args.seq_len)
     windows = make_windows(X, seq_len=L)
     end_times = h[args.time_col].iloc[L - 1 :].reset_index(drop=True)
 
     enc64 = batched_encode(model, windows, batch_size=int(args.batch_size), device=device)
 
-    ***REMOVED*** Optional PCA32
+    # Optional PCA32
     use_pca = bool(args.pca_pkl.strip())
     if use_pca:
         pca_p = Path(args.pca_pkl)
@@ -216,10 +216,10 @@ def main() -> None:
     for name in base_names:
         df_enc[f"{name}_lag{lag}"] = df_enc[name].shift(lag)
 
-    ***REMOVED*** Merge into phase weather
+    # Merge into phase weather
     out = w.merge(df_enc, on=args.time_col, how="left")
 
-    ***REMOVED*** Coverage checks
+    # Coverage checks
     sample_col = base_names[0]
     frac = float(out[sample_col].notna().mean())
     frac_lag = float(out[f"{sample_col}_lag{lag}"].notna().mean())

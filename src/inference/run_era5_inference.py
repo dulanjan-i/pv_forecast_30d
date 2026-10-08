@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Run TFT+PVLib inference on ERA5 weather data to generate predicted PV power.
 
@@ -51,15 +51,15 @@ def run_inference_on_era5(
     Returns:
         DataFrame with forecasts and metadata
     """
-    ***REMOVED*** Load ERA5
+    # Load ERA5
     logger.info(f"Loading ERA5 from {era5_path}")
     era5 = pd.read_parquet(era5_path)
     logger.info(f"  {len(era5)} timesteps from {era5['timestamp_utc'].min()} to {era5['timestamp_utc'].max()}")
     
-    ***REMOVED*** Window parameters
-    history_steps = 168 * 4  ***REMOVED*** 7 days @ 15min for long-head encoder
-    forecast_steps = 2880    ***REMOVED*** 30 days @ 15min
-    stride_steps = 96 * stride_days  ***REMOVED*** days to hours to 15min steps
+    # Window parameters
+    history_steps = 168 * 4  # 7 days @ 15min for long-head encoder
+    forecast_steps = 2880    # 30 days @ 15min
+    stride_steps = 96 * stride_days  # days to hours to 15min steps
     
     total_needed = history_steps + forecast_steps
     
@@ -69,7 +69,7 @@ def run_inference_on_era5(
     logger.info(f"  Stride: {stride_steps} steps ({stride_days} days)")
     logger.info(f"  Total needed per window: {total_needed} steps")
     
-    ***REMOVED*** Calculate number of possible windows
+    # Calculate number of possible windows
     num_windows = (len(era5) - total_needed) // stride_steps + 1
     logger.info(f"  Possible windows: {num_windows}\n")
     
@@ -78,30 +78,30 @@ def run_inference_on_era5(
     for window_idx in tqdm(range(num_windows), desc="Running forecasts"):
         start_idx = window_idx * stride_steps
         
-        ***REMOVED*** Check if we have enough data
+        # Check if we have enough data
         if start_idx + total_needed > len(era5):
             logger.warning(f"Window {window_idx}: Not enough data, skipping")
             break
         
-        ***REMOVED*** Extract history and forecast periods
+        # Extract history and forecast periods
         history = era5.iloc[start_idx:start_idx + history_steps].copy()
         forecast_window = era5.iloc[start_idx + history_steps:start_idx + total_needed].copy()
         
         forecast_start = forecast_window['timestamp_utc'].iloc[0]
         
         try:
-            ***REMOVED*** Run forecast
+            # Run forecast
             predictions = forecaster.predict_30d(
                 forecast_start=forecast_start,
                 weather_df=forecast_window,
                 historical_df=history
             )
             
-            ***REMOVED*** Convert to numpy if tensor
+            # Convert to numpy if tensor
             if torch.is_tensor(predictions):
                 predictions = predictions.cpu().numpy()
             
-            ***REMOVED*** Create forecast record
+            # Create forecast record
             forecast_record = {
                 'window_idx': window_idx,
                 'forecast_start': forecast_start,
@@ -143,7 +143,7 @@ def compute_cross_forecast_rmses(forecasts: List[Dict]) -> pd.DataFrame:
     
     rmse_records = []
     
-    ***REMOVED*** For each forecast, compare with next forecast in overlapping region
+    # For each forecast, compare with next forecast in overlapping region
     for i in range(len(forecasts) - 1):
         curr = forecasts[i]
         next_f = forecasts[i + 1]
@@ -151,21 +151,21 @@ def compute_cross_forecast_rmses(forecasts: List[Dict]) -> pd.DataFrame:
         curr_times = pd.to_datetime(curr['timestamps'])
         next_times = pd.to_datetime(next_f['timestamps'])
         
-        ***REMOVED*** Find overlap
+        # Find overlap
         overlap_start = max(curr_times.min(), next_times.min())
         overlap_end = min(curr_times.max(), next_times.max())
         
         if overlap_end <= overlap_start:
             continue
         
-        ***REMOVED*** Extract overlapping predictions
+        # Extract overlapping predictions
         curr_mask = (curr_times >= overlap_start) & (curr_times <= overlap_end)
         next_mask = (next_times >= overlap_start) & (next_times <= overlap_end)
         
         curr_pred = curr['predictions'][curr_mask]
         next_pred = next_f['predictions'][next_mask]
         
-        ***REMOVED*** Align lengths
+        # Align lengths
         min_len = min(len(curr_pred), len(next_pred))
         curr_pred = curr_pred[:min_len]
         next_pred = next_pred[:min_len]
@@ -173,7 +173,7 @@ def compute_cross_forecast_rmses(forecasts: List[Dict]) -> pd.DataFrame:
         if len(curr_pred) == 0:
             continue
         
-        ***REMOVED*** Compute RMSEs at different horizons
+        # Compute RMSEs at different horizons
         rmse_1h = np.sqrt(np.mean((curr_pred[:4] - next_pred[:4])**2)) if len(curr_pred) >= 4 else 0.0
         rmse_6h = np.sqrt(np.mean((curr_pred[:24] - next_pred[:24])**2)) if len(curr_pred) >= 24 else 0.0
         rmse_24h = np.sqrt(np.mean((curr_pred[:96] - next_pred[:96])**2)) if len(curr_pred) >= 96 else 0.0
@@ -185,7 +185,7 @@ def compute_cross_forecast_rmses(forecasts: List[Dict]) -> pd.DataFrame:
             'forecast_start_1': curr['forecast_start'],
             'forecast_start_2': next_f['forecast_start'],
             'overlap_steps': min_len,
-            'overlap_hours': min_len * 0.25,  ***REMOVED*** 15min = 0.25h
+            'overlap_hours': min_len * 0.25,  # 15min = 0.25h
             'rmse_1h': rmse_1h,
             'rmse_6h': rmse_6h,
             'rmse_24h': rmse_24h,
@@ -197,7 +197,7 @@ def compute_cross_forecast_rmses(forecasts: List[Dict]) -> pd.DataFrame:
     
     rmse_df = pd.DataFrame(rmse_records)
     
-    ***REMOVED*** Print summary statistics
+    # Print summary statistics
     logger.info(f"\nRMSE Summary ({len(rmse_df)} forecast pairs):")
     logger.info(f"{'='*70}")
     logger.info(f"  1-hour RMSE:  {rmse_df['rmse_1h'].mean():.4f} ± {rmse_df['rmse_1h'].std():.4f}")
@@ -212,7 +212,7 @@ def compute_cross_forecast_rmses(forecasts: List[Dict]) -> pd.DataFrame:
 
 def save_predictions(forecasts: List[Dict], output_path: str):
     """Save all predictions to parquet."""
-    ***REMOVED*** Flatten forecasts into time series
+    # Flatten forecasts into time series
     records = []
     
     for fc in forecasts:
@@ -249,7 +249,7 @@ def main():
     
     args = parser.parse_args()
     
-    ***REMOVED*** Initialize forecaster
+    # Initialize forecaster
     logger.info("="*70)
     logger.info("INITIALIZING TFT+PVLIB FORECASTER")
     logger.info("="*70)
@@ -265,7 +265,7 @@ def main():
     
     logger.info("✓ Forecaster ready\n")
     
-    ***REMOVED*** Run inference
+    # Run inference
     logger.info("="*70)
     logger.info("STEP 3: RUNNING TFT+PVLIB INFERENCE ON ERA5")
     logger.info("="*70)
@@ -280,13 +280,13 @@ def main():
         logger.error("No forecasts generated!")
         return
     
-    ***REMOVED*** Save predictions
+    # Save predictions
     logger.info("="*70)
     logger.info("STEP 4: SAVING PREDICTIONS")
     logger.info("="*70)
     save_predictions(forecasts, args.output_predictions)
     
-    ***REMOVED*** Compute RMSEs
+    # Compute RMSEs
     logger.info("="*70)
     logger.info("STEP 5: COMPUTING RMSES")
     logger.info("="*70)
@@ -294,7 +294,7 @@ def main():
     rmse_df.to_parquet(args.output_rmses, index=False)
     logger.info(f"✓ Saved RMSEs to {args.output_rmses}")
     
-    ***REMOVED*** Final summary
+    # Final summary
     logger.info("\n" + "="*70)
     logger.info("INFERENCE COMPLETE")
     logger.info("="*70)

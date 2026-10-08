@@ -1,18 +1,18 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --job-name=tft_sweep
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --nodelist=dbfz-hpc23-gnode4
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --cpus-per-task=16
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH --array=0-7%4
-***REMOVED***SBATCH --output=/shared/%u/miracle/logs/%x_%A_%a.out
-***REMOVED***SBATCH --error=/shared/%u/miracle/logs/%x_%A_%a.err
+#!/bin/bash
+#SBATCH --job-name=tft_sweep
+#SBATCH --partition=gpuh100
+#SBATCH --nodelist=dbfz-hpc23-gnode4
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=04:00:00
+#SBATCH --array=0-7%4
+#SBATCH --output=/shared/%u/miracle/logs/%x_%A_%a.out
+#SBATCH --error=/shared/%u/miracle/logs/%x_%A_%a.err
 
 set -euo pipefail
 
-***REMOVED*** You submit with: sbatch --export=ALL,MODE=tft_only  ...  or MODE=tft_pvlib
+# You submit with: sbatch --export=ALL,MODE=tft_only  ...  or MODE=tft_pvlib
 MODE="${MODE:-}"
 if [[ "$MODE" != "tft_only" && "$MODE" != "tft_pvlib" ]]; then
   echo "ERROR: MODE must be tft_only or tft_pvlib, got: '$MODE'"
@@ -36,14 +36,14 @@ echo "JOB=${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
 echo "CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-NA}"
 date
 
-***REMOVED*** Sweep grid: 4 learning rates x 2 dropout values = 8 configs
+# Sweep grid: 4 learning rates x 2 dropout values = 8 configs
 LRS=(8e-4 1.2e-3 2e-3 3e-3  8e-4 1.2e-3 2e-3 3e-3)
 DROPS=(0.05 0.05 0.05 0.05  0.15 0.15 0.15 0.15)
 
 LR="${LRS[$SLURM_ARRAY_TASK_ID]}"
 DROPOUT="${DROPS[$SLURM_ARRAY_TASK_ID]}"
 
-***REMOVED*** Keep proven stable training pipeline knobs fixed for the sweep
+# Keep proven stable training pipeline knobs fixed for the sweep
 BATCH_SIZE=512
 ACCUM=8
 NUM_WORKERS=12

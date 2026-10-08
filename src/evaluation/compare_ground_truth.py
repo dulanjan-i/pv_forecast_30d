@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Compare Phase 1 predictions against actual ground truth data.
 THE BIG REVEAL!
@@ -13,7 +13,7 @@ print("=" * 80)
 print("🎯 GROUND TRUTH VALIDATION: Phase 1 Predictions vs Real Measurements")
 print("=" * 80)
 
-***REMOVED*** Load actual measurements
+# Load actual measurements
 print("\n📂 Loading ground truth data...")
 df_2023 = pd.read_csv(
     'data/raw/germany/plant_03/Data_SP_ID_3_GRB_2023.csv',
@@ -33,7 +33,7 @@ df_2024 = pd.read_csv(
     parse_dates=['timestamp']
 )
 
-***REMOVED*** Combine
+# Combine
 ground_truth = pd.concat([df_2023, df_2024], ignore_index=True)
 ground_truth['timestamp'] = pd.to_datetime(ground_truth['timestamp'], utc=True)
 ground_truth = ground_truth.sort_values('timestamp').reset_index(drop=True)
@@ -42,7 +42,7 @@ print(f"   Ground truth loaded: {len(ground_truth):,} timesteps")
 print(f"   Date range: {ground_truth['timestamp'].min()} → {ground_truth['timestamp'].max()}")
 print(f"   Power range: {ground_truth['power_kw'].min():.1f} - {ground_truth['power_kw'].max():.1f} kW")
 
-***REMOVED*** Load predictions
+# Load predictions
 print("\n📂 Loading Phase 1 predictions...")
 predictions = pd.read_parquet('data/processed/test_phase1_dec2023_dec2024/predictions_phase1.parquet')
 predictions['timestamp'] = pd.to_datetime(predictions['timestamp_utc'], utc=True)
@@ -50,13 +50,13 @@ predictions['timestamp'] = pd.to_datetime(predictions['timestamp_utc'], utc=True
 print(f"   Predictions loaded: {len(predictions):,} timesteps")
 print(f"   Date range: {predictions['timestamp'].min()} → {predictions['timestamp'].max()}")
 
-***REMOVED*** Normalize ground truth to [0, 1]
+# Normalize ground truth to [0, 1]
 capacity_kw = 7358.9
 ground_truth['power_norm'] = ground_truth['power_kw'] / capacity_kw
 
 print(f"   Normalized with capacity: {capacity_kw:,.1f} kW")
 
-***REMOVED*** Merge
+# Merge
 print("\n🔗 Merging predictions with ground truth...")
 merged = pd.merge(
     predictions[['timestamp', 'predicted_power_norm', 'forecast_idx', 'step_ahead']],
@@ -75,7 +75,7 @@ if len(merged) == 0:
     print("   Prediction range:", predictions['timestamp'].min(), "→", predictions['timestamp'].max())
     exit(1)
 
-***REMOVED*** Calculate errors
+# Calculate errors
 print("\n" + "=" * 80)
 print("📊 ERROR METRICS (Normalized Power [0, 1])")
 print("=" * 80)
@@ -88,7 +88,7 @@ mae_norm = mean_absolute_error(y_true, y_pred)
 r2 = r2_score(y_true, y_pred)
 mape = np.mean(np.abs((y_true - y_pred) / (y_true + 1e-8))) * 100
 
-***REMOVED*** Absolute units
+# Absolute units
 rmse_kw = rmse_norm * capacity_kw
 mae_kw = mae_norm * capacity_kw
 
@@ -100,7 +100,7 @@ print(f"   MAE (absolute):     {mae_kw:.1f} kW")
 print(f"   R² Score:           {r2:.4f}")
 print(f"   MAPE:               {mape:.2f}%")
 
-***REMOVED*** Compare to pseudo-RMSE
+# Compare to pseudo-RMSE
 pseudo_rmse = 0.00693
 print(f"\n📊 COMPARISON TO PSEUDO-RMSE:")
 print(f"   Pseudo-RMSE (forecast disagreement): {pseudo_rmse:.5f}")
@@ -114,7 +114,7 @@ elif rmse_norm < pseudo_rmse * 3:
 else:
     print(f"   ⚠️  WARNING: True RMSE significantly exceeds pseudo-RMSE estimate")
 
-***REMOVED*** Daylight vs nighttime performance
+# Daylight vs nighttime performance
 merged['hour'] = merged['timestamp'].dt.hour
 day_mask = (merged['hour'] >= 6) & (merged['hour'] <= 18)
 night_mask = ~day_mask
@@ -144,7 +144,7 @@ if night_mask.sum() > 0:
     print(f"   RMSE: {rmse_night:.5f} ({rmse_night * 100:.2f}%)")
     print(f"   MAE:  {mae_night:.5f} ({mae_night * 100:.2f}%)")
 
-***REMOVED*** Monthly breakdown
+# Monthly breakdown
 print(f"\n" + "=" * 80)
 print("📅 MONTHLY ERROR BREAKDOWN")
 print("=" * 80)
@@ -169,7 +169,7 @@ for _, row in monthly_errors.iterrows():
           f"{row['rmse']:<10.5f} {row['mae']:<10.5f} "
           f"{row['r2']:<8.4f} {row['bias']:<+10.5f}")
 
-***REMOVED*** Seasonal summary
+# Seasonal summary
 winter = monthly_errors[monthly_errors['month'].astype(str).str.contains('2023-12|2024-01|2024-02')]
 spring = monthly_errors[monthly_errors['month'].astype(str).str.contains('2024-03|2024-04|2024-05')]
 summer = monthly_errors[monthly_errors['month'].astype(str).str.contains('2024-06|2024-07')]
@@ -182,7 +182,7 @@ if len(spring) > 0:
 if len(summer) > 0:
     print(f"   Summer (Jun-Jul): RMSE={summer['rmse'].mean():.5f}, R²={summer['r2'].mean():.4f}")
 
-***REMOVED*** Bias analysis
+# Bias analysis
 print(f"\n" + "=" * 80)
 print("📈 BIAS ANALYSIS")
 print("=" * 80)
@@ -201,7 +201,7 @@ elif bias.mean() < -0.01:
 else:
     print(f"\n   ✓ MODEL IS WELL-CALIBRATED (minimal bias)")
 
-***REMOVED*** Best/worst days
+# Best/worst days
 merged['date'] = merged['timestamp'].dt.date
 daily_rmse = merged.groupby('date').apply(
     lambda x: np.sqrt(mean_squared_error(x['power_norm'], x['predicted_power_norm']))
@@ -215,7 +215,7 @@ print(f"\n💥 WORST DAYS (Highest RMSE):")
 for _, row in daily_rmse.nlargest(5, 'rmse').iterrows():
     print(f"   {row['date']}: RMSE = {row['rmse']:.5f}")
 
-***REMOVED*** Final verdict
+# Final verdict
 print(f"\n" + "=" * 80)
 print("🎯 FINAL VERDICT")
 print("=" * 80)
@@ -241,7 +241,7 @@ print(f"   Verdict: {verdict}")
 print(f"\n💾 Comparison complete! Check detailed metrics above.")
 print("=" * 80)
 
-***REMOVED*** Save comparison
+# Save comparison
 output_path = Path("data/processed/test_phase1_dec2023_dec2024/validation_vs_ground_truth.parquet")
 merged.to_parquet(output_path, index=False)
 print(f"\n✅ Saved comparison data to: {output_path}")

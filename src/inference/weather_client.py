@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 OpenMeteo Weather API Client for Real-Time Forecasting
 
@@ -58,11 +58,11 @@ class WeatherClient:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
         
-        ***REMOVED*** Load ECMWF credentials if available
+        # Load ECMWF credentials if available
         self.ecmwf_creds = self._load_ecmwf_credentials()
         
-        ***REMOVED*** Setup OpenMeteo client with cache and retry
-        ***REMOVED*** Note: SSL verification disabled for environments with cert issues
+        # Setup OpenMeteo client with cache and retry
+        # Note: SSL verification disabled for environments with cert issues
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         
@@ -70,7 +70,7 @@ class WeatherClient:
             str(self.cache_dir / 'weather_cache'), 
             expire_after=cache_expire_hours * 3600
         )
-        cache_session.verify = False  ***REMOVED*** Disable SSL verification
+        cache_session.verify = False  # Disable SSL verification
         
         retry_session = retry(
             cache_session, 
@@ -79,14 +79,14 @@ class WeatherClient:
         )
         self.client = openmeteo_requests.Client(session=retry_session)
         
-        ***REMOVED*** OpenMeteo API endpoints
-        self.forecast_url = "https://api.open-meteo.com/v1/forecast"  ***REMOVED*** 7-day optimal, 15-day max
-        self.ensemble_url = "https://ensemble-api.open-meteo.com/v1/ensemble"  ***REMOVED*** 35-day (BROKEN: returns anomalies)
-        self.ecmwf_url = "https://api.open-meteo.com/v1/ecmwf"  ***REMOVED*** 15-day standard, 46-day extended range
-        self.gfs_url = "https://api.open-meteo.com/v1/gfs"  ***REMOVED*** 16-day max, NOAA GFS
-        self.gfs_url = "https://api.open-meteo.com/v1/gfs"  ***REMOVED*** 16-day max, NOAA GFS
+        # OpenMeteo API endpoints
+        self.forecast_url = "https://api.open-meteo.com/v1/forecast"  # 7-day optimal, 15-day max
+        self.ensemble_url = "https://ensemble-api.open-meteo.com/v1/ensemble"  # 35-day (BROKEN: returns anomalies)
+        self.ecmwf_url = "https://api.open-meteo.com/v1/ecmwf"  # 15-day standard, 46-day extended range
+        self.gfs_url = "https://api.open-meteo.com/v1/gfs"  # 16-day max, NOAA GFS
+        self.gfs_url = "https://api.open-meteo.com/v1/gfs"  # 16-day max, NOAA GFS
         
-        ***REMOVED*** ALL weather variables from training data (16 features)
+        # ALL weather variables from training data (16 features)
         self.weather_vars = [
             "temperature_2m",
             "relative_humidity_2m", 
@@ -95,11 +95,11 @@ class WeatherClient:
             "cloud_cover",
             "wind_speed_10m",
             "wind_direction_10m",
-            "shortwave_radiation_instant",      ***REMOVED*** GHI equivalent
-            "direct_radiation_instant",          ***REMOVED*** Direct horizontal
-            "diffuse_radiation_instant",         ***REMOVED*** DHI
-            "direct_normal_irradiance_instant",  ***REMOVED*** DNI
-            "global_tilted_irradiance_instant",  ***REMOVED*** GTI (needs tilt/azimuth)
+            "shortwave_radiation_instant",      # GHI equivalent
+            "direct_radiation_instant",          # Direct horizontal
+            "diffuse_radiation_instant",         # DHI
+            "direct_normal_irradiance_instant",  # DNI
+            "global_tilted_irradiance_instant",  # GTI (needs tilt/azimuth)
             "surface_pressure"
         ]
     
@@ -140,7 +140,7 @@ class WeatherClient:
         elif days <= 15:
             return "ECMWF", self.ecmwf_url
         else:
-            ***REMOVED*** For 30+ days, use GFS (not ensemble which returns anomalies)
+            # For 30+ days, use GFS (not ensemble which returns anomalies)
             return "GFS", self.gfs_url
     
     def fetch_forecast(
@@ -189,17 +189,17 @@ class WeatherClient:
             
             Manual Override: Set use_ecmwf=True or use_ensemble=True to force specific API
         """
-        ***REMOVED*** Convert start_time to string
+        # Convert start_time to string
         if isinstance(start_time, pd.Timestamp):
             start_time = start_time.strftime("%Y-%m-%d")
         elif isinstance(start_time, datetime):
             start_time = start_time.strftime("%Y-%m-%d")
         
-        ***REMOVED*** Calculate end date
+        # Calculate end date
         start_dt = pd.to_datetime(start_time)
         end_dt = start_dt + pd.Timedelta(days=days)
         
-        ***REMOVED*** Choose API endpoint (smart selection or manual override)
+        # Choose API endpoint (smart selection or manual override)
         if auto_select and not use_ecmwf and not use_ensemble:
             api_name, api_url = self.select_best_api(days)
             print(f"                [Auto-selected {api_name} API for {days}-day forecast]")
@@ -221,7 +221,7 @@ class WeatherClient:
         print(f"                Tilt/Azimuth: {tilt}° / {azimuth}°")
         print(f"                API: {api_name}")
         
-        ***REMOVED*** Build API request parameters
+        # Build API request parameters
         params = {
             "latitude": latitude,
             "longitude": longitude,
@@ -233,31 +233,31 @@ class WeatherClient:
             "azimuth": azimuth
         }
         
-        ***REMOVED*** Add model-specific parameters
+        # Add model-specific parameters
         if use_ecmwf or api_name == "ECMWF":
-            ***REMOVED*** ECMWF API doesn't need models parameter
+            # ECMWF API doesn't need models parameter
             pass
         elif use_ensemble:
-            ***REMOVED*** gfs_seamless: Global, up to 35 days (50km resolution)
+            # gfs_seamless: Global, up to 35 days (50km resolution)
             params["models"] = "gfs_seamless"
         elif api_name == "GFS":
-            ***REMOVED*** GFS API: use best_match for automatic model selection
+            # GFS API: use best_match for automatic model selection
             params["models"] = "best_match"
         else:
             params["models"] = "best_match"
         
         try:
-            ***REMOVED*** Call OpenMeteo API (Forecast or Ensemble)
+            # Call OpenMeteo API (Forecast or Ensemble)
             responses = self.client.weather_api(api_url, params=params)
             response = responses[0]
             
             print(f"                ✓ {api_name} API response: {response.Latitude():.4f}°N, {response.Longitude():.4f}°E")
             print(f"                ✓ Elevation: {response.Elevation():.0f}m")
             
-            ***REMOVED*** Extract hourly data
+            # Extract hourly data
             hourly = response.Hourly()
             
-            ***REMOVED*** Parse timestamps
+            # Parse timestamps
             timestamps = pd.date_range(
                 start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
                 end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
@@ -265,17 +265,17 @@ class WeatherClient:
                 inclusive="left"
             )
             
-            ***REMOVED*** Build DataFrame with all variables
+            # Build DataFrame with all variables
             data = {"timestamp_utc": timestamps}
             
-            ***REMOVED*** Extract each variable (order matches self.weather_vars)
+            # Extract each variable (order matches self.weather_vars)
             for idx, var in enumerate(self.weather_vars):
                 values = hourly.Variables(idx).ValuesAsNumpy()
                 data[var] = values
             
             df = pd.DataFrame(data)
             
-            ***REMOVED*** Add "raw" versions (some features have _raw suffix in training)
+            # Add "raw" versions (some features have _raw suffix in training)
             df['shortwave_radiation_instant_raw'] = df['shortwave_radiation_instant']
             df['direct_normal_irradiance_instant_raw'] = df['direct_normal_irradiance_instant']
             df['global_tilted_irradiance_instant_raw'] = df['global_tilted_irradiance_instant']
@@ -309,7 +309,7 @@ class WeatherClient:
             - API returns hourly → we resample down (15-min) or keep as-is (1-hour)
         """
         if target_resolution == "1h":
-            ***REMOVED*** Long-head: keep hourly data as-is, just ensure proper indexing
+            # Long-head: keep hourly data as-is, just ensure proper indexing
             print(f"[WeatherClient] Keeping 1-hour resolution (long-head)...")
             print(f"                ✓ {len(hourly_df)} hourly steps")
             return hourly_df.copy()
@@ -319,10 +319,10 @@ class WeatherClient:
         df = hourly_df.copy()
         df = df.set_index('timestamp_utc')
         
-        ***REMOVED*** Resample to target resolution
+        # Resample to target resolution
         df_resampled = df.resample(target_resolution).asfreq()
         
-        ***REMOVED*** Interpolate continuous variables (most weather vars)
+        # Interpolate continuous variables (most weather vars)
         continuous_vars = [
             'temperature_2m', 'relative_humidity_2m', 'precipitation',
             'cloud_cover', 'wind_speed_10m', 'wind_direction_10m',
@@ -337,7 +337,7 @@ class WeatherClient:
             if var in df_resampled.columns:
                 df_resampled[var] = df_resampled[var].interpolate(method='linear')
         
-        ***REMOVED*** Forward-fill discrete variables (weather_code)
+        # Forward-fill discrete variables (weather_code)
         if 'weather_code' in df_resampled.columns:
             df_resampled['weather_code'] = df_resampled['weather_code'].ffill()
         
@@ -383,7 +383,7 @@ class WeatherClient:
             DataFrame @ target resolution with all weather variables
             Shape: (days * 96, N_cols) for 15-min OR (days * 24, N_cols) for 1-hour
         """
-        ***REMOVED*** Fetch hourly
+        # Fetch hourly
         hourly = self.fetch_forecast(
             latitude=latitude,
             longitude=longitude,
@@ -396,17 +396,17 @@ class WeatherClient:
             auto_select=auto_select
         )
         
-        ***REMOVED*** Resample to target resolution
+        # Resample to target resolution
         forecast_resampled = self.resample_to_resolution(hourly, target_resolution=resolution)
         
-        ***REMOVED*** Trim to exact requested duration
-        ***REMOVED*** 15-min: days * 96 steps, 1-hour: days * 24 steps
+        # Trim to exact requested duration
+        # 15-min: days * 96 steps, 1-hour: days * 24 steps
         steps_per_day = 96 if resolution == "15min" else 24
         expected_steps = days * steps_per_day
         if len(forecast_resampled) > expected_steps:
             forecast_resampled = forecast_resampled.iloc[:expected_steps].copy()
         
-        ***REMOVED*** Map to TFT expected names (ghi, dni, dhi for PVLib)
+        # Map to TFT expected names (ghi, dni, dhi for PVLib)
         forecast_resampled['ghi'] = forecast_resampled['shortwave_radiation_instant']
         forecast_resampled['dni'] = forecast_resampled['direct_normal_irradiance_instant']
         forecast_resampled['dhi'] = forecast_resampled['diffuse_radiation_instant']
@@ -440,7 +440,7 @@ class WeatherClient:
         elif not isinstance(start_time, pd.Timestamp):
             start_time = pd.Timestamp(start_time).tz_localize('UTC')
         
-        ***REMOVED*** Fetch first 15 days
+        # Fetch first 15 days
         chunk1 = self.fetch_and_prepare(
             latitude=latitude,
             longitude=longitude,
@@ -450,7 +450,7 @@ class WeatherClient:
             azimuth=azimuth
         )
         
-        ***REMOVED*** Fetch next 15 days
+        # Fetch next 15 days
         start_time_chunk2 = start_time + pd.Timedelta(days=15)
         chunk2 = self.fetch_and_prepare(
             latitude=latitude,
@@ -461,7 +461,7 @@ class WeatherClient:
             azimuth=azimuth
         )
         
-        ***REMOVED*** Concatenate and remove duplicate boundary timestamp
+        # Concatenate and remove duplicate boundary timestamp
         forecast_30d = pd.concat([chunk1, chunk2], ignore_index=True)
         forecast_30d = forecast_30d.drop_duplicates(subset=['timestamp_utc'], keep='first')
         
@@ -480,24 +480,24 @@ class WeatherClient:
         """
         checks = {}
         
-        ***REMOVED*** Check shape (expected_days @ 15min = expected_days * 96 steps, with tolerance)
+        # Check shape (expected_days @ 15min = expected_days * 96 steps, with tolerance)
         expected_rows = expected_days * 96
-        checks['shape_correct'] = abs(len(df) - expected_rows) <= 5  ***REMOVED*** Allow ±5 for interpolation edge
+        checks['shape_correct'] = abs(len(df) - expected_rows) <= 5  # Allow ±5 for interpolation edge
         
-        ***REMOVED*** Check required columns
+        # Check required columns
         required = ['timestamp_utc', 'ghi', 'dni', 'dhi', 'temperature_2m', 'wind_speed_10m']
         checks['columns_present'] = all(c in df.columns for c in required)
         
-        ***REMOVED*** Check for NaNs in critical columns
+        # Check for NaNs in critical columns
         checks['no_nans_ghi'] = not df['ghi'].isna().any()
         checks['no_nans_dni'] = not df['dni'].isna().any()
         checks['no_nans_temp'] = not df['temperature_2m'].isna().any()
         
-        ***REMOVED*** Check irradiance ranges (W/m²: 0-1500)
+        # Check irradiance ranges (W/m²: 0-1500)
         checks['ghi_range_valid'] = (df['ghi'].min() >= 0) and (df['ghi'].max() <= 1500)
         checks['dni_range_valid'] = (df['dni'].min() >= 0) and (df['dni'].max() <= 1200)
         
-        ***REMOVED*** Check temperature range (-50 to 60°C)
+        # Check temperature range (-50 to 60°C)
         checks['temp_range_valid'] = (df['temperature_2m'].min() >= -50) and (df['temperature_2m'].max() <= 60)
         
         return checks
@@ -519,7 +519,7 @@ def fetch_weather_for_plant(
     Returns:
         Weather forecast DataFrame @ 15-min resolution
     """
-    ***REMOVED*** Load plant metadata
+    # Load plant metadata
     with open(plant_metadata_path) as f:
         meta = json.load(f)
     
@@ -542,7 +542,7 @@ if __name__ == "__main__":
     print("WEATHER CLIENT TEST - Plant 03")
     print("="*70)
     
-    ***REMOVED*** Plant 03 metadata (hardcoded for testing)
+    # Plant 03 metadata (hardcoded for testing)
     plant_03_meta = {
         'latitude': 48.694644,
         'longitude': 12.597587,
@@ -550,13 +550,13 @@ if __name__ == "__main__":
         'azimuth_deg': 180.0
     }
     
-    ***REMOVED*** Use today's date for forecast (OpenMeteo only allows future dates)
+    # Use today's date for forecast (OpenMeteo only allows future dates)
     today = pd.Timestamp.now(tz='UTC').floor('D')
     
-    ***REMOVED*** Initialize client
+    # Initialize client
     client = WeatherClient()
     
-    ***REMOVED*** Test 1: Fetch hourly forecast
+    # Test 1: Fetch hourly forecast
     print(f"\n[TEST 1] Fetching 7-day hourly forecast from {today.date()}...")
     hourly = client.fetch_forecast(
         latitude=plant_03_meta['latitude'],
@@ -570,13 +570,13 @@ if __name__ == "__main__":
     print(f"✓ Columns: {list(hourly.columns)}")
     print(f"✓ Time range: {hourly.timestamp_utc.min()} → {hourly.timestamp_utc.max()}")
     
-    ***REMOVED*** Test 2: Resample to 15-min
+    # Test 2: Resample to 15-min
     print("\n[TEST 2] Resampling to 15-min...")
     forecast_15min = client.resample_to_15min(hourly)
     print(f"✓ 15-min shape: {forecast_15min.shape}")
     print(f"✓ Expected: {7*96} steps for 7 days")
     
-    ***REMOVED*** Test 3: Full pipeline (15 days max allowed by API)
+    # Test 3: Full pipeline (15 days max allowed by API)
     print("\n[TEST 3] Full 15-day pipeline (API max)...")
     forecast_15d = client.fetch_and_prepare(
         latitude=plant_03_meta['latitude'],
@@ -590,7 +590,7 @@ if __name__ == "__main__":
     print(f"✓ Expected: ({15 * 96}, N) for 15 days @ 15min")
     print(f"✓ Time range: {forecast_15d['timestamp_utc'].iloc[0]} → {forecast_15d['timestamp_utc'].iloc[-1]}")
     
-    ***REMOVED*** Test 4: Validation
+    # Test 4: Validation
     print("\n[TEST 4] Validating forecast...")
     checks = client.validate_forecast(forecast_15d, expected_days=15)
     for check, passed in checks.items():

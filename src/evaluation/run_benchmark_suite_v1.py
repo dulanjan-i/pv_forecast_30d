@@ -12,9 +12,9 @@ import pyarrow.parquet as pq
 import matplotlib.pyplot as plt
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** IO
-***REMOVED*** -----------------------------
+# -----------------------------
+# IO
+# -----------------------------
 def read_parquet(path: Path, columns: Optional[List[str]] = None) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Missing parquet: {path}")
@@ -30,9 +30,9 @@ def to_utc_datetime(s: pd.Series) -> pd.Series:
     return pd.to_datetime(s, utc=True, errors="coerce")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Metrics
-***REMOVED*** -----------------------------
+# -----------------------------
+# Metrics
+# -----------------------------
 def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(np.mean(np.abs(y_pred - y_true)))
 
@@ -107,18 +107,18 @@ def bootstrap_mean_ci(deltas: np.ndarray, n_boot: int = 5000, seed: int = 42) ->
     return mean0, lo, hi
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Pred schema helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Pred schema helpers
+# -----------------------------
 REQUIRED_KEY_COLS = ["timestamp_utc", "forecast_start", "step_ahead", "hours_ahead"]
 
 
 def detect_pred_col(df: pd.DataFrame) -> str:
-    ***REMOVED*** Preferred
+    # Preferred
     for c in ["predicted_power_norm", "y_pred", "pred", "prediction", "power_pred", "power_norm_pred"]:
         if c in df.columns:
             return c
-    ***REMOVED*** Fallback: choose a float-like column that is not an obvious feature
+    # Fallback: choose a float-like column that is not an obvious feature
     bad = set(REQUIRED_KEY_COLS + ["policy_action", "blend_short", "blend_long", "blend_physics"])
     candidates = [c for c in df.columns if c not in bad]
     numeric = []
@@ -127,13 +127,13 @@ def detect_pred_col(df: pd.DataFrame) -> str:
             numeric.append(c)
     if len(numeric) == 0:
         raise ValueError(f"Could not detect prediction column. Columns={list(df.columns)[:80]}")
-    ***REMOVED*** Prefer something with "pred" in name
+    # Prefer something with "pred" in name
     predish = [c for c in numeric if "pred" in c.lower()]
     return predish[0] if predish else numeric[0]
 
 
 def standardize_preds(df: pd.DataFrame, name: str) -> pd.DataFrame:
-    ***REMOVED*** Validate keys
+    # Validate keys
     for c in REQUIRED_KEY_COLS:
         if c not in df.columns:
             raise ValueError(f"[{name}] Missing required col: {c}. Has={list(df.columns)[:80]}")
@@ -146,11 +146,11 @@ def standardize_preds(df: pd.DataFrame, name: str) -> pd.DataFrame:
     if pred_col != "predicted_power_norm":
         df = df.rename(columns={pred_col: "predicted_power_norm"})
 
-    ***REMOVED*** Ensure types
+    # Ensure types
     df["step_ahead"] = pd.to_numeric(df["step_ahead"], errors="coerce").astype("Int64")
     df["hours_ahead"] = pd.to_numeric(df["hours_ahead"], errors="coerce")
 
-    ***REMOVED*** Drop rows with broken keys
+    # Drop rows with broken keys
     df = df.dropna(subset=["timestamp_utc", "forecast_start", "step_ahead", "hours_ahead", "predicted_power_norm"])
     df["step_ahead"] = df["step_ahead"].astype(int)
 
@@ -169,11 +169,11 @@ def standardize_truth(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Joining and stitched series
-***REMOVED*** -----------------------------
+# -----------------------------
+# Joining and stitched series
+# -----------------------------
 def join_with_truth(preds: pd.DataFrame, truth: pd.DataFrame, name: str) -> pd.DataFrame:
-    ***REMOVED*** join only on timestamp_utc, truth is single series
+    # join only on timestamp_utc, truth is single series
     out = preds.merge(truth, on="timestamp_utc", how="inner")
     if out.empty:
         raise RuntimeError(f"[{name}] Join with truth produced 0 rows. Check timestamp overlap and tz.")
@@ -187,14 +187,14 @@ def daylight_filter(df: pd.DataFrame, include_night: bool, threshold: float) -> 
 
 
 def make_stitched(df_joined: pd.DataFrame) -> pd.DataFrame:
-    ***REMOVED*** choose smallest lead for each timestamp, approximates "most recent forecast available"
+    # choose smallest lead for each timestamp, approximates "most recent forecast available"
     dd = df_joined.sort_values(["timestamp_utc", "hours_ahead"]).groupby("timestamp_utc", as_index=False).first()
     return dd
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Output helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Output helpers
+# -----------------------------
 @dataclass
 class Paths:
     out_dir: Path
@@ -218,9 +218,9 @@ def save_fig(path: Path) -> None:
     plt.close()
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Plotting: facet grids
-***REMOVED*** -----------------------------
+# -----------------------------
+# Plotting: facet grids
+# -----------------------------
 def grid_shape(n: int) -> Tuple[int, int]:
     if n <= 0:
         return 1, 1
@@ -275,7 +275,7 @@ def plot_facets_case_week(
         if i == 0:
             ax.legend()
 
-    ***REMOVED*** Turn off unused axes
+    # Turn off unused axes
     for j in range(len(names), rows * cols):
         r = j // cols
         c = j % cols
@@ -394,7 +394,7 @@ def plot_facets_leadtime_rmse_curve(
 
 
 def plot_monthly_rmse_all(monthly_long: pd.DataFrame, out: Path) -> None:
-    ***REMOVED*** monthly_long: columns = month, model, RMSE
+    # monthly_long: columns = month, model, RMSE
     plt.figure(figsize=(10, 4))
     for model, g in monthly_long.groupby("model"):
         x = g["month"].astype(str).tolist()
@@ -407,9 +407,9 @@ def plot_monthly_rmse_all(monthly_long: pd.DataFrame, out: Path) -> None:
     save_fig(out)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main
+# -----------------------------
 def parse_models(args_models: List[str]) -> Dict[str, Path]:
     """
     --model name:/abs/or/rel/path.parquet   (repeatable)
@@ -457,17 +457,17 @@ def main() -> None:
     baseline = standardize_preds(read_parquet(Path(args.baseline)), args.baseline_name)
     models = parse_models(args.model)
 
-    ***REMOVED*** Load and standardize contenders
+    # Load and standardize contenders
     contenders: Dict[str, pd.DataFrame] = {}
     for name, p in models.items():
         contenders[name] = standardize_preds(read_parquet(p), name)
 
-    ***REMOVED*** Join baseline with truth, filter
+    # Join baseline with truth, filter
     base_join = join_with_truth(baseline, truth, args.baseline_name)
     base_join = daylight_filter(base_join, include_night=args.include_night, threshold=args.daylight_threshold)
     base_join = base_join.rename(columns={"predicted_power_norm": "y_pred"})
 
-    ***REMOVED*** Join contenders with truth, filter, then align to baseline keys for fair paired comparisons
+    # Join contenders with truth, filter, then align to baseline keys for fair paired comparisons
     key = ["forecast_start", "step_ahead", "timestamp_utc", "hours_ahead"]
 
     base_keys = base_join[key + ["y_true", "y_pred"]].copy()
@@ -477,26 +477,26 @@ def main() -> None:
         jj = join_with_truth(dfp, truth, name)
         jj = daylight_filter(jj, include_night=args.include_night, threshold=args.daylight_threshold)
         jj = jj.rename(columns={"predicted_power_norm": "y_pred"})
-        ***REMOVED*** Align to baseline sample set
+        # Align to baseline sample set
         jj2 = jj.merge(base_keys[key + ["y_true"]], on=key + ["y_true"], how="inner")
         joined_models[name] = jj2
 
-    ***REMOVED*** Also align baseline to itself (already filtered), for safety
+    # Also align baseline to itself (already filtered), for safety
     base_aligned = base_join.merge(base_keys[key + ["y_true"]], on=key + ["y_true"], how="inner")
     base_aligned = base_aligned[key + ["y_true", "y_pred"]].copy()
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Overall metrics table (all models including baseline)
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Overall metrics table (all models including baseline)
+    # -----------------------------
     overall_rows = []
     tail_rows = []
     stitched_rows = []
 
-    ***REMOVED*** baseline overall
+    # baseline overall
     overall_rows.append({"model": args.baseline_name, **metrics_row(base_aligned["y_true"].values, base_aligned["y_pred"].values)})
     tail_rows.append({"model": args.baseline_name, **tail_stats_abs((base_aligned["y_pred"] - base_aligned["y_true"]).abs().values)})
 
-    ***REMOVED*** contenders overall
+    # contenders overall
     for name, jj in joined_models.items():
         overall_rows.append({"model": name, **metrics_row(jj["y_true"].values, jj["y_pred"].values)})
         tail_rows.append({"model": name, **tail_stats_abs((jj["y_pred"] - jj["y_true"]).abs().values)})
@@ -507,16 +507,16 @@ def main() -> None:
     write_csv_and_tex(overall, paths.tables_dir / "overall_metrics.csv", paths.tables_dir / "overall_metrics.tex", index=False)
     write_csv_and_tex(tail_tbl, paths.tables_dir / "tail_abs_error.csv", paths.tables_dir / "tail_abs_error.tex", index=False)
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Stitched overall (all models)
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Stitched overall (all models)
+    # -----------------------------
     stitched_truth = truth.sort_values("timestamp_utc").copy()
     stitched_baseline = make_stitched(base_join.rename(columns={"predicted_power_norm": "y_pred"}))
     stitched_baseline = stitched_baseline[["timestamp_utc", "y_true", "y_pred"]].copy()
 
     stitched_models: Dict[str, pd.DataFrame] = {}
     for name, jj in joined_models.items():
-        ***REMOVED*** Need original hours_ahead series in jj for stitching, it exists
+        # Need original hours_ahead series in jj for stitching, it exists
         st = make_stitched(jj)
         st = st[["timestamp_utc", "y_true", "y_pred"]].copy()
         stitched_models[name] = st
@@ -533,9 +533,9 @@ def main() -> None:
         index=False,
     )
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Monthly, lead buckets, daily (all models)
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Monthly, lead buckets, daily (all models)
+    # -----------------------------
     def add_time_cols(df: pd.DataFrame) -> pd.DataFrame:
         dd = df.copy()
         dd["month"] = dd["timestamp_utc"].dt.to_period("M").astype(str)
@@ -546,7 +546,7 @@ def main() -> None:
     base2 = add_time_cols(base_aligned.copy())
     models2: Dict[str, pd.DataFrame] = {name: add_time_cols(jj.copy()) for name, jj in joined_models.items()}
 
-    ***REMOVED*** Monthly metrics long form
+    # Monthly metrics long form
     monthly_long_rows = []
     for m, g in base2.groupby("month"):
         monthly_long_rows.append({"month": m, "model": args.baseline_name, **metrics_row(g["y_true"].values, g["y_pred"].values)})
@@ -557,7 +557,7 @@ def main() -> None:
     monthly_long = pd.DataFrame(monthly_long_rows).sort_values(["month", "model"])
     write_csv_and_tex(monthly_long, paths.tables_dir / "monthly_metrics_long.csv", paths.tables_dir / "monthly_metrics_long.tex", index=False)
 
-    ***REMOVED*** Lead bucket metrics long form
+    # Lead bucket metrics long form
     lead_long_rows = []
     for b, g in base2.groupby("lead_bucket"):
         lead_long_rows.append({"lead_bucket": b, "model": args.baseline_name, **metrics_row(g["y_true"].values, g["y_pred"].values)})
@@ -571,7 +571,7 @@ def main() -> None:
     lead_long = lead_long.sort_values(["__ord", "model"]).drop(columns="__ord")
     write_csv_and_tex(lead_long, paths.tables_dir / "lead_bucket_metrics_long.csv", paths.tables_dir / "lead_bucket_metrics_long.tex", index=False)
 
-    ***REMOVED*** Daily metrics, used for worst days and paired deltas
+    # Daily metrics, used for worst days and paired deltas
     daily_rows = []
     for d, g in base2.groupby("day"):
         daily_rows.append({"day": d, "model": args.baseline_name, **metrics_row(g["y_true"].values, g["y_pred"].values)})
@@ -582,7 +582,7 @@ def main() -> None:
     daily_long = pd.DataFrame(daily_rows).sort_values(["day", "model"])
     write_csv_and_tex(daily_long, paths.tables_dir / "daily_metrics_long.csv", paths.tables_dir / "daily_metrics_long.tex", index=False)
 
-    ***REMOVED*** Worst days per model (top 10 by RMSE)
+    # Worst days per model (top 10 by RMSE)
     worst_rows = []
     for model in daily_long["model"].unique():
         dm = daily_long[daily_long["model"] == model].copy()
@@ -592,7 +592,7 @@ def main() -> None:
     worst_tbl = pd.concat(worst_rows, axis=0, ignore_index=True)
     worst_tbl.to_csv((paths.tables_dir / "worst_10_days_per_model.csv").as_posix(), index=False)
 
-    ***REMOVED*** Paired deltas vs baseline (daily MAE and RMSE)
+    # Paired deltas vs baseline (daily MAE and RMSE)
     base_daily = daily_long[daily_long["model"] == args.baseline_name][["day", "MAE", "RMSE"]].rename(
         columns={"MAE": "MAE_baseline", "RMSE": "RMSE_baseline"}
     )
@@ -620,13 +620,13 @@ def main() -> None:
     paired_tbl = pd.DataFrame(paired_rows).sort_values("model")
     write_csv_and_tex(paired_tbl, paths.tables_dir / "paired_daily_deltas_vs_baseline.csv", paths.tables_dir / "paired_daily_deltas_vs_baseline.tex", index=False)
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Plots
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Monthly RMSE (all models)
+    # -----------------------------
+    # Plots
+    # -----------------------------
+    # Monthly RMSE (all models)
     plot_monthly_rmse_all(monthly_long[["month", "model", "RMSE"]], paths.figures_dir / "monthly_rmse_all_models.png")
 
-    ***REMOVED*** Facet grids: case studies
+    # Facet grids: case studies
     stitched_truth2 = stitched_truth.rename(columns={"y_true": "y_true"}).copy()
     stitched_truth2 = stitched_truth2[["timestamp_utc", "y_true"]].copy()
 
@@ -650,7 +650,7 @@ def main() -> None:
         title=f"Case study winter week, truth vs {args.baseline_name} vs each model",
     )
 
-    ***REMOVED*** Facet grid: abs error hist baseline vs each model
+    # Facet grid: abs error hist baseline vs each model
     joined_models_simple = {name: dfm[["timestamp_utc", "hours_ahead", "y_true", "y_pred"]].copy() for name, dfm in joined_models.items()}
     base_simple = base_aligned[["timestamp_utc", "hours_ahead", "y_true", "y_pred"]].copy()
 
@@ -662,7 +662,7 @@ def main() -> None:
         max_abs=1.0,
     )
 
-    ***REMOVED*** Facet grid: lead-time RMSE curve up to 24h
+    # Facet grid: lead-time RMSE curve up to 24h
     plot_facets_leadtime_rmse_curve(
         joined_baseline=base_simple,
         joined_models=joined_models_simple,
@@ -671,26 +671,26 @@ def main() -> None:
         max_h=float(args.max_hours_curve),
     )
 
-    ***REMOVED*** -----------------------------
-    ***REMOVED*** Results markdown summary
-    ***REMOVED*** -----------------------------
+    # -----------------------------
+    # Results markdown summary
+    # -----------------------------
     md = []
-    md.append("***REMOVED*** Benchmark suite summary\n")
+    md.append("# Benchmark suite summary\n")
     md.append(f"- Truth: {Path(args.truth)}\n")
     md.append(f"- Baseline: {args.baseline_name} = {Path(args.baseline)}\n")
     md.append(f"- Models: {', '.join(models2.keys()) if len(models2) else '(none)'}\n")
     md.append(f"- Night filtering: {'OFF' if args.include_night else 'ON'} (y_true >= {args.daylight_threshold})\n")
-    md.append("\n***REMOVED******REMOVED*** Overall metrics\n")
+    md.append("\n## Overall metrics\n")
     md.append(overall.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Stitched overall metrics\n")
+    md.append("\n\n## Stitched overall metrics\n")
     md.append(stitched_overall.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Tail abs error\n")
+    md.append("\n\n## Tail abs error\n")
     md.append(tail_tbl.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Paired daily deltas vs baseline\n")
+    md.append("\n\n## Paired daily deltas vs baseline\n")
     md.append(paired_tbl.to_markdown(index=False))
     (paths.text_dir / "results.md").write_text("\n".join(md))
 
-    ***REMOVED*** Save eval joins for reuse
+    # Save eval joins for reuse
     base_aligned.to_parquet((paths.out_dir / "baseline_eval_joined.parquet").as_posix(), index=False)
     for name, jj in joined_models.items():
         jj.to_parquet((paths.out_dir / f"{name}_eval_joined.parquet").as_posix(), index=False)

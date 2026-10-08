@@ -74,7 +74,7 @@ class GroupedWindowWithMetaDataset(Dataset):
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
 
-        ***REMOVED*** hard fail on NaNs
+        # hard fail on NaNs
         X_all = d[GLOBAL_LSTM_INPUT_FEATURES].to_numpy()
         y_all = d[TARGET_COL].to_numpy()
         if np.isnan(X_all).any() or np.isnan(y_all).any():
@@ -172,11 +172,11 @@ def main() -> None:
     for X, y, pid, tsec in loader:
         X = X.to(device)
 
-        ***REMOVED*** IMPORTANT:
-        ***REMOVED*** We want an encoding vector, not the scalar prediction.
-        ***REMOVED*** Your GlobalLSTMEncoder must expose an encoder output.
-        ***REMOVED*** If it doesn't yet, add a method `encode(X)` that returns last hidden state (B, H).
-        enc = model.encode(X)  ***REMOVED*** shape (B, H)
+        # IMPORTANT:
+        # We want an encoding vector, not the scalar prediction.
+        # Your GlobalLSTMEncoder must expose an encoder output.
+        # If it doesn't yet, add a method `encode(X)` that returns last hidden state (B, H).
+        enc = model.encode(X)  # shape (B, H)
         enc = enc.detach().cpu().numpy()
 
         y_np = y.detach().cpu().numpy()

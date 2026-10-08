@@ -27,7 +27,7 @@ def _load_times(p: Path, plant_id: str | None) -> pd.Series:
 
     ts = pd.to_datetime(df[KEY_T], utc=True, errors="coerce")
     ts = ts.dropna()
-    ts = ts.dt.tz_convert("UTC").dt.tz_localize(None)  ***REMOVED*** tz-aware -> tz-naive (still UTC)
+    ts = ts.dt.tz_convert("UTC").dt.tz_localize(None)  # tz-aware -> tz-naive (still UTC)
     return ts.sort_values().reset_index(drop=True)
 
 def _summ(name: str, s: pd.Series) -> None:
@@ -38,7 +38,7 @@ def _summ(name: str, s: pd.Series) -> None:
 
 
 def _overlap(a: pd.Series, b: pd.Series) -> int:
-    ***REMOVED*** convert to int64 ns for fast set intersection
+    # convert to int64 ns for fast set intersection
     aset = set(a.view("int64").tolist())
     bset = set(b.view("int64").tolist())
     return len(aset.intersection(bset))

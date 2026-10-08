@@ -53,7 +53,7 @@ from src.data.schema import (
     validate_required_columns,
 )
 
-***REMOVED*** Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
+# Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
 PLANT_IDS: List[str] = ["plant_01","plant_02","plant_03","plant_05","plant_06"]
 
 
@@ -121,10 +121,10 @@ def stratified_temporal_split(
     
     np.random.seed(random_seed)
     
-    ***REMOVED*** Ensure timestamps are datetime
+    # Ensure timestamps are datetime
     timestamps = pd.to_datetime(df[time_col])
     
-    ***REMOVED*** Classify each row by season (Northern Hemisphere)
+    # Classify each row by season (Northern Hemisphere)
     months = timestamps.dt.month
     seasons = np.empty(len(months), dtype='U10')
     seasons[(months == 12) | (months == 1) | (months == 2)] = 'winter'
@@ -132,44 +132,44 @@ def stratified_temporal_split(
     seasons[(months == 6) | (months == 7) | (months == 8)] = 'summer'
     seasons[(months == 9) | (months == 10) | (months == 11)] = 'fall'
     
-    ***REMOVED*** Initialize index arrays
+    # Initialize index arrays
     train_indices = []
     val_indices = []
     test_indices = []
     
-    ***REMOVED*** For each season, split proportionally
+    # For each season, split proportionally
     for season in ['winter', 'spring', 'summer', 'fall']:
         season_mask = (seasons == season)
         season_indices = np.where(season_mask)[0]
         n_season = len(season_indices)
         
         if n_season == 0:
-            continue  ***REMOVED*** Skip seasons with no data
+            continue  # Skip seasons with no data
         
-        ***REMOVED*** Shuffle season indices for random sampling
+        # Shuffle season indices for random sampling
         np.random.shuffle(season_indices)
         
-        ***REMOVED*** Split this season's indices proportionally
+        # Split this season's indices proportionally
         n_train = int(n_season * train_frac)
         n_val = int(n_season * val_frac)
-        ***REMOVED*** Test gets the remainder to ensure all samples are used
+        # Test gets the remainder to ensure all samples are used
         
         train_indices.extend(season_indices[:n_train])
         val_indices.extend(season_indices[n_train:n_train + n_val])
         test_indices.extend(season_indices[n_train + n_val:])
     
-    ***REMOVED*** Convert to numpy arrays and sort (maintains some temporal ordering within splits)
+    # Convert to numpy arrays and sort (maintains some temporal ordering within splits)
     train_indices = np.array(sorted(train_indices), dtype=int)
     val_indices = np.array(sorted(val_indices), dtype=int)
     test_indices = np.array(sorted(test_indices), dtype=int)
     
-    ***REMOVED*** Diagnostic output
+    # Diagnostic output
     total = len(train_indices) + len(val_indices) + len(test_indices)
     print(f"[SPLIT] Stratified temporal split: train={len(train_indices)} ({len(train_indices)/total*100:.1f}%), "
           f"val={len(val_indices)} ({len(val_indices)/total*100:.1f}%), "
           f"test={len(test_indices)} ({len(test_indices)/total*100:.1f}%)")
     
-    ***REMOVED*** Print seasonal distribution per split for verification
+    # Print seasonal distribution per split for verification
     for split_name, indices in [('Train', train_indices), ('Val', val_indices), ('Test', test_indices)]:
         split_seasons = seasons[indices]
         season_counts = {s: np.sum(split_seasons == s) for s in ['winter', 'spring', 'summer', 'fall']}
@@ -190,19 +190,19 @@ def process_one(plant_id: str, paths: DataPaths) -> None:
 
     df = pd.read_parquet(in_path)
 
-    ***REMOVED*** Required: time + all LSTM features
+    # Required: time + all LSTM features
     required = {TIME_COL} | set(LSTM_INPUT_FEATURES)
     validate_required_columns(df.columns, required, context=f"{plant_id}: pretrain_base")
 
-    ***REMOVED*** Ensure sorted time
+    # Ensure sorted time
     df[TIME_COL] = pd.to_datetime(df[TIME_COL], utc=True)
     df = df.sort_values(TIME_COL).reset_index(drop=True)
 
-    ***REMOVED*** Define feature cols for scaling: all LSTM inputs EXCEPT the target
+    # Define feature cols for scaling: all LSTM inputs EXCEPT the target
     scale_cols = [c for c in LSTM_INPUT_FEATURES if c != POWER_NORM_COL]
 
-    ***REMOVED*** Split into train/val/test (ALL THREE SPLITS)
-    ***REMOVED*** Version 02: Using stratified temporal split (ensures balanced seasonal representation)
+    # Split into train/val/test (ALL THREE SPLITS)
+    # Version 02: Using stratified temporal split (ensures balanced seasonal representation)
     print(f"\n[INFO] {plant_id}: Performing stratified temporal split...")
     train_idx, val_idx, test_idx = stratified_temporal_split(
         df=df,
@@ -213,30 +213,30 @@ def process_one(plant_id: str, paths: DataPaths) -> None:
         random_seed=42
     )
     
-    ***REMOVED*** Extract splits using indices (not slices, since stratified sampling is non-contiguous)
+    # Extract splits using indices (not slices, since stratified sampling is non-contiguous)
     df_train = df.iloc[train_idx].copy()
     df_val = df.iloc[val_idx].copy()
     df_test = df.iloc[test_idx].copy()
     
-    ***REMOVED*** Sort each split by time (stratification may have shuffled within seasons)
+    # Sort each split by time (stratification may have shuffled within seasons)
     df_train = df_train.sort_values(TIME_COL).reset_index(drop=True)
     df_val = df_val.sort_values(TIME_COL).reset_index(drop=True)
     df_test = df_test.sort_values(TIME_COL).reset_index(drop=True)
 
-    ***REMOVED*** Fit scaler on TRAIN ONLY, then apply to all three splits
-    ***REMOVED*** This prevents data leakage from val/test into normalization
+    # Fit scaler on TRAIN ONLY, then apply to all three splits
+    # This prevents data leakage from val/test into normalization
     stats = fit_scaler_train(df_train, scale_cols)
     df_train_s = apply_scaler(df_train, stats, scale_cols)
     df_val_s = apply_scaler(df_val, stats, scale_cols)
-    df_test_s = apply_scaler(df_test, stats, scale_cols)  ***REMOVED*** TEST split scaled
+    df_test_s = apply_scaler(df_test, stats, scale_cols)  # TEST split scaled
 
-    ***REMOVED*** Write ALL THREE splits to disk
+    # Write ALL THREE splits to disk
     out_dir = paths.germany_pretraining / plant_id
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    df_train_s.to_parquet(out_dir / "train.parquet", index=False)  ***REMOVED*** TRAIN split
-    df_val_s.to_parquet(out_dir / "val.parquet", index=False)      ***REMOVED*** VAL split
-    df_test_s.to_parquet(out_dir / "test.parquet", index=False)    ***REMOVED*** TEST split
+    df_train_s.to_parquet(out_dir / "train.parquet", index=False)  # TRAIN split
+    df_val_s.to_parquet(out_dir / "val.parquet", index=False)      # VAL split
+    df_test_s.to_parquet(out_dir / "test.parquet", index=False)    # TEST split
 
     with open(out_dir / "scaler.json", "w", encoding="utf-8") as f:
         json.dump(

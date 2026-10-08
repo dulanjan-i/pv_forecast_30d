@@ -1,4 +1,4 @@
-***REMOVED*** src/rl/rewrite_rewards_minenv_v2.py
+# src/rl/rewrite_rewards_minenv_v2.py
 from __future__ import annotations
 
 import argparse
@@ -38,7 +38,7 @@ def main() -> None:
     preds = pd.read_parquet(preds_path)
     gt = pd.read_parquet(gt_path)
 
-    ***REMOVED*** required columns
+    # required columns
     if "timestamp_utc" not in preds.columns or "forecast_start" not in preds.columns:
         raise ValueError("preds parquet must include timestamp_utc and forecast_start")
     if "timestamp_utc" not in gt.columns:
@@ -48,7 +48,7 @@ def main() -> None:
     if "is_daylight" not in gt.columns:
         raise ValueError("gt parquet must include is_daylight (0/1)")
 
-    ***REMOVED*** figure out prediction column
+    # figure out prediction column
     yhat_col = None
     for c in ["predicted_power_norm", "y_hat", "pred_power_norm"]:
         if c in preds.columns:
@@ -57,8 +57,8 @@ def main() -> None:
     if yhat_col is None:
         raise ValueError("Could not find prediction column in preds parquet")
 
-    ***REMOVED*** join for day1 series per forecast_start
-    ***REMOVED*** We only need day1 points: step_ahead 0..95
+    # join for day1 series per forecast_start
+    # We only need day1 points: step_ahead 0..95
     if "step_ahead" not in preds.columns:
         raise ValueError("preds parquet must include step_ahead to select day1")
     preds_day1 = preds[preds["step_ahead"].between(0, args.day1_steps - 1)].copy()
@@ -66,7 +66,7 @@ def main() -> None:
     gt2 = gt[["timestamp_utc", "power_norm", "is_daylight"]].copy()
     merged = preds_day1.merge(gt2, on="timestamp_utc", how="inner")
 
-    ***REMOVED*** cache day1 arrays per forecast_start
+    # cache day1 arrays per forecast_start
     grouped = merged.groupby("forecast_start", sort=True)
 
     state_cols = _infer_state_cols(df, "state_", args.state_dim)

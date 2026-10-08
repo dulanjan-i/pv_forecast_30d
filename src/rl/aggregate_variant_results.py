@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """Aggregate per-variant result parquets into a summary CSV.
 
 Writes: experiments/rl/counterfactuals/plant_03/summary/variant_summary.csv
@@ -29,11 +29,11 @@ def main():
         overall_mean = float(df["rmse_day1"].mean()) if "rmse_day1" in df.columns else None
         count = len(df)
 
-        ***REMOVED*** mean per action
+        # mean per action
         action_means = df.groupby("action")["rmse_day1"].mean().to_dict() if "action" in df.columns else {}
 
         row = {"variant": variant, "file": str(p), "rows": count, "rmse_mean": overall_mean}
-        ***REMOVED*** add action means as columns action_0..action_9
+        # add action means as columns action_0..action_9
         for a in range(10):
             row[f"action_{a}_mean"] = float(action_means.get(a, float("nan")))
 
@@ -44,10 +44,10 @@ def main():
     out_df.to_csv(out_path, index=False)
     print("WROTE:", out_path)
 
-    ***REMOVED*** Also write a tiny markdown summary
+    # Also write a tiny markdown summary
     md = out_dir / "summary.md"
     with open(md, "w") as fh:
-        fh.write("***REMOVED*** Variant summary\n\n")
+        fh.write("# Variant summary\n\n")
         fh.write(f"Files aggregated: {len(out_df)}\n\n")
         fh.write("| variant | rows | rmse_mean | best_action | best_action_rmse |\n")
         fh.write("|---|---:|---:|---:|---:|\n")

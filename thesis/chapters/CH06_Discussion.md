@@ -1,8 +1,8 @@
-***REMOVED*** Chapter 6 — Discussion
+# Chapter 6 — Discussion
 
-***REMOVED******REMOVED*** 6.1 Key findings summary (mapped to RQs)
+## 6.1 Key findings summary (mapped to RQs)
 
-***REMOVED******REMOVED******REMOVED*** RQ1 — Hybrid physics + deep learning improves PV forecasting
+### RQ1 — Hybrid physics + deep learning improves PV forecasting
 
 Evidence:
 
@@ -15,7 +15,7 @@ Interpretation:
 - Physics baselines alone provide a meaningful prior but are insufficient for high accuracy.
 - The combination of learned models with physics-informed constraints yields strong gains and improves plausibility.
 
-***REMOVED******REMOVED******REMOVED*** RQ2 — Transfer learning improves robustness across domains
+### RQ2 — Transfer learning improves robustness across domains
 
 Evidence:
 
@@ -27,7 +27,7 @@ Interpretation:
 - Warm initialization reduces error across near and long horizons.
 - The effect is strongest in the near-term bucket where calibration and local regime alignment matter.
 
-***REMOVED******REMOVED******REMOVED*** RQ3 — Long-horizon stability via dual-head + physics glue
+### RQ3 — Long-horizon stability via dual-head + physics glue
 
 Evidence:
 
@@ -40,7 +40,7 @@ Interpretation:
 - Neither short-only nor long-only forecasts are competitive alone.
 - Hierarchical blending stabilizes forecasts across the full 30-day horizon.
 
-***REMOVED******REMOVED******REMOVED*** RQ4 — Self-adaptation via an RL meta-controller
+### RQ4 — Self-adaptation via an RL meta-controller
 
 Evidence:
 
@@ -53,9 +53,9 @@ Interpretation:
 - This does not invalidate the architectural contribution; rather, it positions the RL controller as a reproducible, measurable adaptive layer that requires further environment tuning and additional training data to deliver consistent improvements.
 
 
-***REMOVED******REMOVED*** 6.2 Scientific contributions
+## 6.2 Scientific contributions
 
-***REMOVED******REMOVED******REMOVED*** 6.2.1 Methodological innovations
+### 6.2.1 Methodological innovations
 
 1. **Hybrid ensemble architecture** combining:
    - PVLib physics features and constraints,
@@ -70,14 +70,14 @@ Interpretation:
    - DDQN meta-controller scaffold with prioritized replay and soft target updates,
    - local rule-based advisors producing interpretable state signals.
 
-***REMOVED******REMOVED******REMOVED*** 6.2.2 Empirical insights
+### 6.2.2 Empirical insights
 
 - Hybridization is not only a modeling choice but a stability mechanism for long-horizon forecasting.
 - Transfer learning works best when the intermediate domain is regionally aligned (Germany regional pretraining as a bridge).
 - Multi-resolution forecasting is necessary for simultaneously capturing near-term ramps and long-term structure.
 
 
-***REMOVED******REMOVED*** 6.3 Comparison with state-of-the-art
+## 6.3 Comparison with state-of-the-art
 
 This section should position MiRACLE against recent PV forecasting work along dimensions:
 
@@ -90,13 +90,13 @@ This section should position MiRACLE against recent PV forecasting work along di
 A thesis-ready comparison table can be built once the target comparison papers are selected.
 
 
-***REMOVED******REMOVED*** 6.4 Practical implications
+## 6.4 Practical implications
 
 - Operational value: 30-day forecasts support maintenance scheduling, grid integration planning, and trading/dispatch decisions.
 - System design: MiRACLE’s architecture is organized to support real-time ingestion, feature generation, forecasting, and monitoring.
 
 
-***REMOVED******REMOVED*** 6.5 Limitations
+## 6.5 Limitations
 
 - Single target plant evaluation limits generalization claims.
 - Weather API dependence can be a bottleneck and a source of shift.
@@ -104,7 +104,7 @@ A thesis-ready comparison table can be built once the target comparison papers a
 - Database/dashboard integration is not fully implemented as a production system (positioned as future work).
 
 
-***REMOVED******REMOVED*** 6.6 Lessons from exploratory experiments
+## 6.6 Lessons from exploratory experiments
 
 A key strength of the methodology is that it explicitly tracks exploratory steps and removes them from headline claims when they are not representative.
 
@@ -118,6 +118,6 @@ Audit trail:
 This iterative elimination process is presented not as “failure”, but as the scientific mechanism that led to a robust final design.
 
 
-***REMOVED******REMOVED*** 6.7 Summary
+## 6.7 Summary
 
 MiRACLE’s evidence base supports the core thesis claims about hybridization, transfer, and hierarchical inference, while honestly characterizing the RL controller as a promising adaptive layer with measurable but not yet consistently positive impact under the canonical evaluation.

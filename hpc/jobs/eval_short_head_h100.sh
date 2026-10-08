@@ -1,12 +1,12 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --job-name=eval_short_head
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --cpus-per-task=8
-***REMOVED***SBATCH --mem=32G
-***REMOVED***SBATCH --time=00:20:00
-***REMOVED***SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
-***REMOVED***SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
+#!/bin/bash
+#SBATCH --job-name=eval_short_head
+#SBATCH --partition=gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
+#SBATCH --time=00:20:00
+#SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
+#SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
 
 set -e
 

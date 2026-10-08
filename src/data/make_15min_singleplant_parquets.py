@@ -1,4 +1,4 @@
-***REMOVED*** src/data/make_15min_singleplant_parquets.py
+# src/data/make_15min_singleplant_parquets.py
 """
 Create plant-level 15-min train/val/test parquets for fine-tuning.
 
@@ -59,7 +59,7 @@ def load_and_filter(src_parquet: Path, plant_id: int) -> pd.DataFrame:
     df = df[df["plant_id"] == str(plant_id).strip()].copy()
 
 
-    ***REMOVED*** Ensure timestamp is parsed and sortable
+    # Ensure timestamp is parsed and sortable
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True, errors="coerce")
     df = df.dropna(subset=["timestamp_utc"]).copy()
 

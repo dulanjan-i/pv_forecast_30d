@@ -1,4 +1,4 @@
-***REMOVED*** TFT Pipeline TODO
+# TFT Pipeline TODO
 
 - [ ] **Step 3.7 — Build weather features (raw + scaled)**
   - Goal: produce one consistent weather feature table aligned to TFT timestamps for train/val.

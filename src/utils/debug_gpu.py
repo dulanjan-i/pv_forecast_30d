@@ -2,7 +2,7 @@ import torch
 import time
 import os
 
-***REMOVED*** FORCE ISOLATION
+# FORCE ISOLATION
 os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("SLURM_ID_PASS", "0")
 
 print(f"--- HARDWARE CHECK ---")
@@ -13,7 +13,7 @@ else:
     print("NO GPU DETECTED. FAILURE.")
     exit(1)
 
-***REMOVED*** CREATE MASSIVE TENSORS (Simulate your TFT batch)
+# CREATE MASSIVE TENSORS (Simulate your TFT batch)
 BATCH_SIZE = 4096
 DIM = 512
 print(f"\n--- SPEED TEST ---")
@@ -23,18 +23,18 @@ print("Initializing tensors...")
 a = torch.randn(BATCH_SIZE, DIM, device="cuda")
 b = torch.randn(DIM, DIM, device="cuda")
 
-***REMOVED*** WARMUP
+# WARMUP
 print("Warming up GPU...")
 for _ in range(10):
     c = torch.matmul(a, b)
 torch.cuda.synchronize()
 
-***REMOVED*** BENCHMARK
+# BENCHMARK
 print("Running 1000 Matrix Multiplications...")
 start = time.time()
 for i in range(1000):
     c = torch.matmul(a, b)
-    ***REMOVED*** Simulate a tiny bit of CPU work (like a training loop)
+    # Simulate a tiny bit of CPU work (like a training loop)
     if i % 100 == 0:
         print(f"Step {i}...")
 

@@ -1,4 +1,4 @@
-***REMOVED*** src/inference/phase1_inference_with_policy.py
+# src/inference/phase1_inference_with_policy.py
 from __future__ import annotations
 
 import argparse
@@ -19,9 +19,9 @@ from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
 LOGGER = logging.getLogger("phase1_inference_with_policy")
 
 
-***REMOVED*** ----------------------------
-***REMOVED*** Helpers
-***REMOVED*** ----------------------------
+# ----------------------------
+# Helpers
+# ----------------------------
 def _ensure_utc_midnight(x: Any) -> pd.Timestamp:
     """
     Return a tz-aware UTC Timestamp floored to midnight.
@@ -57,18 +57,18 @@ def _infer_state_cols(df: pd.DataFrame, qnet_in_dim: int) -> List[str]:
     """
     cols = list(df.columns)
 
-    ***REMOVED*** Prefer common prefixes
+    # Prefer common prefixes
     preferred = []
     for prefix in ("s_", "state_", "feat_", "x_"):
         preferred = [c for c in cols if c.startswith(prefix)]
         if preferred:
             break
 
-    ***REMOVED*** Another common style: s0,s1,s2...
+    # Another common style: s0,s1,s2...
     if not preferred:
         preferred = [c for c in cols if (c.startswith("s") and c[1:].isdigit())]
 
-    ***REMOVED*** Fallback: numeric columns excluding known non-state columns
+    # Fallback: numeric columns excluding known non-state columns
     if not preferred:
         exclude = {
             "action", "a",
@@ -77,7 +77,7 @@ def _infer_state_cols(df: pd.DataFrame, qnet_in_dim: int) -> List[str]:
             "forecast_start",
             "blend_short", "blend_long", "blend_physics",
         }
-        ***REMOVED*** also exclude next-state columns
+        # also exclude next-state columns
         numeric = []
         for c in cols:
             if c in exclude:
@@ -88,7 +88,7 @@ def _infer_state_cols(df: pd.DataFrame, qnet_in_dim: int) -> List[str]:
                 numeric.append(c)
         preferred = numeric
 
-    ***REMOVED*** Enforce exact dimension
+    # Enforce exact dimension
     if len(preferred) < qnet_in_dim:
         raise ValueError(
             f"Could not infer enough state columns. Need {qnet_in_dim}, found {len(preferred)}. "
@@ -121,9 +121,9 @@ def _extract_qnet_state_dict(ckpt: Dict[str, Any]) -> Dict[str, torch.Tensor]:
     for key in ("q_net", "online_net", "policy_net", "model_state_dict", "state_dict"):
         if key in ckpt and isinstance(ckpt[key], dict):
             return ckpt[key]
-    ***REMOVED*** Sometimes the checkpoint itself is the state_dict
+    # Sometimes the checkpoint itself is the state_dict
     if all(isinstance(v, torch.Tensor) for v in ckpt.values()):
-        return ckpt  ***REMOVED*** type: ignore
+        return ckpt  # type: ignore
     raise ValueError(f"Could not find q-network state_dict keys in checkpoint. Keys: {list(ckpt.keys())}")
 
 
@@ -136,7 +136,7 @@ def _build_qnet_from_state_dict(sd: Dict[str, torch.Tensor]) -> Tuple[QNet, int,
     if not weight_keys:
         raise ValueError(f"State dict does not look like expected MLP with 'net.*.weight'. Keys: {list(sd.keys())[:20]}")
 
-    ***REMOVED*** Sort by module index inside 'net.{idx}.weight'
+    # Sort by module index inside 'net.{idx}.weight'
     def _idx(k: str) -> int:
         return int(k.split(".")[1])
 
@@ -170,7 +170,7 @@ def _action_to_blend_weights(sarns_norm: pd.DataFrame) -> Dict[int, Dict[str, fl
         w = row.to_dict()
         s = float(w["blend_short"] + w["blend_long"] + w["blend_physics"])
         if not np.isfinite(s) or abs(s - 1.0) > 1e-2:
-            ***REMOVED*** Do not hard fail, but clamp/renorm for safety
+            # Do not hard fail, but clamp/renorm for safety
             vals = np.array([w["blend_short"], w["blend_long"], w["blend_physics"]], dtype=float)
             vals = np.clip(vals, 0.0, None)
             ss = float(vals.sum())
@@ -255,18 +255,18 @@ def main() -> None:
     device = torch.device("cuda" if (args.device == "cuda" or (args.device is None and torch.cuda.is_available())) else "cpu")
     LOGGER.info("Device: %s", device)
 
-    ***REMOVED*** ----------------------------
-    ***REMOVED*** Load weather and (optional) historical encoder source
-    ***REMOVED*** ----------------------------
+    # ----------------------------
+    # Load weather and (optional) historical encoder source
+    # ----------------------------
     wx15 = _normalize_ts_col(_read_parquet_must_exist(paths.weather_15min), "timestamp_utc")
 
     hist_df: Optional[pd.DataFrame] = None
     if paths.hist_encoder is not None:
         hist_df = _normalize_ts_col(_read_parquet_must_exist(paths.hist_encoder), "timestamp_utc")
 
-    ***REMOVED*** ----------------------------
-    ***REMOVED*** Load SARNS_NORM and build mapping + state dataframe indexed by forecast_start
-    ***REMOVED*** ----------------------------
+    # ----------------------------
+    # Load SARNS_NORM and build mapping + state dataframe indexed by forecast_start
+    # ----------------------------
     sarns = _read_parquet_must_exist(paths.sarns_norm)
 
     if "forecast_start" not in sarns.columns:
@@ -283,26 +283,26 @@ def main() -> None:
     LOGGER.info("Actions seen in sarns_norm: %s", sorted(action_to_weights.keys()))
     LOGGER.info("Baseline (action 0) weights: %s", action_to_weights[0])
 
-    ***REMOVED*** ----------------------------
-    ***REMOVED*** Load DDQN checkpoint, reconstruct Q-net from its saved weights
-    ***REMOVED*** ----------------------------
+    # ----------------------------
+    # Load DDQN checkpoint, reconstruct Q-net from its saved weights
+    # ----------------------------
     ckpt_obj = torch.load(paths.policy_ckpt, map_location="cpu")
     q_sd = _extract_qnet_state_dict(ckpt_obj)
     qnet, q_state_dim, q_action_dim = _build_qnet_from_state_dict(q_sd)
     qnet = qnet.to(device).eval()
     LOGGER.info("Loaded Q-net from checkpoint: state_dim=%d action_dim=%d", q_state_dim, q_action_dim)
 
-    ***REMOVED*** Make sure our action mapping can handle the policy outputs
-    ***REMOVED*** If policy picks an action not present, we fall back to action 0.
-    ***REMOVED*** That is fine for robustness.
+    # Make sure our action mapping can handle the policy outputs
+    # If policy picks an action not present, we fall back to action 0.
+    # That is fine for robustness.
 
-    ***REMOVED*** Infer which columns are the state features used by this checkpoint
+    # Infer which columns are the state features used by this checkpoint
     state_cols = _infer_state_cols(sarns_1.reset_index(), q_state_dim)
     LOGGER.info("Using %d state columns: %s", len(state_cols), state_cols)
 
-    ***REMOVED*** ----------------------------
-    ***REMOVED*** Forecaster (must match PhysicsAwareForecaster.__init__)
-    ***REMOVED*** ----------------------------
+    # ----------------------------
+    # Forecaster (must match PhysicsAwareForecaster.__init__)
+    # ----------------------------
     forecaster = PhysicsAwareForecaster(
         short_ckpt=str(paths.short_ckpt),
         long_ckpt=str(paths.long_ckpt),
@@ -312,17 +312,17 @@ def main() -> None:
         device=str(device),
     )
 
-    ***REMOVED*** ----------------------------
-    ***REMOVED*** Rolling forecast loop
-    ***REMOVED*** ----------------------------
+    # ----------------------------
+    # Rolling forecast loop
+    # ----------------------------
     start = _ensure_utc_midnight(args.start_date)
     end = _ensure_utc_midnight(args.end_date)
     stride = int(args.stride_days)
 
-    ***REMOVED*** Forecast starts: inclusive start, inclusive end
+    # Forecast starts: inclusive start, inclusive end
     fss = pd.date_range(start=start, end=end, freq=f"{stride}D", tz="UTC")
 
-    ***REMOVED*** Output streaming writer
+    # Output streaming writer
     out_path.parent.mkdir(parents=True, exist_ok=True)
     if out_path.exists():
         out_path.unlink()
@@ -344,26 +344,26 @@ def main() -> None:
         fs = _ensure_utc_midnight(fs)
 
         try:
-            ***REMOVED*** 30d decoder window (15-min). Must be exactly 2880 rows.
+            # 30d decoder window (15-min). Must be exactly 2880 rows.
             wwin = wx15[(wx15["timestamp_utc"] >= fs) & (wx15["timestamp_utc"] < fs + pd.Timedelta(days=30))].copy()
             if len(wwin) != 2880:
                 stats["skipped_bad_window"] += 1
                 continue
 
-            ***REMOVED*** History window for encoder anchoring
+            # History window for encoder anchoring
             if hist_df is not None:
                 hstart = fs - history_td
                 hwin = hist_df[(hist_df["timestamp_utc"] < fs) & (hist_df["timestamp_utc"] >= hstart)].copy()
                 if len(hwin) == 0:
                     hwin = hist_df[hist_df["timestamp_utc"] < fs].tail(96).copy()
             else:
-                ***REMOVED*** Fallback: use weather as history (power_norm will be derived from PVLib inside forecaster)
+                # Fallback: use weather as history (power_norm will be derived from PVLib inside forecaster)
                 hstart = fs - history_td
                 hwin = wx15[(wx15["timestamp_utc"] < fs) & (wx15["timestamp_utc"] >= hstart)].copy()
                 if len(hwin) == 0:
                     hwin = wx15[wx15["timestamp_utc"] < fs].tail(96).copy()
 
-            ***REMOVED*** State -> action (offline evaluation uses sarns_norm state)
+            # State -> action (offline evaluation uses sarns_norm state)
             if fs in sarns_1.index:
                 st = sarns_1.loc[fs, state_cols].to_numpy(dtype=np.float32)
                 st_t = torch.from_numpy(st).to(device).view(1, -1)
@@ -381,7 +381,7 @@ def main() -> None:
                 "physics": float(w["blend_physics"]),
             }
 
-            ***REMOVED*** Full 30d forecast. RL affects Day 1 blend only (by design in PhysicsAwareForecaster).
+            # Full 30d forecast. RL affects Day 1 blend only (by design in PhysicsAwareForecaster).
             yhat = forecaster.predict_30d(
                 forecast_start=fs,
                 weather_df=wwin,

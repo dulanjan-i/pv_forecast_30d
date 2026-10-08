@@ -25,7 +25,7 @@ from src.rl.reward import compute_reward as canonical_compute_reward
 
 def _infer_state_cols(df: pd.DataFrame) -> list[str]:
     cols = [c for c in df.columns if c.startswith("state_")]
-    ***REMOVED*** keep deterministic order state_0, state_1, ...
+    # keep deterministic order state_0, state_1, ...
     cols = sorted(cols, key=lambda x: int(x.split("_")[1]))
     return cols
 
@@ -49,19 +49,19 @@ def recompute_rewards(df: pd.DataFrame) -> pd.DataFrame:
     if len(state_cols) != len(next_state_cols):
         raise ValueError(f"State dim mismatch: {len(state_cols)} state vs {len(next_state_cols)} next_state")
 
-    ***REMOVED*** Build matrices
+    # Build matrices
     S = df[state_cols].to_numpy(dtype=np.float32)
     NS = df[next_state_cols].to_numpy(dtype=np.float32)
     A = df["action"].to_numpy(dtype=np.int64)
 
-    ***REMOVED*** Canonical reward expects at least indices 0,1,2 exist
+    # Canonical reward expects at least indices 0,1,2 exist
     if S.shape[1] < 3:
         raise ValueError(
             f"State dim={S.shape[1]} but canonical reward requires at least 3 dims "
             "(short_rmse, long_rmse, physics_residual)."
         )
 
-    ***REMOVED*** Vectorized loop (fast enough for typical SARNS sizes)
+    # Vectorized loop (fast enough for typical SARNS sizes)
     rewards = np.empty((S.shape[0],), dtype=np.float32)
     for i in range(S.shape[0]):
         rewards[i] = canonical_compute_reward(S[i], int(A[i]), NS[i])

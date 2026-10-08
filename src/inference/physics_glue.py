@@ -1,4 +1,4 @@
-***REMOVED*** src/inference/physics_glue.py
+# src/inference/physics_glue.py
 """
 Physics-Aware Glue Functions for MiRACLE Forecasting.
 
@@ -46,14 +46,14 @@ def upsample_with_pvlib_shape(
         upsampled_15min: Predictions at 15-min resolution, shape (H*4,)
     
     Example:
-        >>> hourly = np.array([0.5, 0.6, 0.7])  ***REMOVED*** 3 hours
-        >>> pvlib = np.array([0.1, 0.15, 0.2, 0.05,   ***REMOVED*** hour 1
-        ...                   0.2, 0.25, 0.3, 0.25,   ***REMOVED*** hour 2
-        ...                   0.3, 0.35, 0.4, 0.35])  ***REMOVED*** hour 3
+        >>> hourly = np.array([0.5, 0.6, 0.7])  # 3 hours
+        >>> pvlib = np.array([0.1, 0.15, 0.2, 0.05,   # hour 1
+        ...                   0.2, 0.25, 0.3, 0.25,   # hour 2
+        ...                   0.3, 0.35, 0.4, 0.35])  # hour 3
         >>> result = upsample_with_pvlib_shape(hourly, pvlib)
         >>> result.shape
         (12,)
-        >>> ***REMOVED*** Each hour's 4 steps sum to original hourly value
+        >>> # Each hour's 4 steps sum to original hourly value
     """
     num_hours = len(hourly_predictions)
     expected_15min = num_hours * 4
@@ -65,32 +65,32 @@ def upsample_with_pvlib_shape(
         )
     
     if method == "uniform":
-        ***REMOVED*** Simple linear interpolation (fallback)
-        ***REMOVED*** Repeat each hourly value 4 times, then smooth
+        # Simple linear interpolation (fallback)
+        # Repeat each hourly value 4 times, then smooth
         upsampled = np.repeat(hourly_predictions, 4)
         return upsampled
     
     elif method == "proportional":
-        ***REMOVED*** Proportional distribution using PVLib shape
+        # Proportional distribution using PVLib shape
         upsampled = np.zeros(expected_15min, dtype=np.float32)
         
         for h in range(num_hours):
-            ***REMOVED*** Get this hour's 4 quarter-hour PVLib values
+            # Get this hour's 4 quarter-hour PVLib values
             start_idx = h * 4
             end_idx = start_idx + 4
             pvlib_hour = pvlib_15min[start_idx:end_idx]
             
-            ***REMOVED*** Calculate sum for this hour
+            # Calculate sum for this hour
             pvlib_sum = pvlib_hour.sum()
             
-            if pvlib_sum > 1e-6:  ***REMOVED*** Daytime: distribute proportionally
-                ***REMOVED*** Proportion: what fraction of the hour's total does each 15-min get?
+            if pvlib_sum > 1e-6:  # Daytime: distribute proportionally
+                # Proportion: what fraction of the hour's total does each 15-min get?
                 proportions = pvlib_hour / pvlib_sum
-                ***REMOVED*** Apply proportions to ML hourly prediction
+                # Apply proportions to ML hourly prediction
                 upsampled[start_idx:end_idx] = hourly_predictions[h] * proportions
             else:
-                ***REMOVED*** Nighttime (all PVLib near zero): distribute uniformly
-                ***REMOVED*** This avoids division by zero
+                # Nighttime (all PVLib near zero): distribute uniformly
+                # This avoids division by zero
                 upsampled[start_idx:end_idx] = hourly_predictions[h] / 4.0
         
         return upsampled
@@ -129,7 +129,7 @@ def blend_with_physics(
         >>> ml = np.array([0.8, 0.6, 0.4])
         >>> pvlib = np.array([0.7, 0.5, 0.3])
         >>> blend_with_physics(ml, pvlib, alpha=0.7)
-        array([0.77, 0.57, 0.37])  ***REMOVED*** 0.7*0.8 + 0.3*0.7 = 0.77
+        array([0.77, 0.57, 0.37])  # 0.7*0.8 + 0.3*0.7 = 0.77
     """
     if len(ml_predictions) != len(pvlib_baseline):
         raise ValueError(
@@ -139,7 +139,7 @@ def blend_with_physics(
     if not 0.0 <= alpha <= 1.0:
         raise ValueError(f"Alpha must be in [0, 1], got {alpha}")
     
-    ***REMOVED*** Weighted blend
+    # Weighted blend
     blended = alpha * ml_predictions + (1.0 - alpha) * pvlib_baseline
     
     if constraints:
@@ -176,13 +176,13 @@ def apply_physics_constraints(
     """
     constrained = predictions.copy()
     
-    ***REMOVED*** Constraint 1: Force night hours to zero
-    ***REMOVED*** PVLib < 0.01 indicates nighttime (< 1% capacity)
+    # Constraint 1: Force night hours to zero
+    # PVLib < 0.01 indicates nighttime (< 1% capacity)
     night_mask = pvlib_baseline < 0.01
     constrained[night_mask] = 0.0
     
-    ***REMOVED*** Constraint 2: Clip to valid range [0, max_capacity]
-    ***REMOVED*** Use PVLib as reference for physical maximum
+    # Constraint 2: Clip to valid range [0, max_capacity]
+    # Use PVLib as reference for physical maximum
     max_allowed = pvlib_baseline * max_capacity_multiplier
     constrained = np.clip(constrained, 0.0, max_allowed)
     
@@ -225,9 +225,9 @@ def blend_hierarchical(
         >>> long = np.array([0.7, 0.5, 0.3])
         >>> pvlib = np.array([0.65, 0.48, 0.25])
         >>> result = blend_hierarchical(short, long, pvlib)
-        >>> ***REMOVED*** Layer 1: 0.6×0.8 + 0.4×0.7 = 0.76
-        >>> ***REMOVED*** Layer 2: 0.7×0.76 + 0.3×0.65 = 0.727
-        >>> ***REMOVED*** Layer 3: constrain(0.727, pvlib)
+        >>> # Layer 1: 0.6×0.8 + 0.4×0.7 = 0.76
+        >>> # Layer 2: 0.7×0.76 + 0.3×0.65 = 0.727
+        >>> # Layer 3: constrain(0.727, pvlib)
     """
     if len(short_pred) != len(long_upsampled) or len(short_pred) != len(pvlib_baseline):
         raise ValueError(
@@ -241,13 +241,13 @@ def blend_hierarchical(
     if not abs(alpha_short + alpha_long - 1.0) < 1e-6:
         raise ValueError(f"alpha_short + alpha_long must equal 1.0, got {alpha_short + alpha_long}")
     
-    ***REMOVED*** Layer 1: ML Ensemble (short precision + long strategy)
+    # Layer 1: ML Ensemble (short precision + long strategy)
     ml_blend = alpha_short * short_pred + alpha_long * long_upsampled
     
-    ***REMOVED*** Layer 2: Physics-Aware Blend (ML data-driven + PVLib physics)
+    # Layer 2: Physics-Aware Blend (ML data-driven + PVLib physics)
     physics_blend = alpha_ml * ml_blend + (1.0 - alpha_ml) * pvlib_baseline
     
-    ***REMOVED*** Layer 3: Hard Constraints (enforce physical reality)
+    # Layer 3: Hard Constraints (enforce physical reality)
     if constraints:
         final = apply_physics_constraints(
             physics_blend,
@@ -260,19 +260,19 @@ def blend_hierarchical(
     return final
 
 
-***REMOVED*** ==================== Testing & Validation ====================
+# ==================== Testing & Validation ====================
 
-***REMOVED*** Example usage (can be run for testing)
+# Example usage (can be run for testing)
 if __name__ == "__main__":
     print("[INFO] Testing physics glue functions...")
     
-    ***REMOVED*** Test 1: Upsampling
+    # Test 1: Upsampling
     print("\n[TEST 1] Upsampling 3 hours to 15-min")
     hourly = np.array([0.5, 0.6, 0.7])
     pvlib = np.array([
-        0.1, 0.15, 0.2, 0.05,   ***REMOVED*** hour 1: sunrise (low → peak → low)
-        0.2, 0.25, 0.3, 0.25,   ***REMOVED*** hour 2: morning (increasing)
-        0.3, 0.35, 0.4, 0.35    ***REMOVED*** hour 3: midday (high plateau)
+        0.1, 0.15, 0.2, 0.05,   # hour 1: sunrise (low → peak → low)
+        0.2, 0.25, 0.3, 0.25,   # hour 2: morning (increasing)
+        0.3, 0.35, 0.4, 0.35    # hour 3: midday (high plateau)
     ])
     
     upsampled = upsample_with_pvlib_shape(hourly, pvlib)
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     print(f"    Output 15-min: {upsampled}")
     print(f"    Hourly sums preserved: {upsampled[:4].sum():.3f} ≈ {hourly[0]:.3f}")
     
-    ***REMOVED*** Test 2: Blending
+    # Test 2: Blending
     print("\n[TEST 2] Blending ML with physics")
     ml = np.array([0.8, 0.6, 0.4, 0.2, 0.0])
     pvlib_base = np.array([0.7, 0.5, 0.3, 0.1, 0.0])
@@ -291,14 +291,14 @@ if __name__ == "__main__":
     
     print(f"    ML predictions:     {ml}")
     print(f"    PVLib baseline:     {pvlib_base}")
-    print(f"    Blended (α=0.9):    {blended_high}  ***REMOVED*** Trust ML")
-    print(f"    Blended (α=0.5):    {blended_mid}  ***REMOVED*** Equal weight")
-    print(f"    Blended (α=0.1):    {blended_low}  ***REMOVED*** Trust physics")
+    print(f"    Blended (α=0.9):    {blended_high}  # Trust ML")
+    print(f"    Blended (α=0.5):    {blended_mid}  # Equal weight")
+    print(f"    Blended (α=0.1):    {blended_low}  # Trust physics")
     
-    ***REMOVED*** Test 3: Constraints
+    # Test 3: Constraints
     print("\n[TEST 3] Physics constraints")
-    raw = np.array([0.9, 0.8, 0.5, 0.05, -0.1])  ***REMOVED*** Some invalid values
-    pvlib_ref = np.array([0.7, 0.6, 0.4, 0.005, 0.0])  ***REMOVED*** Night at end
+    raw = np.array([0.9, 0.8, 0.5, 0.05, -0.1])  # Some invalid values
+    pvlib_ref = np.array([0.7, 0.6, 0.4, 0.005, 0.0])  # Night at end
     
     constrained = apply_physics_constraints(raw, pvlib_ref, max_capacity_multiplier=1.2)
     print(f"    Raw predictions:    {raw}")
@@ -307,7 +307,7 @@ if __name__ == "__main__":
     print(f"    - Clipped to 120% of PVLib: {constrained[0]:.3f} ≤ {pvlib_ref[0]*1.2:.3f}")
     print(f"    - Night forced to 0: {constrained[-2:]}")
     
-    ***REMOVED*** Test 4: Hierarchical Blending
+    # Test 4: Hierarchical Blending
     print("\n[TEST 4] Hierarchical 3-way blend")
     short = np.array([0.8, 0.6, 0.4, 0.2])
     long = np.array([0.7, 0.5, 0.3, 0.1])

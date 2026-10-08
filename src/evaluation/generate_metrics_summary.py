@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Generate comprehensive TFT metrics summary markdown combining:
 - Val loss (QuantileLoss, selection criterion)
@@ -13,13 +13,13 @@ from pathlib import Path
 def main():
     repo = Path.cwd()
     
-    ***REMOVED*** Read all evaluation CSVs
+    # Read all evaluation CSVs
     ablation = pd.read_csv(repo / "experiments/tft/notes/short_head_eval.csv")
     short_finetune = pd.read_csv(repo / "experiments/tft/runs/germany/plant_03/15min/short_head_eval.csv")
     short_summary = pd.read_csv(repo / "experiments/tft/runs/germany/plant_03/15min/finetune_summary.csv")
     long_finetune = pd.read_csv(repo / "experiments/tft/runs/germany/plant_03/longhead/hourly720/long_head_eval.csv")
     
-    ***REMOVED*** Read long-head val_loss from metrics.csv files
+    # Read long-head val_loss from metrics.csv files
     long_runs = [
         ("warm_seed42", "experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed42/20251231_104406"),
         ("warm_seed43", "experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405"),
@@ -37,21 +37,21 @@ def main():
             best_val = df["val_loss"].min()
             long_val_losses[mode] = best_val
     
-    ***REMOVED*** Build markdown
+    # Build markdown
     lines = []
-    lines.append("***REMOVED*** MiRACLE v1.0: Comprehensive TFT Metrics Summary\n\n")
+    lines.append("# MiRACLE v1.0: Comprehensive TFT Metrics Summary\n\n")
     lines.append("**Purpose**: Defensible documentation combining:\n")
     lines.append("- **Val Loss (QuantileLoss)**: Training selection criterion (early stopping)\n")
     lines.append("- **RMSE/MAE**: Post-hoc interpretable metrics on validation set (median quantile)\n\n")
     lines.append("---\n\n")
     
-    ***REMOVED*** Phase 1: Ablation
-    lines.append("***REMOVED******REMOVED*** Phase 1: Feature Ablation Study (Short-head, 15-min, 24h)\n\n")
+    # Phase 1: Ablation
+    lines.append("## Phase 1: Feature Ablation Study (Short-head, 15-min, 24h)\n\n")
     lines.append("**Purpose**: Quantify PVLib physics contribution vs. TFT-only baseline\n\n")
     lines.append("| Mode | Val Loss (selection) | RMSE | MAE | Best Epoch |\n")
     lines.append("|---|---:|---:|---:|---:|\n")
     
-    ***REMOVED*** Get val_loss from ablation_summary.csv
+    # Get val_loss from ablation_summary.csv
     abl_summary = pd.read_csv(repo / "experiments/tft/runs/germany/ablations/ablation_summary.csv")
     for _, row in ablation.iterrows():
         mode = row["mode"]
@@ -63,8 +63,8 @@ def main():
     lines.append("\n**Winner**: TFT+PVLib (5.36% RMSE improvement vs. baseline)\n\n")
     lines.append("---\n\n")
     
-    ***REMOVED*** Phase 2: Global Pretrain
-    lines.append("***REMOVED******REMOVED*** Phase 2: Global Pretraining (Multi-site, no-leak)\n\n")
+    # Phase 2: Global Pretrain
+    lines.append("## Phase 2: Global Pretraining (Multi-site, no-leak)\n\n")
     lines.append("**Purpose**: Learn cross-site patterns for transfer learning initialization\n\n")
     global_metrics = pd.read_csv(repo / "experiments/tft/runs/germany/global_noleak/target03_excluded/20251229_134852/logs/metrics.csv")
     best_val_global = global_metrics["val_loss"].min()
@@ -76,16 +76,16 @@ def main():
     lines.append("- **Note**: RMSE not computed (multi-site aggregate; per-plant eval in Phase 3)\n\n")
     lines.append("---\n\n")
     
-    ***REMOVED*** Phase 3: Short-head finetune
-    lines.append("***REMOVED******REMOVED*** Phase 3: Plant_03 Fine-tuning (Short-head, 15-min, 24h)\n\n")
+    # Phase 3: Short-head finetune
+    lines.append("## Phase 3: Plant_03 Fine-tuning (Short-head, 15-min, 24h)\n\n")
     lines.append("**Purpose**: Validate transfer learning (warm) vs. cold-start\n\n")
     lines.append("| Regime | Seed | Val Loss (selection) | RMSE | MAE |\n")
     lines.append("|---|---:|---:|---:|---:|\n")
     
-    ***REMOVED*** Merge short_finetune RMSE with short_summary val_loss
+    # Merge short_finetune RMSE with short_summary val_loss
     short_merged = short_finetune.merge(
         short_summary[["regime", "best_val_loss"]],
-        left_on=short_finetune["mode"].str.split("_").str[0],  ***REMOVED*** extract regime
+        left_on=short_finetune["mode"].str.split("_").str[0],  # extract regime
         right_on="regime",
         how="left"
     )
@@ -94,7 +94,7 @@ def main():
         mode_parts = row["mode"].split("_")
         regime = mode_parts[0]
         seed = mode_parts[1]
-        ***REMOVED*** Find matching row in summary
+        # Find matching row in summary
         summary_row = short_summary[
             (short_summary["regime"] == regime) & 
             (short_summary["run_dir"].str.contains(f"seed_{seed}") | 
@@ -107,7 +107,7 @@ def main():
         
         lines.append(f"| {regime} | {seed} | {val_loss:.6f} | {row['rmse']:.6f} | {row['mae']:.6f} |\n")
     
-    ***REMOVED*** Compute means
+    # Compute means
     warm_rmse = short_finetune[short_finetune["mode"].str.startswith("warm")]["rmse"].mean()
     cold_rmse = short_finetune[short_finetune["mode"].str.startswith("cold")]["rmse"].mean()
     warm_val = short_summary[short_summary["regime"] == "warm"]["best_val_loss"].mean()
@@ -124,8 +124,8 @@ def main():
     lines.append(f"- RMSE: **{rel_rmse:.1f}%** improvement\n\n")
     lines.append("---\n\n")
     
-    ***REMOVED*** Phase 4: Long-head finetune
-    lines.append("***REMOVED******REMOVED*** Phase 4: Plant_03 Fine-tuning (Long-head, 1-hour, 30 days)\n\n")
+    # Phase 4: Long-head finetune
+    lines.append("## Phase 4: Plant_03 Fine-tuning (Long-head, 1-hour, 30 days)\n\n")
     lines.append("**Purpose**: Validate transfer learning at extended forecast horizon\n\n")
     lines.append("| Regime | Seed | Val Loss (selection) | RMSE | MAE |\n")
     lines.append("|---|---:|---:|---:|---:|\n")
@@ -138,7 +138,7 @@ def main():
         val_loss = long_val_losses.get(mode, float('nan'))
         lines.append(f"| {regime} | {seed} | {val_loss:.6f} | {row['rmse']:.6f} | {row['mae']:.6f} |\n")
     
-    ***REMOVED*** Compute means
+    # Compute means
     warm_long_rmse = long_finetune[long_finetune["mode"].str.startswith("warm")]["rmse"].mean()
     cold_long_rmse = long_finetune[long_finetune["mode"].str.startswith("cold")]["rmse"].mean()
     warm_long_val = sum(v for k, v in long_val_losses.items() if k.startswith("warm")) / 3
@@ -155,8 +155,8 @@ def main():
     lines.append(f"- RMSE: **{rel_long_rmse:.1f}%** improvement\n\n")
     lines.append("---\n\n")
     
-    ***REMOVED*** Summary
-    lines.append("***REMOVED******REMOVED*** Key Findings\n\n")
+    # Summary
+    lines.append("## Key Findings\n\n")
     lines.append("1. **Val Loss (QuantileLoss)**: Selection criterion used throughout training (early stopping)\n")
     lines.append("2. **RMSE/MAE**: Post-hoc interpretable metrics computed on validation set using median quantile\n")
     lines.append("3. **Consistency**: Transfer learning benefits observed in both selection criterion (val loss) and interpretable metrics (RMSE)\n")

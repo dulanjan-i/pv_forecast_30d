@@ -23,21 +23,21 @@ from __future__ import annotations
 from typing import List
 
 
-***REMOVED*** Core identifiers
+# Core identifiers
 TIME_COL: str = "timestamp_utc"
 GROUP_COL: str = "plant_id"
 TARGET_COL: str = "power_norm"
 
-***REMOVED*** Static features
+# Static features
 STATIC_CATEGORICALS: List[str] = [GROUP_COL]
 STATIC_REALS: List[str] = []
 
-***REMOVED*** Time-varying known features (available for decoder at inference)
-***REMOVED*** Treat weather_code as categorical because it is an encoded condition label.
+# Time-varying known features (available for decoder at inference)
+# Treat weather_code as categorical because it is an encoded condition label.
 TV_KNOWN_CATEGORICALS: List[str] = ["weather_code"]
 
 TV_KNOWN_REALS: List[str] = [
-    ***REMOVED*** Raw weather reals
+    # Raw weather reals
     "temperature_2m",
     "relative_humidity_2m",
     "precipitation",
@@ -46,12 +46,12 @@ TV_KNOWN_REALS: List[str] = [
     "wind_direction_10m",
     "surface_pressure",
 
-    ***REMOVED*** Irradiance (raw set)
+    # Irradiance (raw set)
     "shortwave_radiation_instant_raw",
     "direct_normal_irradiance_instant_raw",
     "global_tilted_irradiance_instant_raw",
 
-    ***REMOVED*** PVLib physics features (known if computed from forecast weather)
+    # PVLib physics features (known if computed from forecast weather)
     "pvlib_solar_zenith",
     "pvlib_solar_azimuth",
     "pvlib_poa_global",
@@ -62,8 +62,8 @@ TV_KNOWN_REALS: List[str] = [
     "pvlib_ac_kw",
 ]
 
-***REMOVED*** Time-varying unknown features (encoder-only)
-***REMOVED*** Target must be included here by PyTorch Forecasting convention.
+# Time-varying unknown features (encoder-only)
+# Target must be included here by PyTorch Forecasting convention.
 TV_UNKNOWN_REALS_PREFIX: str = "lstm_enc_"
 
 def lstm_encoding_cols(n: int = 64) -> List[str]:
@@ -71,15 +71,15 @@ def lstm_encoding_cols(n: int = 64) -> List[str]:
 
 TV_UNKNOWN_REALS: List[str] = [TARGET_COL] + lstm_encoding_cols(64)
 
-***REMOVED*** Columns to drop before building the dataset
+# Columns to drop before building the dataset
 DROP_COLS: List[str] = [
-    ***REMOVED*** Redundant plant one-hots (keep plant_id categorical)
+    # Redundant plant one-hots (keep plant_id categorical)
     "plant_01", "plant_02", "plant_03", "plant_05", "plant_06",
 
-    ***REMOVED*** GTI proxy used during LSTM stage
+    # GTI proxy used during LSTM stage
     "poa_irradiance",
 
-    ***REMOVED*** Duplicated irradiance set without raw suffix (keep *_raw)
+    # Duplicated irradiance set without raw suffix (keep *_raw)
     "shortwave_radiation_instant",
     "direct_radiation_instant",
     "diffuse_radiation_instant",

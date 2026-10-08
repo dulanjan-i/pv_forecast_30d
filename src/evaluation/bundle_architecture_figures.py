@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """Bundle rendered architecture figures into a zip for reliable transfer.
 
 VS Code Remote's per-file download sometimes results in users accidentally

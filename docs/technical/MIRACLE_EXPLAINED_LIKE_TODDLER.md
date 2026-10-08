@@ -1,10 +1,10 @@
-***REMOVED*** MiRACLE V1.0 - Explained Like You're 5 🧒
+# MiRACLE V1.0 - Explained Like You're 5 🧒
 
 **"How does the smart solar power robot work?"**
 
 ---
 
-***REMOVED******REMOVED*** 🏰 The Big Picture (Imagine a Smart House)
+## 🏰 The Big Picture (Imagine a Smart House)
 
 Imagine you have a **magic house** that can predict how much electricity your solar panels will make tomorrow, next week, and even next month.
 
@@ -23,9 +23,9 @@ But instead of just **one robot** doing all the thinking, you have **4 robots wo
 
 ---
 
-***REMOVED******REMOVED*** 👥 Meet the Team
+## 👥 Meet the Team
 
-***REMOVED******REMOVED******REMOVED*** 🤖 Robot 1: Short-Term Watcher ("Short-TFT Advisor")
+### 🤖 Robot 1: Short-Term Watcher ("Short-TFT Advisor")
 
 **Job:** Watch how well we predict **TODAY and TOMORROW**
 
@@ -43,7 +43,7 @@ But instead of just **one robot** doing all the thinking, you have **4 robots wo
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 🤖 Robot 2: Long-Term Watcher ("Long-TFT Advisor")
+### 🤖 Robot 2: Long-Term Watcher ("Long-TFT Advisor")
 
 **Job:** Watch how well we predict **NEXT WEEK and NEXT MONTH**
 
@@ -61,7 +61,7 @@ But instead of just **one robot** doing all the thinking, you have **4 robots wo
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 🤖 Robot 3: Physics Doctor ("PVLib Advisor")
+### 🤖 Robot 3: Physics Doctor ("PVLib Advisor")
 
 **Job:** Use **REAL SCIENCE** to check if the other robots are making sense
 
@@ -79,7 +79,7 @@ But instead of just **one robot** doing all the thinking, you have **4 robots wo
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 🧠 The Boss: Meta-Controller (THE ONLY ONE WHO LEARNS!)
+### 🧠 The Boss: Meta-Controller (THE ONLY ONE WHO LEARNS!)
 
 **Job:** Read ALL the notes from the 3 robots and **DECIDE WHAT TO DO**
 
@@ -116,11 +116,11 @@ But instead of just **one robot** doing all the thinking, you have **4 robots wo
 
 ---
 
-***REMOVED******REMOVED*** 📝 The 35 Pieces of Information (State)
+## 📝 The 35 Pieces of Information (State)
 
 The Boss reads 35 numbers every time it makes a decision:
 
-***REMOVED******REMOVED******REMOVED*** From Robot 1 (10 numbers):
+### From Robot 1 (10 numbers):
 1. How wrong were we 1 hour ago?
 2. How wrong were we 24 hours ago?
 3. How confident is Robot 1?
@@ -132,7 +132,7 @@ The Boss reads 35 numbers every time it makes a decision:
 9. Are nighttime predictions worse than daytime?
 10. Is the weather website working well?
 
-***REMOVED******REMOVED******REMOVED*** From Robot 2 (10 numbers):
+### From Robot 2 (10 numbers):
 11. How wrong were we 1 day ago?
 12. How wrong were we 7 days ago?
 13. How wrong were we 30 days ago?
@@ -144,7 +144,7 @@ The Boss reads 35 numbers every time it makes a decision:
 19. Are long-term predictions getting worse?
 20. Did we switch weather websites a lot?
 
-***REMOVED******REMOVED******REMOVED*** From Robot 3 (8 numbers):
+### From Robot 3 (8 numbers):
 21. How different is science from Robot 1 and 2?
 22. How bright is the sun right now? (GHI)
 23. How much direct sunlight? (DNI)
@@ -154,7 +154,7 @@ The Boss reads 35 numbers every time it makes a decision:
 27. Is it nighttime?
 28. How cloudy is it?
 
-***REMOVED******REMOVED******REMOVED*** Extra Facts (7 numbers):
+### Extra Facts (7 numbers):
 29. Overall prediction error
 30. Do Robot 1 and Robot 2 disagree?
 31. Is the data changing globally?
@@ -165,7 +165,7 @@ The Boss reads 35 numbers every time it makes a decision:
 
 ---
 
-***REMOVED******REMOVED*** 🎁 How The Boss Gets Rewarded (or Punished!)
+## 🎁 How The Boss Gets Rewarded (or Punished!)
 
 The Boss learns by getting **points** (positive) or **punishments** (negative).
 
@@ -174,19 +174,19 @@ The Boss learns by getting **points** (positive) or **punishments** (negative).
 Points = (Accuracy) + (Low Drift) - (Cost) - (Too Many Retrains) + (Bonus)
 ```
 
-***REMOVED******REMOVED******REMOVED*** 1. Accuracy Points (+)
+### 1. Accuracy Points (+)
 - **If predictions get BETTER:** +10 points per 0.01 kW improvement
 - **If predictions get WORSE:** -10 points per 0.01 kW degradation
 
 **Like:** Getting a gold star when you guess the weather correctly!
 
-***REMOVED******REMOVED******REMOVED*** 2. Drift Penalty (-)
+### 2. Drift Penalty (-)
 - **If the data starts acting weird:** -5 points
 - **If Robot 1 and Robot 2 disagree a lot:** -5 points
 
 **Like:** Getting in trouble when your homework looks messy.
 
-***REMOVED******REMOVED******REMOVED*** 3. Cost Penalty (-)
+### 3. Cost Penalty (-)
 - **DO NOTHING:** 0 points (free!)
 - **TUNE ROBOT 1:** -0.1 points (cheap)
 - **TUNE ROBOT 2:** -0.15 points (a bit more)
@@ -196,31 +196,31 @@ Points = (Accuracy) + (Low Drift) - (Cost) - (Too Many Retrains) + (Bonus)
 
 **Like:** Spending your allowance. Some actions cost money!
 
-***REMOVED******REMOVED******REMOVED*** 4. Retrain Penalty (-)
+### 4. Retrain Penalty (-)
 - **If we retrain too much:** -0.3 points per retrain
 
 **Like:** If you erase your homework and start over 10 times, the teacher gets annoyed.
 
-***REMOVED******REMOVED******REMOVED*** 5. Bonus Points (+)
+### 5. Bonus Points (+)
 - **If all weather websites agree:** +0.1 bonus points
 
 **Like:** Getting extra credit when all your friends agree on the answer!
 
 ---
 
-***REMOVED******REMOVED*** 🧠 How The Boss Learns (The Magic Part!)
+## 🧠 How The Boss Learns (The Magic Part!)
 
-***REMOVED******REMOVED******REMOVED*** Step 1: The Boss Starts Dumb
+### Step 1: The Boss Starts Dumb
 At first, The Boss makes **random decisions**. Sometimes good, sometimes bad!
 
-***REMOVED******REMOVED******REMOVED*** Step 2: Remember What Happened
+### Step 2: Remember What Happened
 Every time The Boss makes a decision, it writes in a **diary**:
 - "I saw these 35 numbers..."
-- "I picked action ***REMOVED***3..."
+- "I picked action #3..."
 - "I got +5 points!"
 - "Then these new 35 numbers happened..."
 
-***REMOVED******REMOVED******REMOVED*** Step 3: Learn from Mistakes
+### Step 3: Learn from Mistakes
 The Boss has a **"brain"** (neural network) that tries to guess:
 > "If I see these 35 numbers, which action will give me the most points?"
 
@@ -230,14 +230,14 @@ It practices by:
 3. If YES: "Do that action more often!"
 4. If NO: "Try a different action next time!"
 
-***REMOVED******REMOVED******REMOVED*** Step 4: Get Smarter Over Time
+### Step 4: Get Smarter Over Time
 After thousands of tries, The Boss gets really good at picking the right action!
 
 ---
 
-***REMOVED******REMOVED*** 🎮 Why Only The Boss Learns (and not the 3 Robots)
+## 🎮 Why Only The Boss Learns (and not the 3 Robots)
 
-***REMOVED******REMOVED******REMOVED*** Original Bad Idea (4 Learning Robots):
+### Original Bad Idea (4 Learning Robots):
 ```
 🧠 Boss Robot    (LEARNS)
 🤖 Robot 1       (LEARNS)
@@ -249,7 +249,7 @@ After thousands of tries, The Boss gets really good at picking the right action!
 
 **Like:** If 4 kids are all trying to steer one bicycle at the same time. CRASH! 🚴💥
 
-***REMOVED******REMOVED******REMOVED*** New Good Idea (Only Boss Learns):
+### New Good Idea (Only Boss Learns):
 ```
 🧠 Boss Robot    (LEARNS)
 🤖 Robot 1       (Just watches and reports)
@@ -263,9 +263,9 @@ After thousands of tries, The Boss gets really good at picking the right action!
 
 ---
 
-***REMOVED******REMOVED*** 🏆 Example: A Typical Day
+## 🏆 Example: A Typical Day
 
-***REMOVED******REMOVED******REMOVED*** Morning (8 AM):
+### Morning (8 AM):
 1. **Robot 1** says: "Today's prediction is 5% off"
 2. **Robot 2** says: "Next week looks good"
 3. **Robot 3** says: "Physics says panels are clean"
@@ -273,7 +273,7 @@ After thousands of tries, The Boss gets really good at picking the right action!
 5. **The Boss** decides: **Action 0 (DO NOTHING)** ✅
 6. **Points:** +8 (because prediction was pretty good!)
 
-***REMOVED******REMOVED******REMOVED*** Afternoon (2 PM):
+### Afternoon (2 PM):
 1. **Robot 1** says: "Uh oh, prediction is 15% off now!"
 2. **Robot 2** says: "Next week still looks ok"
 3. **Robot 3** says: "Science says sunshine should be higher!"
@@ -281,7 +281,7 @@ After thousands of tries, The Boss gets really good at picking the right action!
 5. **The Boss** decides: **Action 1 (TUNE ROBOT 1)** 🔧
 6. **Points:** +5 (tuning helped, but it cost 0.1 points)
 
-***REMOVED******REMOVED******REMOVED*** Evening (6 PM):
+### Evening (6 PM):
 1. **Robot 1** says: "Much better now, only 3% off!"
 2. **Robot 2** says: "Still good"
 3. **Robot 3** says: "All good"
@@ -293,23 +293,23 @@ After thousands of tries, The Boss gets really good at picking the right action!
 
 ---
 
-***REMOVED******REMOVED*** 🚀 Why This System is Smart
+## 🚀 Why This System is Smart
 
-***REMOVED******REMOVED******REMOVED*** 1. **Fast Decisions**
+### 1. **Fast Decisions**
 The Boss can read 35 numbers and pick an action in **0.01 seconds** (faster than you can blink!)
 
-***REMOVED******REMOVED******REMOVED*** 2. **Learns from Experience**
+### 2. **Learns from Experience**
 After 10,000 days of practice, The Boss gets **really good** at picking the right action.
 
-***REMOVED******REMOVED******REMOVED*** 3. **Never Breaks Things**
+### 3. **Never Breaks Things**
 The 3 robots use **simple, safe rules**. Only The Boss experiments and learns.
 
-***REMOVED******REMOVED******REMOVED*** 4. **Asks for Help**
+### 4. **Asks for Help**
 If The Boss is unsure, it can **CALL A HUMAN** (Action 8) to help retrain the robots.
 
 ---
 
-***REMOVED******REMOVED*** 🎯 Final Summary
+## 🎯 Final Summary
 
 **Question:** "How does the smart solar power robot work?"
 

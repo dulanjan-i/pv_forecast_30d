@@ -1,6 +1,6 @@
-***REMOVED******REMOVED*** Appendix A. German PV Data Preprocessing Workflow
+## Appendix A. German PV Data Preprocessing Workflow
 
-***REMOVED******REMOVED******REMOVED*** A.0 Scope and Data Flow
+### A.0 Scope and Data Flow
 - **Objective:** Produce modelling-ready 15-minute PV–weather time series for six anonymised German plants.
 - **Inputs:** Provider metadata workbook, raw PV CSV exports (German decimal, UTC timestamps), Open-Meteo ERA5 Seamless archive calls.
 - **Outputs:** Validated interim PV (`data/interim/germany`) and weather parquets plus merged processed artefacts (`data/processed/germany`).
@@ -8,7 +8,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.1 Plant Metadata Harmonisation
+### A.1 Plant Metadata Harmonisation
 **Source:** `src/data/generate_germany_metadata.py`  
 **Inputs:** `data/metadata/germany/Base_Data_exc_Dulan.xlsx` (sheet “Basedata”).  
 **Key steps:**
@@ -22,7 +22,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.2 PV Signal Ingestion and Feature Derivation
+### A.2 PV Signal Ingestion and Feature Derivation
 **Source:** `src/data/preprocess_germany_pv.py`  
 **Inputs:** Raw plant CSV dumps in `data/raw/germany/{plant}` plus metadata JSON.  
 **Key steps:**
@@ -35,7 +35,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.3 Interactive Sanity Checks
+### A.3 Interactive Sanity Checks
 **Source:** `notebooks/data_cleaning/german_data_sanity_check.ipynb`  
 **Purpose:** Document exploratory QA performed immediately after PV ingestion.  
 **Analyses performed:**
@@ -47,7 +47,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.4 Rule-Based Scaling Corrections
+### A.4 Rule-Based Scaling Corrections
 **Source:** `src/data/fix_germany_pv_scaling.py`  
 **Logic:** Compare installed capacity (`installed_capacity_kw`) with each plant’s observed maximum `power_kw`.  
 **Details:**
@@ -60,7 +60,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.5 Enforcement of a Strict 15-Minute Grid
+### A.5 Enforcement of a Strict 15-Minute Grid
 **Source:** `src/data/enforce_germany_pv_15min_grid.py`  
 **Goal:** Make sampling regularity explicit before merging with weather.  
 **Method:**
@@ -72,7 +72,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.6 Weather Forcing Retrieval
+### A.6 Weather Forcing Retrieval
 **Source:** `src/data/call_openmeteo_hist_germany.py`  
 **Inputs:** Metadata JSON (lat/lon, tilt, azimuth) and PV-derived start/end dates.  
 **Process:**
@@ -85,7 +85,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.7 Weather Temporal Harmonisation
+### A.7 Weather Temporal Harmonisation
 **Source:** `src/data/preprocess_germany_weather.py`  
 **Steps:**
 - Localise the naive `date` field to `Europe/Berlin`, handling DST gaps (`nonexistent="shift_forward"`) and duplicates (first occurrence kept), then convert to UTC to align with PV data.
@@ -100,7 +100,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.8 PV–Weather Integration
+### A.8 PV–Weather Integration
 **Source:** `src/data/merge_germany_pv_weather.py`  
 **Pipeline:**
 - Load the grid-aligned PV and weather parquets, enforce UTC datetime typing on `timestamp_utc`, and drop redundant columns (e.g., local `date`).
@@ -111,7 +111,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** A.9 Post-Processing Validation
+### A.9 Post-Processing Validation
 **Source:** `notebooks/data_cleaning/german_data_sanity_check.ipynb` (final cells).  
 **Checks performed after each major script:**
 - Confirm that scaling factors corrected magnitudes without distorting daily shapes.

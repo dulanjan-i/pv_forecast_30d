@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Run build_counterfactual_day1.py for every variant listed in a manifest.json
 and append provenance + result path to the experiment log.
@@ -31,14 +31,14 @@ def main():
     out_dir = Path(manifest_path).parent.parent / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Default artifact paths (project conventions)
+    # Default artifact paths (project conventions)
     short_ckpt = Path("V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.pt")
     long_ckpt = Path("V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt")
     plant_meta = Path("data/metadata/germany/plant_03.json")
     short_train = Path("data/processed/plant_level/plant_03/15min_pca32/train.parquet")
     long_train = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
     sarns = Path("freeze/final_thesis_v1/phase1_2024daily_final/rl/sarns_norm_with_blends.parquet")
-    ***REMOVED*** Use the canonical processed backtest weather (15-min, includes pvlib if present)
+    # Use the canonical processed backtest weather (15-min, includes pvlib if present)
     hist_weather = Path("data/processed/plant_level/plant_03/hist_weather_gt_15min_utc.parquet")
     gt = Path("data/processed/plant_level/plant_03/ground_truth_from_sheet_15min_utc_capnorm.parquet")
 
@@ -67,7 +67,7 @@ def main():
 
         started = datetime.utcnow().isoformat() + "Z"
         print(f"Running variant {variant_id} -> {out_file}")
-        ***REMOVED*** Ensure project root is on PYTHONPATH so `src` imports resolve
+        # Ensure project root is on PYTHONPATH so `src` imports resolve
         import os
         env = os.environ.copy()
         env["PYTHONPATH"] = str(root.resolve())
@@ -76,7 +76,7 @@ def main():
 
         status = "OK" if res.returncode == 0 else f"ERROR({res.returncode})"
 
-        ***REMOVED*** Append record to experiment log
+        # Append record to experiment log
         with open(log_path, "a") as logf:
             logf.write(f"| {variant_id} | {date} | {mag} | {weather_file} | {out_file} | {status} | {started} | {finished} |\n")
 

@@ -28,11 +28,11 @@ def test_checkpoint_loading(checkpoint_path: Path, state_dim: int = 35, device: 
     try:
         logger.info(f"Testing checkpoint: {checkpoint_path}")
         
-        ***REMOVED*** Initialize controller
+        # Initialize controller
         config = RLConfig(mode="rl")
         controller = MetaController(state_dim=state_dim, config=config)
         
-        ***REMOVED*** Load checkpoint
+        # Load checkpoint
         checkpoint = torch.load(checkpoint_path, map_location=device)
         controller.policy_net.load_state_dict(checkpoint['policy_net'])
         controller.target_net.load_state_dict(checkpoint['target_net'])
@@ -43,17 +43,17 @@ def test_checkpoint_loading(checkpoint_path: Path, state_dim: int = 35, device: 
         logger.info(f"   Training steps: {checkpoint['steps']}")
         logger.info(f"   Final epsilon: {checkpoint['epsilon']:.4f}")
         
-        ***REMOVED*** Move to device
+        # Move to device
         controller.policy_net.to(device)
         controller.target_net.to(device)
         
-        ***REMOVED*** Test inference on sample states
+        # Test inference on sample states
         logger.info("\nTesting inference on 5 random sample states...")
         for i in range(5):
             state = np.random.randn(state_dim).astype(np.float32)
             action = controller.select_action(state)
             
-            ***REMOVED*** Get Q-values for debugging
+            # Get Q-values for debugging
             state_tensor = torch.FloatTensor(state).unsqueeze(0).to(device)
             with torch.no_grad():
                 q_values = controller.policy_net(state_tensor).squeeze().cpu().numpy()

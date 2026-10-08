@@ -1,4 +1,4 @@
-***REMOVED*** MiRACLE Thesis Evidence Bible
+# MiRACLE Thesis Evidence Bible
 **Meta Intelligent Reinforcement-driven Adaptive Control framework for Learning-based Ensembles**
 
 **Version**: 1.0  
@@ -7,7 +7,7 @@
 
 ---
 
-***REMOVED******REMOVED*** ✅ Canonical thesis results (freeze/ wins)
+## ✅ Canonical thesis results (freeze/ wins)
 
 For thesis headline performance numbers, **treat artifacts under `freeze/final_thesis_v1/` as canonical** (latest timestamps). In particular:
 
@@ -16,11 +16,11 @@ For thesis headline performance numbers, **treat artifacts under `freeze/final_t
 
 Numbers reported elsewhere in `docs/` / `reports/` may be training-validation, integration-test, or historical metrics and must not be used as the headline system performance unless they match the `freeze/` outputs.
 
-***REMOVED******REMOVED*** 🎯 THESIS GOAL
+## 🎯 THESIS GOAL
 
 **Primary Goal**: Predict 30-day PV power output at 15-minute resolution using real-time weather API data for a utility-scale plant.
 
-***REMOVED******REMOVED******REMOVED*** Evidence Files:
+### Evidence Files:
 - **Production System**: [src/inference/physics_aware_forecaster.py](../src/inference/physics_aware_forecaster.py)
   - Line 128-255: `predict_30d()` method implements full 30-day hierarchical forecast
   - Returns 2880 timesteps (30 days × 96 steps/day) at 15-minute resolution
@@ -37,20 +37,20 @@ Numbers reported elsewhere in `docs/` / `reports/` may be training-validation, i
   - Line 25-79: End-to-end 15-day forecast with live OpenMeteo API
   - Line 79: "Running forecast with LIVE WEATHER from OpenMeteo API..."
 
-***REMOVED******REMOVED******REMOVED*** Outputs:
+### Outputs:
 - **Predictions**: [freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet](../freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet)
   - Shape: 1,036,800 rows (360 forecast_starts × 2,880 steps)
   - Columns: timestamp_utc, predicted_power_norm, step_ahead, hours_ahead
   
 ---
 
-***REMOVED******REMOVED*** 📚 RESEARCH QUESTIONS
+## 📚 RESEARCH QUESTIONS
 
-***REMOVED******REMOVED******REMOVED*** RQ1: Hybrid Physics + Deep Learning System
+### RQ1: Hybrid Physics + Deep Learning System
 
 **Question**: How can we build a hybrid system that combines physics-based modeling with deep learning for PV forecasting?
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Architecture Evidence:
+#### Architecture Evidence:
 
 **1. Hierarchical Dual-TFT Ensemble** [src/inference/physics_aware_forecaster.py](../src/inference/physics_aware_forecaster.py)
 - **Short-Head TFT** (Lines 201-241):
@@ -79,12 +79,12 @@ Numbers reported elsewhere in `docs/` / `reports/` may be training-validation, i
 - **Layer 2**: Physics-aware (70% ML + 30% PVLib)
 - **Layer 3**: Hard constraints (night=0, capacity≤120%)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Architecture Documentation:
+#### Architecture Documentation:
 - [HIERARCHICAL_ARCHITECTURE_AUDIT.md](../HIERARCHICAL_ARCHITECTURE_AUDIT.md) - Full implementation audit
 - [TFT_INTEGRATION_STATUS.md](../TFT_INTEGRATION_STATUS.md) - Validated TFT integration
 - [PHYSICS_GLUE_IMPLEMENTATION.md](../PHYSICS_GLUE_IMPLEMENTATION.md) - Physics constraints
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Ablation Studies:
+#### Ablation Studies:
 
 **Experiment File**: [experiments/tft/runs/germany/ablations/ablation_summary_extended.csv](../experiments/tft/runs/germany/ablations/ablation_summary_extended.csv)
 
@@ -97,7 +97,7 @@ Numbers reported elsewhere in `docs/` / `reports/` may be training-validation, i
 
 **Key Finding**: LSTM removed after ablations showed `tft_only` (0.0126) outperformed `tft_lstm` (0.0187). Current architecture uses dual-TFT + PVLib (no LSTM).
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Validation Metrics:
+#### Validation Metrics:
 
 - **Canonical (thesis headline)**: use the frozen benchmark under `freeze/final_thesis_v1/` as the single source of truth for thesis-level headline numbers. The integrated MiRACLE v1.0 system (freeze benchmark) reports:
 
@@ -112,11 +112,11 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** RQ2: Transfer Learning (US → Germany)
+### RQ2: Transfer Learning (US → Germany)
 
 **Question**: How can we transfer temporal knowledge learned from one context to another (US PV plants to German plants) without heavy retraining?
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Transfer Learning Strategy:
+#### Transfer Learning Strategy:
 
 **1. PVDAQ Pretraining Data** [PROGRESS_TRACKER.md](../PROGRESS_TRACKER.md)
 - Line 4: "PVDAQ System 2107 (Farm Solar Array, US) → German Transfer Learning"
@@ -138,7 +138,7 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
 3. Initialize German plant_03 TFT with pretrained encoder
 4. Fine-tune on German data (only 6-12 months training data)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Cold vs. Warm Start Comparison:
+#### Cold vs. Warm Start Comparison:
 
 **Report**: [reports/miracle_v1_results_CORRECTED.md](../reports/miracle_v1_results_CORRECTED.md)
 
@@ -162,7 +162,7 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
 2. Faster convergence: Warm start optimal at epoch ~13 vs. cold ~16 (19% fewer epochs)
 3. **13% validation loss improvement** (0.02666 vs 0.03077 for short-head)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Production Checkpoints:
+#### Production Checkpoints:
 
 **V1.0 Models**: [V1.0_FINAL_TFT/README.md](../V1.0_FINAL_TFT/README.md)
 
@@ -180,7 +180,7 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
   - Training date: 2025-12-31
   - Path: `V1.0_FINAL_TFT/longhead_seed43/best.pt`
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Verification Report:
+#### Verification Report:
 
 [reports/VERIFICATION_SUMMARY_v1.md](../reports/VERIFICATION_SUMMARY_v1.md)
 
@@ -191,11 +191,11 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** RQ3: Long-Horizon Stability
+### RQ3: Long-Horizon Stability
 
 **Question**: How can we stabilize long horizon forecasts under shifting weather and data regimes?
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Multi-Scale Temporal Modeling:
+#### Multi-Scale Temporal Modeling:
 
 **1. Short-Term Tactical (Day 1-2)** [src/inference/physics_aware_forecaster.py](../src/inference/physics_aware_forecaster.py)
 - Short-head TFT: 96-step @ 15-min (high-frequency dynamics)
@@ -212,7 +212,7 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
 - 30% weight in final blend
 - Prevents ML models from drifting to implausible regions
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Horizon-Specific Performance:
+#### Horizon-Specific Performance:
 
 **Report**: [reports/PLANT03_TFT_VALIDATION_METRICS.md](../reports/PLANT03_TFT_VALIDATION_METRICS.md)
 
@@ -225,7 +225,7 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
 3. R² Lower for Long Head: Expected due to increasing uncertainty (0.376 vs 0.486)
 4. Non-Monotonic Error: Forecast accuracy improves after Day 15 (weather regime convergence)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Drift Detection & Regime Switching:
+#### Drift Detection & Regime Switching:
 
 **State Space Features** [src/rl/rl_meta_controller.py](../src/rl/rl_meta_controller.py)
 - Line 482-489: State vector includes:
@@ -243,7 +243,7 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
   - Action 2 (LONG_BIAS): s=0.300, l=0.450, p=0.250
   - Action 3 (PHYSICS_BIAS): s=0.325, l=0.175, p=0.500
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 30-Day Forecast Outputs:
+#### 30-Day Forecast Outputs:
 
 **Baseline System**: [freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet](../freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet)
 - 360 forecast_starts × 2,880 timesteps = 1,036,800 predictions
@@ -256,24 +256,24 @@ _Note_: when quoting a single headline number in the thesis front matter or abst
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** RQ4: Self-Adaptive Pipeline
+### RQ4: Self-Adaptive Pipeline
 
 **Question**: How can we make the forecasting pipeline self-adaptive so that it reacts intelligently to drift and uncertainty?
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 1. RL Meta-Controller
+#### 1. RL Meta-Controller
 
 **Core Implementation**: [src/rl/rl_meta_controller.py](../src/rl/rl_meta_controller.py)
 
 **Action Space** (Line 357-364):
 ```python
-ACTION_MAINTAIN = 0              ***REMOVED*** Keep current blend weights
-ACTION_FINE_TUNE_SHORT = 1       ***REMOVED*** Bias toward short-term model
-ACTION_FINE_TUNE_LONG = 2        ***REMOVED*** Bias toward long-term model
-ACTION_RECALIBRATE_PVLIB = 3     ***REMOVED*** Increase physics baseline weight
-ACTION_BLEND_HIGH_SHORT = 4      ***REMOVED*** Aggressive short-term tuning
-ACTION_BLEND_HIGH_LONG = 5       ***REMOVED*** Aggressive long-term tuning
-ACTION_BLEND_HIGH_PHYSICS = 6    ***REMOVED*** Full physics fallback
-ACTION_SUGGEST_RETRAIN = 7       ***REMOVED*** Trigger expensive model retraining
+ACTION_MAINTAIN = 0              # Keep current blend weights
+ACTION_FINE_TUNE_SHORT = 1       # Bias toward short-term model
+ACTION_FINE_TUNE_LONG = 2        # Bias toward long-term model
+ACTION_RECALIBRATE_PVLIB = 3     # Increase physics baseline weight
+ACTION_BLEND_HIGH_SHORT = 4      # Aggressive short-term tuning
+ACTION_BLEND_HIGH_LONG = 5       # Aggressive long-term tuning
+ACTION_BLEND_HIGH_PHYSICS = 6    # Full physics fallback
+ACTION_SUGGEST_RETRAIN = 7       # Trigger expensive model retraining
 ```
 
 **Note**: Current deployment uses 4-action Q-network trained on 3 actions (0, 2, 3) from heuristic mode. Full 8-action deployment is planned future work.
@@ -298,13 +298,13 @@ Priority-based rule system that:
 ```
 R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−Cost_t) + w₄(−RetrainFreq_t)
 
-w₁ = 1.0   ***REMOVED*** Accuracy (primary)
-w₂ = 0.5   ***REMOVED*** Drift control (stability)
-w₃ = 0.2   ***REMOVED*** Cost (efficiency)
-w₄ = 0.3   ***REMOVED*** Retrain frequency (anti-oscillation)
+w₁ = 1.0   # Accuracy (primary)
+w₂ = 0.5   # Drift control (stability)
+w₃ = 0.2   # Cost (efficiency)
+w₄ = 0.3   # Retrain frequency (anti-oscillation)
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2. Data Collection Pipeline
+#### 2. Data Collection Pipeline
 
 **RL Transition Collector**: [src/rl/collect_rl_data.py](../src/rl/collect_rl_data.py)
 - Line 35: `from src.rl.rl_integrated_forecaster import RLIntegratedForecaster`
@@ -319,7 +319,7 @@ w₄ = 0.3   ***REMOVED*** Retrain frequency (anti-oscillation)
 - Rewards (negative RMSE, mean: -0.107)
 - Blend weight mappings
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 3. Policy Inference
+#### 3. Policy Inference
 
 **Offline Policy Evaluation**: [src/inference/phase1_inference_with_policy.py](../src/inference/phase1_inference_with_policy.py)
 - Line 280-286: Load DDQN checkpoint, reconstruct Q-network
@@ -333,7 +333,7 @@ w₄ = 0.3   ***REMOVED*** Retrain frequency (anti-oscillation)
 - Output: 4 Q-values
 - Checkpoint: [freeze/final_thesis_v1/phase1_2024daily_final/rl/ddqn_phase1_daily_norm.pt](../freeze/final_thesis_v1/phase1_2024daily_final/rl/ddqn_phase1_daily_norm.pt)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 4. Real-Time API Switching
+#### 4. Real-Time API Switching
 
 **Multi-API Weather Router**: [src/inference/weather_client.py](../src/inference/weather_client.py)
 
@@ -345,9 +345,9 @@ w₄ = 0.3   ***REMOVED*** Retrain frequency (anti-oscillation)
 **Intelligent Fallback** (Line 160-289):
 ```python
 def fetch_weather_forecast(self, latitude, longitude, forecast_days=16, api='forecast'):
-    ***REMOVED*** Try primary API
-    ***REMOVED*** If fails → automatic fallback to next API
-    ***REMOVED*** If all fail → raise error with diagnostics
+    # Try primary API
+    # If fails → automatic fallback to next API
+    # If all fail → raise error with diagnostics
 ```
 
 **Multi-Source Comparison**: [tests/test_weather_api_comparison.py](../tests/test_weather_api_comparison.py)
@@ -356,7 +356,7 @@ def fetch_weather_forecast(self, latitude, longitude, forecast_days=16, api='for
 - Line 404: OpenMeteo GFS source
 - Compares predictions across 3 weather data sources
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 5. Live Weather Integration
+#### 5. Live Weather Integration
 
 **End-to-End Test**: [tests/test_live_weather_forecast.py](../tests/test_live_weather_forecast.py)
 - Line 25-79: `test_live_weather_15day()` 
@@ -366,18 +366,18 @@ def fetch_weather_forecast(self, latitude, longitude, forecast_days=16, api='for
 
 **Production Usage** [V1.0_FINAL_TFT/README.md](../V1.0_FINAL_TFT/README.md) (Line 90-99):
 ```python
-***REMOVED*** Use live weather API (real-time adaptive)
+# Use live weather API (real-time adaptive)
 forecast = forecaster.predict_30d(
     forecast_start="2026-01-02 00:00:00",
-    use_live_weather=True  ***REMOVED*** Fetches from OpenMeteo
+    use_live_weather=True  # Fetches from OpenMeteo
 )
 ```
 
 ---
 
-***REMOVED******REMOVED*** 🏗️ CONTRIBUTIONS
+## 🏗️ CONTRIBUTIONS
 
-***REMOVED******REMOVED******REMOVED*** Contribution 1: Hybrid Ensemble Architecture
+### Contribution 1: Hybrid Ensemble Architecture
 
 **Claim**: A hybrid ensemble architecture that integrates a short-term TFT and a long-term TFT with PVLib physical modeling.
 
@@ -403,7 +403,7 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Contribution 2: Global Pretraining Strategy
+### Contribution 2: Global Pretraining Strategy
 
 **Claim**: A global pretraining strategy on a PVDAQ utility-scale dataset to learn generic PV temporal dynamics.
 
@@ -432,7 +432,7 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Contribution 3: Canonical LSTM Encoder
+### Contribution 3: Canonical LSTM Encoder
 
 **Claim**: A canonical LSTM encoder selected via systematic hyperparameter sweeps.
 
@@ -455,7 +455,7 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Contribution 4: Multi-Horizon TFT with Interpretability
+### Contribution 4: Multi-Horizon TFT with Interpretability
 
 **Claim**: A multi-horizon forecasting layer based on the TFT with interpretability tools, modified into an ensemble of two pretrained TFTs (short-head and long-head).
 
@@ -488,7 +488,7 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Contribution 5: RL Meta-Controller
+### Contribution 5: RL Meta-Controller
 
 **Claim**: A reinforcement learning meta-controller that manages retraining, reforecasting, and adaptive blend weight selection.
 
@@ -528,7 +528,7 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Contribution 6: Real-Time API Switching Router
+### Contribution 6: Real-Time API Switching Router
 
 **Claim**: An operational real-time pipeline design with a real-time API switching router.
 
@@ -566,15 +566,15 @@ forecast = forecaster.predict_30d(
 ```python
 forecast = forecaster.predict_30d(
     forecast_start="2026-01-02 00:00:00",
-    use_live_weather=True  ***REMOVED*** Real-time API switching
+    use_live_weather=True  # Real-time API switching
 )
 ```
 
 ---
 
-***REMOVED******REMOVED*** 📊 RESULTS & OUTPUTS
+## 📊 RESULTS & OUTPUTS
 
-***REMOVED******REMOVED******REMOVED*** Checkpoint Files
+### Checkpoint Files
 
 **TFT Models**:
 1. [V1.0_FINAL_TFT/shorthead_seed42/best.pt](../V1.0_FINAL_TFT/shorthead_seed42/best.pt)
@@ -593,7 +593,7 @@ forecast = forecaster.predict_30d(
    - Training: 314 SARNS transitions
    - Inference: 400ms per decision
 
-***REMOVED******REMOVED******REMOVED*** Prediction Outputs
+### Prediction Outputs
 
 **1. Baseline System Predictions**:
 - File: [freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet](../freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_baseline_rerun.parquet)
@@ -625,7 +625,7 @@ forecast = forecaster.predict_30d(
 - State-Action-Reward-NextState tuples
 - Blend weight mappings
 
-***REMOVED******REMOVED******REMOVED*** Validation Reports
+### Validation Reports
 
 **1. TFT Validation Metrics**:
 - File: [reports/PLANT03_TFT_VALIDATION_METRICS.md](../reports/PLANT03_TFT_VALIDATION_METRICS.md)
@@ -657,7 +657,7 @@ forecast = forecaster.predict_30d(
 - Hierarchical blending strategy
 - Cross-validation checklist
 
-***REMOVED******REMOVED******REMOVED*** Experiment Logs
+### Experiment Logs
 
 **TFT Training Runs**:
 - Directory: `experiments/tft/runs/germany/`
@@ -674,9 +674,9 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED*** 🔍 KEY IMPLEMENTATION FILES
+## 🔍 KEY IMPLEMENTATION FILES
 
-***REMOVED******REMOVED******REMOVED*** Core Forecasting System
+### Core Forecasting System
 
 1. **Main Forecaster**: [src/inference/physics_aware_forecaster.py](../src/inference/physics_aware_forecaster.py)
    - `__init__()`: Load TFT models, plant metadata
@@ -694,7 +694,7 @@ forecast = forecaster.predict_30d(
    - `fetch_weather_forecast()`: Intelligent API switching
    - `_fetch_pvlib_inputs()`: PVLib feature computation
 
-***REMOVED******REMOVED******REMOVED*** RL Meta-Controller
+### RL Meta-Controller
 
 4. **Meta-Controller**: [src/rl/rl_meta_controller.py](../src/rl/rl_meta_controller.py)
    - `RLMetaController`: DDQN agent
@@ -711,7 +711,7 @@ forecast = forecaster.predict_30d(
    - State lookup → Q-network → action
    - Apply learned blend weights
 
-***REMOVED******REMOVED******REMOVED*** Models
+### Models
 
 7. **TFT Configuration**: [src/models/tft_model.py](../src/models/tft_model.py)
    - `TFTConfig`: Hyperparameter dataclass
@@ -721,7 +721,7 @@ forecast = forecaster.predict_30d(
    - Historical pretraining implementation
    - Not used in V1.0
 
-***REMOVED******REMOVED******REMOVED*** Validation & Testing
+### Validation & Testing
 
 9. **Offline TFT Validation**: [src/inference/offline_predict_tft.py](../src/inference/offline_predict_tft.py)
    - Validate TFT predictions against test set
@@ -741,9 +741,9 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED*** 📈 PERFORMANCE SUMMARY
+## 📈 PERFORMANCE SUMMARY
 
-***REMOVED******REMOVED******REMOVED*** Forecasting Accuracy
+### Forecasting Accuracy
 
 | Metric | Short-Head (24h) | Long-Head (30d) |
 |--------|------------------|-----------------|
@@ -751,14 +751,14 @@ forecast = forecaster.predict_30d(
 | **MAE** | 0.049 | 0.044 |
 | **R²** | 0.486 | 0.376 |
 
-***REMOVED******REMOVED******REMOVED*** Transfer Learning
+### Transfer Learning
 
 | Method | Short-Head Loss | Long-Head Loss | Convergence Speedup |
 |--------|-----------------|----------------|---------------------|
 | **Cold Start** | 0.03077 | N/A | Baseline |
 | **Warm Start** | **0.02666** (13% better) | **0.02414** | **19% faster** |
 
-***REMOVED******REMOVED******REMOVED*** RL Meta-Controller
+### RL Meta-Controller
 
 | Metric | Value |
 |--------|-------|
@@ -769,7 +769,7 @@ forecast = forecaster.predict_30d(
 | **Training Transitions** | 314 SARNS samples |
 | **Action Space** | 3 deployed (0, 2, 3) out of 8 defined |
 
-***REMOVED******REMOVED******REMOVED*** System Performance
+### System Performance
 
 | Metric | Value |
 |--------|-------|
@@ -781,9 +781,9 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED*** 🎓 THESIS CITATIONS
+## 🎓 THESIS CITATIONS
 
-***REMOVED******REMOVED******REMOVED*** For Goal Statement:
+### For Goal Statement:
 > "MiRACLE is a Meta Intelligent Reinforcement-driven Adaptive Control framework for Learning-based Ensembles that predicts 30-day PV power output at 15-minute resolution (2,880 timesteps) using real-time weather API data for utility-scale plants.
 >
 > Model-level training evaluation achieved RMSE of 0.087 (short-head, 24h) and 0.076 (long-head, 30-day) on normalized power output.
@@ -795,7 +795,7 @@ forecast = forecaster.predict_30d(
 - [reports/PLANT03_TFT_VALIDATION_METRICS.md](../reports/PLANT03_TFT_VALIDATION_METRICS.md)
 - [src/inference/physics_aware_forecaster.py](../src/inference/physics_aware_forecaster.py)
 
-***REMOVED******REMOVED******REMOVED*** For RQ1 (Hybrid System):
+### For RQ1 (Hybrid System):
 > "The hybrid ensemble combines short-term TFT (96-step encoder/decoder @ 15-min), long-term TFT (168/720-step @ 1-hour), and PVLib physics modeling through a 3-layer hierarchical blend: (1) ML ensemble (60% short + 40% long), (2) physics-aware (70% ML + 30% PVLib), (3) hard physical constraints. Ablation studies showed dual-TFT architecture outperforms TFT+LSTM (validation loss 0.0126 vs 0.0187)."
 
 **Evidence**:
@@ -803,7 +803,7 @@ forecast = forecaster.predict_30d(
 - [experiments/tft/runs/germany/ablations/ablation_summary_extended.csv](../experiments/tft/runs/germany/ablations/ablation_summary_extended.csv)
 - [HIERARCHICAL_ARCHITECTURE_AUDIT.md](../HIERARCHICAL_ARCHITECTURE_AUDIT.md)
 
-***REMOVED******REMOVED******REMOVED*** For RQ2 (Transfer Learning):
+### For RQ2 (Transfer Learning):
 > "Transfer learning from PVDAQ System 2107 (US utility-scale farm) to German plant_03 via warm-start initialization achieved 13% validation loss improvement (0.02666 vs 0.03077) and 19% faster convergence (13 vs 16 epochs) compared to cold-start training. Both short-head (seed 42) and long-head (seed 43) TFT models were pretrained on US data before fine-tuning on 6-12 months of German data."
 
 **Evidence**:
@@ -811,7 +811,7 @@ forecast = forecaster.predict_30d(
 - [reports/VERIFICATION_SUMMARY_v1.md](../reports/VERIFICATION_SUMMARY_v1.md)
 - [PROGRESS_TRACKER.md](../PROGRESS_TRACKER.md)
 
-***REMOVED******REMOVED******REMOVED*** For RQ3 (Long-Horizon Stability):
+### For RQ3 (Long-Horizon Stability):
 > "Multi-scale temporal modeling stabilizes 30-day forecasts through complementary short-term (tactical) and long-term (strategic) TFT heads.
 >
 > Long-head RMSE of 0.076 across the 720-hour horizon is reported as a **model-level training evaluation metric** (see `reports/PLANT03_TFT_VALIDATION_METRICS.md`).
@@ -822,7 +822,7 @@ forecast = forecaster.predict_30d(
 - [reports/PLANT03_TFT_VALIDATION_METRICS.md](../reports/PLANT03_TFT_VALIDATION_METRICS.md)
 - [src/inference/physics_aware_forecaster.py](../src/inference/physics_aware_forecaster.py)
 
-***REMOVED******REMOVED******REMOVED*** For RQ4 (Self-Adaptive):
+### For RQ4 (Self-Adaptive):
 > "DDQN meta-controller with 10-dimensional state space adaptively selects blend weights based on multi-objective reward (accuracy, stability, cost, retraining frequency).
 >
 > The canonical baseline-vs-policy results for the thesis are reported from `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md` (night-filtered)."
@@ -834,95 +834,95 @@ forecast = forecaster.predict_30d(
 
 ---
 
-***REMOVED******REMOVED*** 📁 DIRECTORY STRUCTURE REFERENCE
+## 📁 DIRECTORY STRUCTURE REFERENCE
 
 ```
 pv_forecast_30d/
-├── V1.0_FINAL_TFT/                      ***REMOVED*** Production model checkpoints
-│   ├── shorthead_seed42/best.pt         ***REMOVED*** Short-head TFT (24h)
-│   ├── longhead_seed43/best.pt          ***REMOVED*** Long-head TFT (30d)
-│   └── plant_metadata/plant_03.json     ***REMOVED*** Plant configuration
+├── V1.0_FINAL_TFT/                      # Production model checkpoints
+│   ├── shorthead_seed42/best.pt         # Short-head TFT (24h)
+│   ├── longhead_seed43/best.pt          # Long-head TFT (30d)
+│   └── plant_metadata/plant_03.json     # Plant configuration
 │
 ├── src/
 │   ├── inference/
-│   │   ├── physics_aware_forecaster.py  ***REMOVED*** Main forecasting system
-│   │   ├── physics_glue.py              ***REMOVED*** Physics integration
-│   │   ├── weather_client.py            ***REMOVED*** Multi-API weather router
-│   │   └── offline_predict_tft.py       ***REMOVED*** Validation pipeline
+│   │   ├── physics_aware_forecaster.py  # Main forecasting system
+│   │   ├── physics_glue.py              # Physics integration
+│   │   ├── weather_client.py            # Multi-API weather router
+│   │   └── offline_predict_tft.py       # Validation pipeline
 │   ├── rl/
-│   │   ├── rl_meta_controller.py        ***REMOVED*** DDQN meta-controller
-│   │   ├── collect_rl_data.py           ***REMOVED*** SARNS data collection
-│   │   └── rl_integrated_forecaster.py  ***REMOVED*** RL-enhanced forecaster
+│   │   ├── rl_meta_controller.py        # DDQN meta-controller
+│   │   ├── collect_rl_data.py           # SARNS data collection
+│   │   └── rl_integrated_forecaster.py  # RL-enhanced forecaster
 │   ├── models/
-│   │   ├── tft_model.py                 ***REMOVED*** TFT configuration
-│   │   └── global_lstm_encoder.py       ***REMOVED*** (Deprecated) LSTM encoder
+│   │   ├── tft_model.py                 # TFT configuration
+│   │   └── global_lstm_encoder.py       # (Deprecated) LSTM encoder
 │   └── validation/
-│       └── eval_short_head.py           ***REMOVED*** Model selection
+│       └── eval_short_head.py           # Model selection
 │
 ├── freeze/final_thesis_v1/phase1_2024daily_final/
 │   ├── processed/
-│   │   ├── predictions_phase1_baseline_rerun.parquet    ***REMOVED*** 1M predictions
-│   │   ├── predictions_phase1_policy_rerun.parquet      ***REMOVED*** RL-enhanced
-│   │   ├── ground_truth_15min_utc_capnorm.parquet      ***REMOVED*** Validation data
-│   │   └── weather_with_pvlib_15min.parquet            ***REMOVED*** Weather features
+│   │   ├── predictions_phase1_baseline_rerun.parquet    # 1M predictions
+│   │   ├── predictions_phase1_policy_rerun.parquet      # RL-enhanced
+│   │   ├── ground_truth_15min_utc_capnorm.parquet      # Validation data
+│   │   └── weather_with_pvlib_15min.parquet            # Weather features
 │   └── rl/
-│       ├── sarns_norm_with_blends.parquet              ***REMOVED*** 314 transitions
-│       └── ddqn_phase1_daily_norm.pt                   ***REMOVED*** Q-network
+│       ├── sarns_norm_with_blends.parquet              # 314 transitions
+│       └── ddqn_phase1_daily_norm.pt                   # Q-network
 │
 ├── experiments/tft/runs/germany/ablations/
-│   └── ablation_summary_extended.csv    ***REMOVED*** 4-configuration comparison
+│   └── ablation_summary_extended.csv    # 4-configuration comparison
 │
 ├── reports/
-│   ├── PLANT03_TFT_VALIDATION_METRICS.md       ***REMOVED*** Main results
-│   ├── miracle_v1_results_CORRECTED.md         ***REMOVED*** Transfer learning
-│   ├── RL_POLICY_AUDIT_THESIS_DEFENSE.md       ***REMOVED*** RL meta-controller
-│   └── THESIS_EVIDENCE_BIBLE.md                ***REMOVED*** This document
+│   ├── PLANT03_TFT_VALIDATION_METRICS.md       # Main results
+│   ├── miracle_v1_results_CORRECTED.md         # Transfer learning
+│   ├── RL_POLICY_AUDIT_THESIS_DEFENSE.md       # RL meta-controller
+│   └── THESIS_EVIDENCE_BIBLE.md                # This document
 │
 ├── tests/
-│   ├── test_live_weather_forecast.py    ***REMOVED*** End-to-end integration
-│   └── test_weather_api_comparison.py   ***REMOVED*** Multi-source validation
+│   ├── test_live_weather_forecast.py    # End-to-end integration
+│   └── test_weather_api_comparison.py   # Multi-source validation
 │
 └── docs/
-    ├── HIERARCHICAL_ARCHITECTURE_AUDIT.md      ***REMOVED*** Implementation audit
-    ├── TFT_INTEGRATION_STATUS.md               ***REMOVED*** TFT integration
-    └── PHYSICS_GLUE_IMPLEMENTATION.md          ***REMOVED*** Physics constraints
+    ├── HIERARCHICAL_ARCHITECTURE_AUDIT.md      # Implementation audit
+    ├── TFT_INTEGRATION_STATUS.md               # TFT integration
+    └── PHYSICS_GLUE_IMPLEMENTATION.md          # Physics constraints
 ```
 
 ---
 
-***REMOVED******REMOVED*** ✅ VERIFICATION CHECKLIST
+## ✅ VERIFICATION CHECKLIST
 
-***REMOVED******REMOVED******REMOVED*** Goal Achievement
+### Goal Achievement
 - [x] 30-day horizon forecast ✓
 - [x] 15-minute resolution (2,880 timesteps) ✓
 - [x] Real-time weather API integration ✓
 - [x] Utility-scale plant deployment (7.36 MW) ✓
 
-***REMOVED******REMOVED******REMOVED*** RQ1: Hybrid System
+### RQ1: Hybrid System
 - [x] Dual-TFT architecture implemented ✓
 - [x] PVLib physics baseline integrated ✓
 - [x] Hierarchical 3-layer blending ✓
 - [x] Ablation study validates design ✓
 
-***REMOVED******REMOVED******REMOVED*** RQ2: Transfer Learning
+### RQ2: Transfer Learning
 - [x] PVDAQ pretraining documented ✓
 - [x] Warm-start protocol implemented ✓
 - [x] 13% performance improvement demonstrated ✓
 - [x] US → Germany transfer validated ✓
 
-***REMOVED******REMOVED******REMOVED*** RQ3: Long-Horizon Stability
+### RQ3: Long-Horizon Stability
 - [x] 30-day forecasts generated ✓
 - [x] Multi-scale temporal modeling ✓
 - [x] Physics anchoring prevents drift ✓
 - [x] Non-monotonic error pattern explained ✓
 
-***REMOVED******REMOVED******REMOVED*** RQ4: Self-Adaptive
+### RQ4: Self-Adaptive
 - [x] RL meta-controller deployed ✓
 - [x] Multi-API weather router ✓
 - [x] Adaptive blend weight selection ✓
 - [x] Real-time inference (400ms) ✓
 
-***REMOVED******REMOVED******REMOVED*** Contributions
+### Contributions
 - [x] Dual-TFT + PVLib architecture ✓
 - [x] Global pretraining strategy ✓
 - [x] LSTM encoder (deprecated) ✓

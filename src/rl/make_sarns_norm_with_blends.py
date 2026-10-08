@@ -1,4 +1,4 @@
-***REMOVED*** src/rl/make_sarns_norm_with_blends.py
+# src/rl/make_sarns_norm_with_blends.py
 from __future__ import annotations
 
 import argparse
@@ -23,11 +23,11 @@ def main() -> None:
     if tcol not in df.columns:
         raise ValueError(f"Missing {tcol}. Have: {list(df.columns)[:40]}")
 
-    ***REMOVED*** Keep deterministic ordering
+    # Keep deterministic ordering
     df = df.sort_values([tcol, "action"] if "action" in df.columns else [tcol]).reset_index(drop=True)
 
-    ***REMOVED*** One row per forecast_start. States are identical across actions in MINENV,
-    ***REMOVED*** so taking the last row is fine and stable.
+    # One row per forecast_start. States are identical across actions in MINENV,
+    # so taking the last row is fine and stable.
     daily = df.groupby(tcol, as_index=False).tail(1).reset_index(drop=True)
 
     daily.to_parquet(out_path, index=False)

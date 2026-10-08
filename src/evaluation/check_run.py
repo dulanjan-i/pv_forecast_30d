@@ -1,7 +1,7 @@
 import pandas as pd
 import sys
 
-***REMOVED*** CHANGE THIS to the path of the file you are currently generating
+# CHANGE THIS to the path of the file you are currently generating
 FILE_PATH = "freeze/final_thesis_v1/phase1_2024daily_final/processed/predictions_phase1_policy_rerun.parquet"
 
 try:
@@ -12,7 +12,7 @@ try:
     print(f"📅 Date Range: {df['timestamp_utc'].min()} to {df['timestamp_utc'].max()}")
     
     print("\n--- 🕵️ ACTION ANALYSIS (The Truth) ---")
-    ***REMOVED*** Group by Action and show the average weights used
+    # Group by Action and show the average weights used
     stats = df.groupby("policy_action")[["blend_short", "blend_long", "blend_physics"]].mean()
     stats["count"] = df["policy_action"].value_counts()
     print(stats)

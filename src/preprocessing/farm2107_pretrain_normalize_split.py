@@ -30,9 +30,9 @@ import numpy as np
 import pandas as pd
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Paths
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------
 
 BASE_PATH = Path("data/processed/pretraining/farm2107_pretrain_base.parquet")
 
@@ -43,15 +43,15 @@ TEST_OUT  = OUT_DIR / "farm2107_pretrain_test.parquet"
 SCALERS_OUT = OUT_DIR / "farm2107_pretrain_scalers.json"
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Config
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------
 
 TIME_COL = "measured_on"
 TARGET_COL = "pv_power_norm"
 
-***REMOVED*** All candidate feature columns (will intersect with actual columns)
-***REMOVED*** pv_power_norm appears here intentionally: we use past PV as input feature.
+# All candidate feature columns (will intersect with actual columns)
+# pv_power_norm appears here intentionally: we use past PV as input feature.
 CANDIDATE_FEATURE_COLS: List[str] = [
     "pv_power_norm",
     "poa_irradiance",
@@ -71,9 +71,9 @@ CANDIDATE_FEATURE_COLS: List[str] = [
 ]
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Helpers
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
 
 def load_base(path: Path) -> pd.DataFrame:
     if not path.exists():
@@ -101,23 +101,23 @@ def select_and_clean(df: pd.DataFrame) -> pd.DataFrame:
     if TARGET_COL not in df.columns:
         raise ValueError(f"Target column '{TARGET_COL}' not found in base DataFrame.")
 
-    cols = [TIME_COL] + available_features  ***REMOVED*** includes TARGET_COL
+    cols = [TIME_COL] + available_features  # includes TARGET_COL
     df = df[cols].copy()
 
-    ***REMOVED*** Drop rows where target is missing (cannot train on missing target)
+    # Drop rows where target is missing (cannot train on missing target)
     before = len(df)
     df = df.dropna(subset=[TARGET_COL])
     after = len(df)
     print(f"[INFO] Dropped {before - after} rows with NaN target.")
 
-    ***REMOVED*** Optional: impute missing POA using GTI if available
+    # Optional: impute missing POA using GTI if available
     if "poa_irradiance" in df.columns and "global_tilted_irradiance_instant" in df.columns:
         na_before = df["poa_irradiance"].isna().sum()
         df["poa_irradiance"] = df["poa_irradiance"].fillna(df["global_tilted_irradiance_instant"])
         na_after = df["poa_irradiance"].isna().sum()
         print(f"[INFO] Imputed {na_before - na_after} NaNs in poa_irradiance using GTI.")
 
-    ***REMOVED*** Any remaining NaNs in features? You can drop them for pretraining simplicity.
+    # Any remaining NaNs in features? You can drop them for pretraining simplicity.
     feature_cols = [c for c in available_features]
     na_rows = df[feature_cols].isna().any(axis=1).sum()
     if na_rows > 0:
@@ -159,7 +159,7 @@ def compute_scalers(train: pd.DataFrame, feature_cols: List[str]) -> Dict[str, D
     for col in to_scale:
         mean = float(train[col].mean())
         std = float(train[col].std(ddof=0))
-        ***REMOVED*** Avoid division by zero
+        # Avoid division by zero
         if std == 0.0:
             std = 1.0
 
@@ -190,9 +190,9 @@ def apply_scalers(df: pd.DataFrame, scalers: Dict[str, Dict[str, float]]) -> pd.
     return df
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Main
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------
 
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -200,21 +200,21 @@ def main():
     df = load_base(BASE_PATH)
     df = select_and_clean(df)
 
-    ***REMOVED*** Figure out which features are actually present
+    # Figure out which features are actually present
     feature_cols = [c for c in CANDIDATE_FEATURE_COLS if c in df.columns]
 
-    ***REMOVED*** Split into train/val/test
+    # Split into train/val/test
     train_df, val_df, test_df = time_based_split(df)
 
-    ***REMOVED*** Compute scalers on TRAIN only
+    # Compute scalers on TRAIN only
     scalers = compute_scalers(train_df, feature_cols)
 
-    ***REMOVED*** Apply scalers
+    # Apply scalers
     train_scaled = apply_scalers(train_df, scalers)
     val_scaled = apply_scalers(val_df, scalers)
     test_scaled = apply_scalers(test_df, scalers)
 
-    ***REMOVED*** Save splits
+    # Save splits
     print(f"[INFO] Saving train to {TRAIN_OUT}")
     train_scaled.to_parquet(TRAIN_OUT, index=False)
 
@@ -224,7 +224,7 @@ def main():
     print(f"[INFO] Saving test to {TEST_OUT}")
     test_scaled.to_parquet(TEST_OUT, index=False)
 
-    ***REMOVED*** Save scalers metadata as JSON
+    # Save scalers metadata as JSON
     print(f"[INFO] Saving scalers to {SCALERS_OUT}")
     with SCALERS_OUT.open("w") as f:
         json.dump(scalers, f, indent=2)

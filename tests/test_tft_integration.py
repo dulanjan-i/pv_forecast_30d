@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Test TFT integration with PhysicsAwareForecaster.
 Validates short-head and long-head inference with real checkpoints.
@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-***REMOVED*** Add src to path
+# Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
@@ -21,14 +21,14 @@ def test_short_head_single_day():
     print("TEST: Short-Head TFT Inference (Single Day)")
     print("="*70)
     
-    ***REMOVED*** Checkpoint paths
+    # Checkpoint paths
     short_ckpt = Path("experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best_state_dict.pt")
     long_ckpt = Path("experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best_state_dict.pt")
     metadata = Path("data/metadata/germany/plant_03.json")
     short_train = Path("data/processed/plant_level/plant_03/15min_pca32/train.parquet")
     long_train = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
     
-    ***REMOVED*** Check files exist
+    # Check files exist
     missing = []
     for p in [short_ckpt, long_ckpt, metadata, short_train, long_train]:
         if not p.exists():
@@ -43,7 +43,7 @@ def test_short_head_single_day():
     print("\n✓ All required files found")
     
     try:
-        ***REMOVED*** Initialize forecaster
+        # Initialize forecaster
         print("\n[1/4] Initializing PhysicsAwareForecaster...")
         forecaster = PhysicsAwareForecaster(
             short_ckpt=short_ckpt,
@@ -51,24 +51,24 @@ def test_short_head_single_day():
             plant_metadata=metadata,
             short_train_parquet=short_train,
             long_train_parquet=long_train,
-            device="cpu"  ***REMOVED*** Use CPU for testing
+            device="cpu"  # Use CPU for testing
         )
         print("✓ Forecaster initialized")
         
-        ***REMOVED*** Load test data
+        # Load test data
         print("\n[2/4] Loading test data...")
         test_df = pd.read_parquet("data/processed/plant_level/plant_03/15min_pca32/test.parquet")
         print(f"✓ Test data loaded: {test_df.shape}")
         print(f"   Time range: {test_df.timestamp_utc.min()} → {test_df.timestamp_utc.max()}")
         
-        ***REMOVED*** Test Day 2 prediction (skip first day to have enough history)
+        # Test Day 2 prediction (skip first day to have enough history)
         print("\n[3/4] Running short-head inference for Day 2...")
-        ***REMOVED*** Start at Day 2 to ensure we have 96 steps of history (Day 1)
+        # Start at Day 2 to ensure we have 96 steps of history (Day 1)
         day2_start = pd.Timestamp("2023-10-14 00:00:00", tz="UTC")
         
-        ***REMOVED*** Extract historical (encoder) and forecast (decoder) windows
-        historical_df = test_df.copy()  ***REMOVED*** Full test set for history
-        weather_df = test_df.copy()  ***REMOVED*** Full test set for weather
+        # Extract historical (encoder) and forecast (decoder) windows
+        historical_df = test_df.copy()  # Full test set for history
+        weather_df = test_df.copy()  # Full test set for weather
         
         print(f"   Day 2 start: {day2_start}")
         print(f"   Test data range: {test_df.timestamp_utc.min()} → {test_df.timestamp_utc.max()}")
@@ -85,14 +85,14 @@ def test_short_head_single_day():
         print(f"   Range: [{pred_day2.min():.4f}, {pred_day2.max():.4f}]")
         print(f"   Mean: {pred_day2.mean():.4f}")
         
-        ***REMOVED*** Compare vs offline_predict_tft.py baseline
+        # Compare vs offline_predict_tft.py baseline
         print("\n[4/4] Comparing vs offline baseline...")
         offline_preds = pd.read_parquet("outputs/plant03_shorthead_test_preds.parquet")
         
-        ***REMOVED*** Find Day 2 predictions (rows 192-288, since 96 steps per day @ 15min)
+        # Find Day 2 predictions (rows 192-288, since 96 steps per day @ 15min)
         offline_day2 = offline_preds.iloc[192:288]['y_hat_q50'].values
         
-        ***REMOVED*** Calculate MAE
+        # Calculate MAE
         mae = np.abs(pred_day2 - offline_day2).mean()
         rmse = np.sqrt(((pred_day2 - offline_day2) ** 2).mean())
         max_diff = np.abs(pred_day2 - offline_day2).max()
@@ -102,12 +102,12 @@ def test_short_head_single_day():
         print(f"   RMSE vs offline: {rmse:.6f}")
         print(f"   Max difference: {max_diff:.6f}")
         
-        ***REMOVED*** Success criteria
-        if mae < 0.01:  ***REMOVED*** Very close match
+        # Success criteria
+        if mae < 0.01:  # Very close match
             print("\n✅ SHORT-HEAD TEST PASSED!")
             print("   Predictions match offline baseline (MAE < 0.01)")
             return True
-        elif mae < 0.05:  ***REMOVED*** Reasonable match
+        elif mae < 0.05:  # Reasonable match
             print("\n⚠️  SHORT-HEAD TEST ACCEPTABLE")
             print(f"   Minor differences (MAE={mae:.4f} < 0.05)")
             return True
@@ -130,7 +130,7 @@ def test_long_head():
     print("TEST: Long-Head TFT Inference (30 Days)")
     print("="*70)
     
-    ***REMOVED*** Checkpoint paths
+    # Checkpoint paths
     short_ckpt = Path("experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best_state_dict.pt")
     long_ckpt = Path("experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best_state_dict.pt")
     metadata = Path("data/metadata/germany/plant_03.json")
@@ -138,7 +138,7 @@ def test_long_head():
     long_train = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
     
     try:
-        ***REMOVED*** Initialize forecaster
+        # Initialize forecaster
         print("\n[1/3] Initializing PhysicsAwareForecaster...")
         forecaster = PhysicsAwareForecaster(
             short_ckpt=short_ckpt,
@@ -150,17 +150,17 @@ def test_long_head():
         )
         print("✓ Forecaster initialized")
         
-        ***REMOVED*** Load test data
+        # Load test data
         print("\n[2/3] Loading hourly test data...")
         test_df = pd.read_parquet("data/processed/plant_level/plant_03/hourly_longhead/test.parquet")
         print(f"✓ Test data loaded: {test_df.shape}")
         
-        ***REMOVED*** Test long-head prediction (start a few days in to have history)
+        # Test long-head prediction (start a few days in to have history)
         print("\n[3/3] Running long-head inference (720 hours)...")
-        forecast_start = pd.Timestamp("2023-10-19 00:00:00", tz="UTC")  ***REMOVED*** Start 7 days in for history
+        forecast_start = pd.Timestamp("2023-10-19 00:00:00", tz="UTC")  # Start 7 days in for history
         
-        historical_df = test_df.copy()  ***REMOVED*** Full test set for history
-        weather_df = test_df.copy()  ***REMOVED*** Full test set for weather
+        historical_df = test_df.copy()  # Full test set for history
+        weather_df = test_df.copy()  # Full test set for weather
         
         print(f"   Forecast start: {forecast_start}")
         print(f"   Test data range: {test_df.timestamp_utc.min()} → {test_df.timestamp_utc.max()}")
@@ -176,7 +176,7 @@ def test_long_head():
         print(f"   Range: [{pred_long.min():.4f}, {pred_long.max():.4f}]")
         print(f"   Mean: {pred_long.mean():.4f}")
         
-        ***REMOVED*** Validation checks
+        # Validation checks
         checks = []
         if pred_long.shape == (720,):
             checks.append("✓ Shape correct (720,)")
@@ -220,7 +220,7 @@ def main():
         'long_head': test_long_head()
     }
     
-    ***REMOVED*** Summary
+    # Summary
     print("\n" + "="*70)
     print("TEST SUMMARY")
     print("="*70)

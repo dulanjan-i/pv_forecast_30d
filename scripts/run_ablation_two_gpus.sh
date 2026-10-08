@@ -1,9 +1,9 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-***REMOVED*** --------
-***REMOVED*** Config
-***REMOVED*** --------
+# --------
+# Config
+# --------
 PHASE_DIR="freeze/final_thesis_v1/phase1_2024daily_final"
 PLANT_META="V1.0_FINAL_TFT/plant_metadata/plant_03.json"
 
@@ -15,21 +15,21 @@ SHORT_TRAIN="data/processed/plant_level/plant_03/15min_pca32/train.parquet"
 LONG_TRAIN="data/processed/plant_level/plant_03/hourly_longhead/train.parquet"
 HIST_ENCODER="data/processed/plant_level/plant_03/hist_weather_gt_15min_utc.parquet"
 
-***REMOVED*** Keep long head constant unless you want warm vs cold later
+# Keep long head constant unless you want warm vs cold later
 LONG_CKPT="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/plant_03/longhead/hourly720/BEST/checkpoints/best.ckpt"
 
 
 OUT_DIR="freeze/final_thesis_v1/ablations_inference_2gpu"
 mkdir -p "$OUT_DIR"
 
-***REMOVED*** Which prediction type to output: hybrid, pvlib_only, tft_only
+# Which prediction type to output: hybrid, pvlib_only, tft_only
 PRED_MODE="hybrid"
 SAVE_COMPONENTS="0"
 
-***REMOVED*** --------
-***REMOVED*** Your ablation short-head checkpoints
-***REMOVED*** Edit these paths to match your repo
-***REMOVED*** --------
+# --------
+# Your ablation short-head checkpoints
+# Edit these paths to match your repo
+# --------
 BASE_DIR="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/ablations"
 TS="20251226_165225"
 
@@ -39,9 +39,9 @@ SHORT_CKPTS["tft_pvlib"]="${BASE_DIR}/tft_pvlib/${TS}/checkpoints/best.ckpt"
 SHORT_CKPTS["tft_lstm"]="${BASE_DIR}/tft_lstm/${TS}/checkpoints/best.ckpt"
 SHORT_CKPTS["full"]="${BASE_DIR}/full/${TS}/checkpoints/best.ckpt"
 
-***REMOVED*** --------
-***REMOVED*** Helpers
-***REMOVED*** --------
+# --------
+# Helpers
+# --------
 merge_two_parquets () {
   local in1="$1"
   local in2="$2"
@@ -56,7 +56,7 @@ t2 = pq.read_table("${in2}")
 
 t = pa.concat_tables([t1, t2], promote=True)
 
-***REMOVED*** Sort for deterministic output if keys exist
+# Sort for deterministic output if keys exist
 cols = t.column_names
 sort_keys = [c for c in ["forecast_start", "step_ahead", "timestamp_utc"] if c in cols]
 if sort_keys:
@@ -95,7 +95,7 @@ run_one_model () {
   echo "pred_mode:  ${PRED_MODE}"
   echo "============================================================"
 
-  ***REMOVED*** shard 0 on GPU 0
+  # shard 0 on GPU 0
   CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python -m src.inference.phase1_inference_pipeline_v2 \
     --weather-source historical \
     --start-date "$START" --end-date "$END" --stride-days "$STRIDE" \
@@ -111,7 +111,7 @@ run_one_model () {
 
   pid0=$!
 
-  ***REMOVED*** shard 1 on GPU 1
+  # shard 1 on GPU 1
   CUDA_VISIBLE_DEVICES=1 PYTHONPATH=. python -m src.inference.phase1_inference_pipeline_v2 \
     --weather-source historical \
     --start-date "$START" --end-date "$END" --stride-days "$STRIDE" \
@@ -136,9 +136,9 @@ run_one_model () {
   echo "DONE: $out"
 }
 
-***REMOVED*** --------
-***REMOVED*** Run all
-***REMOVED*** --------
+# --------
+# Run all
+# --------
 for name in "${!SHORT_CKPTS[@]}"; do
   run_one_model "$name" "${SHORT_CKPTS[$name]}"
 done

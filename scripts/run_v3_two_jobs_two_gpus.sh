@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 PHASE_DIR="freeze/final_thesis_v1/phase1_2024daily_final"
@@ -15,15 +15,15 @@ HIST_ENCODER="data/processed/plant_level/plant_03/hist_weather_gt_15min_utc.parq
 OUT_DIR="freeze/final_thesis_v1/inference_v3_runs"
 mkdir -p "$OUT_DIR"
 
-***REMOVED*** -----------------------------
-***REMOVED*** WARM (production) ckpts
-***REMOVED*** -----------------------------
+# -----------------------------
+# WARM (production) ckpts
+# -----------------------------
 WARM_SHORT="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/plant_03/15min/BEST/checkpoints/best.ckpt"
 WARM_LONG="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/plant_03/longhead/hourly720/BEST/checkpoints/best.ckpt"
 
-***REMOVED*** -----------------------------
-***REMOVED*** COLD ckpts 
-***REMOVED*** -----------------------------
+# -----------------------------
+# COLD ckpts 
+# -----------------------------
 COLD_SHORT="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/plant_03/15min/pvlib_coldstart/20251229_134850/checkpoints/best.ckpt"
 COLD_LONG="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/plant_03/longhead/hourly720/cold/lr2e-3_do0.15_bs64_acc8_seed43/20251231_104406/checkpoints/best.ckpt"
 
@@ -44,7 +44,7 @@ echo " GPU0: warm hybrid with components"
 echo " GPU1: cold hybrid glued"
 echo "Outputs -> $OUT_DIR"
 
-***REMOVED*** GPU0: warm hybrid components
+# GPU0: warm hybrid components
 CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python -m src.inference.phase1_inference_pipeline_v3 \
   --weather-source historical \
   --start-date "$START" --end-date "$END" --stride-days "$STRIDE" \
@@ -59,7 +59,7 @@ CUDA_VISIBLE_DEVICES=0 PYTHONPATH=. python -m src.inference.phase1_inference_pip
 
 pid0=$!
 
-***REMOVED*** GPU1: cold hybrid glued
+# GPU1: cold hybrid glued
 CUDA_VISIBLE_DEVICES=1 PYTHONPATH=. python -m src.inference.phase1_inference_pipeline_v3 \
   --weather-source historical \
   --start-date "$START" --end-date "$END" --stride-days "$STRIDE" \

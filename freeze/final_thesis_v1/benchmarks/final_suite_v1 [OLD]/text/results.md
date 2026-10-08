@@ -1,4 +1,4 @@
-***REMOVED*** Benchmark suite summary
+# Benchmark suite summary
 
 - Truth: /home/dwijenayake/pv_forecast_30d/freeze/final_thesis_v1/phase1_2024daily_final/processed/ground_truth_15min_utc_capnorm.parquet
 
@@ -9,7 +9,7 @@
 - Night filtering: ON (y_true >= 0.01)
 
 
-***REMOVED******REMOVED*** Overall metrics
+## Overall metrics
 
 | model                  |       MAE |     RMSE |    nRMSE |         MBE |        R2 |      N |
 |:-----------------------|----------:|---------:|---------:|------------:|----------:|-------:|
@@ -21,7 +21,7 @@
 | Short_TFT_only         | 0.118174  | 0.167144 | 0.167144 |  0.0592412  |  0.270175 | 394008 |
 
 
-***REMOVED******REMOVED*** Stitched overall metrics
+## Stitched overall metrics
 
 | model                  |       MAE |     RMSE |    nRMSE |         MBE |        R2 |     N |
 |:-----------------------|----------:|---------:|---------:|------------:|----------:|------:|
@@ -33,7 +33,7 @@
 | Short_TFT_only         | 0.113051  | 0.161461 | 0.161461 |  0.0462743  |  0.309722 | 13869 |
 
 
-***REMOVED******REMOVED*** Tail abs error
+## Tail abs error
 
 | model                  |       P50 |      P90 |      P95 |      P99 |      mean |
 |:-----------------------|----------:|---------:|---------:|---------:|----------:|
@@ -45,7 +45,7 @@
 | Short_TFT_only         | 0.0762341 | 0.289407 | 0.359268 | 0.513335 | 0.118174  |
 
 
-***REMOVED******REMOVED*** Paired daily deltas vs baseline
+## Paired daily deltas vs baseline
 
 | model                  |   mean_daily_delta_MAE |     ci95_lo |     ci95_hi |   frac_days_improved_MAE |   N_days |
 |:-----------------------|-----------------------:|------------:|------------:|-------------------------:|---------:|

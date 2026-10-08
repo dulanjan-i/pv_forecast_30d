@@ -1,22 +1,22 @@
-***REMOVED***!/usr/bin/env bash
-***REMOVED*** =============================================================================
-***REMOVED*** MiRACLE v1.0 Inference Runner
-***REMOVED*** =============================================================================
-***REMOVED*** This script is the main entrypoint for the Docker container.
-***REMOVED*** It wraps the Python inference pipeline with a friendly CLI.
-***REMOVED***
-***REMOVED*** Usage inside Docker:
-***REMOVED***   docker run miracle-inference:v1.0 /app/scripts/run_inference.sh \
-***REMOVED***     --date 2026-01-02 \
-***REMOVED***     --output /app/outputs/forecast.parquet
-***REMOVED***
-***REMOVED*** Usage directly (dev):
-***REMOVED***   bash scripts/run_inference.sh --date 2026-01-02
-***REMOVED*** =============================================================================
+#!/usr/bin/env bash
+# =============================================================================
+# MiRACLE v1.0 Inference Runner
+# =============================================================================
+# This script is the main entrypoint for the Docker container.
+# It wraps the Python inference pipeline with a friendly CLI.
+#
+# Usage inside Docker:
+#   docker run miracle-inference:v1.0 /app/scripts/run_inference.sh \
+#     --date 2026-01-02 \
+#     --output /app/outputs/forecast.parquet
+#
+# Usage directly (dev):
+#   bash scripts/run_inference.sh --date 2026-01-02
+# =============================================================================
 
-set -euo pipefail  ***REMOVED*** exit on error, undefined var, pipe failure
+set -euo pipefail  # exit on error, undefined var, pipe failure
 
-***REMOVED*** ── Defaults ─────────────────────────────────────────────────────────────────
+# ── Defaults ─────────────────────────────────────────────────────────────────
 DATE="${MIRACLE_FORECAST_DATE:-$(date +%Y-%m-%d)}"
 OUTPUT_DIR="${MIRACLE_OUTPUT_DIR:-/app/outputs}"
 RL_CKPT="${MIRACLE_RL_CKPT:-/app/checkpoints/rl_v2/ddqn_best.pt}"
@@ -24,8 +24,8 @@ SHORT_CKPT="${MIRACLE_SHORT_CKPT:-/app/V1.0_FINAL_TFT/shorthead_seed42/checkpoin
 LONG_CKPT="${MIRACLE_LONG_CKPT:-/app/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt}"
 PLANT_META="${MIRACLE_PLANT_META:-/app/V1.0_FINAL_TFT/plant_metadata/plant_03.json}"
 
-***REMOVED*** ── Parse CLI args ────────────────────────────────────────────────────────────
-while [[ $***REMOVED*** -gt 0 ]]; do
+# ── Parse CLI args ────────────────────────────────────────────────────────────
+while [[ $# -gt 0 ]]; do
     case $1 in
         --date)        DATE="$2";       shift 2 ;;
         --output-dir)  OUTPUT_DIR="$2"; shift 2 ;;
@@ -46,7 +46,7 @@ while [[ $***REMOVED*** -gt 0 ]]; do
     esac
 done
 
-***REMOVED*** ── Setup ─────────────────────────────────────────────────────────────────────
+# ── Setup ─────────────────────────────────────────────────────────────────────
 mkdir -p "$OUTPUT_DIR"
 OUTPUT_FILE="${OUTPUT_DIR}/forecast_${DATE}.parquet"
 
@@ -60,7 +60,7 @@ echo "  Short-head    : $SHORT_CKPT"
 echo "  Long-head     : $LONG_CKPT"
 echo "=============================================="
 
-***REMOVED*** ── Verify checkpoints (SHA256 spot-check) ───────────────────────────────────
+# ── Verify checkpoints (SHA256 spot-check) ───────────────────────────────────
 echo ""
 echo "Verifying checkpoint integrity..."
 python - << PYCHECK
@@ -91,7 +91,7 @@ if not ok:
 print("All checksums verified.")
 PYCHECK
 
-***REMOVED*** ── Run inference ─────────────────────────────────────────────────────────────
+# ── Run inference ─────────────────────────────────────────────────────────────
 echo ""
 echo "Running inference pipeline..."
 python -m src.inference.physics_aware_forecaster \

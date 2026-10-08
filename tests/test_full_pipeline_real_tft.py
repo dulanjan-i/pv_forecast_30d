@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Full end-to-end test of the hierarchical 30-day forecasting pipeline with REAL TFT models.
 
@@ -31,9 +31,9 @@ def test_full_30day_pipeline():
     print("FULL 30-DAY HIERARCHICAL PIPELINE TEST (REAL TFT)")
     print("="*70)
     
-    ***REMOVED*** Configuration (V1.0 FINAL - Seed 42 + Seed 43)
-    short_ckpt = Path("V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.pt")  ***REMOVED*** Seed 42, warm-start
-    long_ckpt = Path("V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt")    ***REMOVED*** Seed 43, warm-start
+    # Configuration (V1.0 FINAL - Seed 42 + Seed 43)
+    short_ckpt = Path("V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.pt")  # Seed 42, warm-start
+    long_ckpt = Path("V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt")    # Seed 43, warm-start
     metadata = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
     short_train = Path("data/processed/plant_level/plant_03/15min_pca32/train.parquet")
     long_train = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
@@ -55,7 +55,7 @@ def test_full_30day_pipeline():
         print("  - RL Meta-Controller ready (heuristic mode)")
         
         print("\n[2/5] Loading real test data...")
-        ***REMOVED*** Load both 15min and hourly test sets
+        # Load both 15min and hourly test sets
         short_test = pd.read_parquet("data/processed/plant_level/plant_03/15min_pca32/test.parquet")
         long_test = pd.read_parquet("data/processed/plant_level/plant_03/hourly_longhead/test.parquet")
         
@@ -69,13 +69,13 @@ def test_full_30day_pipeline():
         print("   - 30 short-head calls (96 steps @ 15min per day)")
         print("   - 1 long-head call (720 hours strategic)")
         
-        ***REMOVED*** Use Day 10 start to ensure enough history (168 hours = 7 days)
-        forecast_start = pd.Timestamp("2023-10-22 00:00:00", tz="UTC")  ***REMOVED*** Day 10 in test set
+        # Use Day 10 start to ensure enough history (168 hours = 7 days)
+        forecast_start = pd.Timestamp("2023-10-22 00:00:00", tz="UTC")  # Day 10 in test set
         
         print(f"   Forecast start: {forecast_start}")
         print("   Running predict_30d()...")
         
-        ***REMOVED*** Note: Using return_components=False for final forecast only
+        # Note: Using return_components=False for final forecast only
         forecast = forecaster.predict_30d(
             forecast_start=forecast_start,
             historical_df=short_test,
@@ -87,12 +87,12 @@ def test_full_30day_pipeline():
         
         print("\n[4/5] Validating output...")
         
-        ***REMOVED*** Shape check
+        # Shape check
         print(f"   Shape: {forecast.shape}")
         assert forecast.shape == (2880,), f"Expected (2880,), got {forecast.shape}"
         print("   ✓ Shape correct (2880 steps @ 15min = 30 days)")
         
-        ***REMOVED*** Range check
+        # Range check
         min_val, max_val = forecast.min(), forecast.max()
         mean_val = forecast.mean()
         print(f"   Range: [{min_val:.4f}, {max_val:.4f}]")
@@ -101,17 +101,17 @@ def test_full_30day_pipeline():
         assert max_val <= 1.2, f"Values exceed capacity (>120%): {max_val}"
         print("   ✓ Range valid [0.0, 1.2]")
         
-        ***REMOVED*** Night constraint check
-        ***REMOVED*** Approximate: values < 0.01 should be most of night hours
+        # Night constraint check
+        # Approximate: values < 0.01 should be most of night hours
         night_steps = (forecast < 0.01).sum()
         print(f"   Night steps (< 0.01): {night_steps}/{len(forecast)} ({night_steps/len(forecast)*100:.1f}%)")
         print("   ✓ Night constraints appear reasonable")
         
-        ***REMOVED*** Day pattern check
+        # Day pattern check
         day_steps = (forecast >= 0.01).sum()
         print(f"   Day steps (≥ 0.01): {day_steps}/{len(forecast)} ({day_steps/len(forecast)*100:.1f}%)")
         
-        ***REMOVED*** Check for NaN/inf
+        # Check for NaN/inf
         assert not np.isnan(forecast).any(), "NaN values found"
         assert not np.isinf(forecast).any(), "Inf values found"
         print("   ✓ No NaN or Inf values")
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     try:
         forecast = test_full_30day_pipeline()
         
-        ***REMOVED*** Optionally save output
+        # Optionally save output
         output_path = Path("outputs/full_pipeline_test_forecast.npy")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         np.save(output_path, forecast)

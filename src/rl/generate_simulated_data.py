@@ -35,24 +35,24 @@ def simulate_forecast_errors(ground_truth: np.ndarray, horizon: int) -> Tuple[np
     """
     gt_slice = ground_truth[:horizon]
     
-    ***REMOVED*** Base noise level (increases with horizon)
-    if horizon <= 4:  ***REMOVED*** 1 hour
+    # Base noise level (increases with horizon)
+    if horizon <= 4:  # 1 hour
         noise_std = 0.03
-    elif horizon <= 96:  ***REMOVED*** 24 hours
+    elif horizon <= 96:  # 24 hours
         noise_std = 0.05
-    elif horizon <= 672:  ***REMOVED*** 7 days
+    elif horizon <= 672:  # 7 days
         noise_std = 0.08
-    else:  ***REMOVED*** 30 days
+    else:  # 30 days
         noise_std = 0.12
     
-    ***REMOVED*** Add Gaussian noise
+    # Add Gaussian noise
     noise = np.random.normal(0, noise_std, len(gt_slice))
     forecast = gt_slice + noise
     
-    ***REMOVED*** Clip to physical bounds [0, 1] for normalized power
+    # Clip to physical bounds [0, 1] for normalized power
     forecast = np.clip(forecast, 0.0, 1.0)
     
-    ***REMOVED*** Compute RMSE
+    # Compute RMSE
     rmse = np.sqrt(np.mean((forecast - gt_slice) ** 2))
     
     return forecast, float(rmse)
@@ -65,14 +65,14 @@ def compute_metrics_from_ground_truth(
     """
     Simulate forecast metrics using ground truth + realistic noise.
     """
-    ***REMOVED*** Simulate forecasts at different horizons
+    # Simulate forecasts at different horizons
     _, rmse_1h = simulate_forecast_errors(ground_truth, horizon=4)
     _, rmse_6h = simulate_forecast_errors(ground_truth, horizon=24)
     _, rmse_24h = simulate_forecast_errors(ground_truth, horizon=96)
     _, rmse_7d = simulate_forecast_errors(ground_truth, horizon=672)
     _, rmse_30d = simulate_forecast_errors(ground_truth, horizon=2880)
     
-    ***REMOVED*** Physics residual (compare ground truth vs PVLib)
+    # Physics residual (compare ground truth vs PVLib)
     if 'pvlib_ac_kw' in window_data.columns and len(ground_truth) >= 96:
         pvlib_baseline = window_data['pvlib_ac_kw'].values[:96]
         gt_slice = ground_truth[:96]
@@ -97,30 +97,30 @@ def build_rl_state(metrics: Dict, context: Dict) -> np.ndarray:
     """Build 35-dimensional RL state vector from metrics."""
     state = np.zeros(35, dtype=np.float32)
     
-    ***REMOVED*** [0-4] RMSE components
+    # [0-4] RMSE components
     state[0] = metrics['short_rmse_1h']
     state[1] = metrics['long_rmse_30d']
     state[2] = metrics['physics_residual']
     state[3] = metrics.get('short_rmse_6h', 0.06)
     state[4] = metrics.get('short_rmse_24h', 0.08)
     
-    ***REMOVED*** [5-6] Confidence (inverse of RMSE)
-    state[5] = 1.0 - min(state[0] * 10, 0.9)  ***REMOVED*** short confidence
-    state[6] = 1.0 - min(state[1] * 10, 0.9)  ***REMOVED*** long confidence
+    # [5-6] Confidence (inverse of RMSE)
+    state[5] = 1.0 - min(state[0] * 10, 0.9)  # short confidence
+    state[6] = 1.0 - min(state[1] * 10, 0.9)  # long confidence
     
-    ***REMOVED*** [7-9] Drift indicators
+    # [7-9] Drift indicators
     state[7] = context.get('data_drift', 0.0)
-    state[8] = abs(state[0] - state[1])  ***REMOVED*** short-long mismatch
+    state[8] = abs(state[0] - state[1])  # short-long mismatch
     state[9] = 1.0 if metrics['success'] else 0.0
     
-    ***REMOVED*** [10-14] Blend weights
+    # [10-14] Blend weights
     state[10] = context.get('blend_short', 0.33)
     state[11] = context.get('blend_long', 0.33)
     state[12] = context.get('blend_physics', 0.34)
     state[13] = context.get('actions_since_retrain', 0) / 100.0
-    state[14] = 0.0  ***REMOVED*** retrain count
+    state[14] = 0.0  # retrain count
     
-    ***REMOVED*** [15-19] Temporal context
+    # [15-19] Temporal context
     forecast_time = context.get('forecast_start')
     if forecast_time:
         state[15] = forecast_time.hour / 24.0
@@ -129,26 +129,26 @@ def build_rl_state(metrics: Dict, context: Dict) -> np.ndarray:
         state[18] = forecast_time.dayofweek / 7.0
         state[19] = 1.0 if forecast_time.dayofweek >= 5 else 0.0
     
-    ***REMOVED*** [20-24] Weather
+    # [20-24] Weather
     state[20] = context.get('cloud_cover', 0.5)
     state[21] = context.get('ghi', 0.3)
     state[22] = context.get('dni', 0.3)
     state[23] = context.get('temperature', 0.5)
-    state[24] = 1.0  ***REMOVED*** weather quality
+    state[24] = 1.0  # weather quality
     
-    ***REMOVED*** [25-29] Compute budget
-    state[25] = 1.0  ***REMOVED*** budget remaining
-    state[26] = 0.5  ***REMOVED*** priority
-    state[27] = 1.0  ***REMOVED*** API status
-    state[28] = 0.95  ***REMOVED*** API agreement
-    state[29] = 0.0  ***REMOVED*** cost
+    # [25-29] Compute budget
+    state[25] = 1.0  # budget remaining
+    state[26] = 0.5  # priority
+    state[27] = 1.0  # API status
+    state[28] = 0.95  # API agreement
+    state[29] = 0.0  # cost
     
-    ***REMOVED*** [30-34] Physics baseline
+    # [30-34] Physics baseline
     state[30] = 1.0 - min(metrics['physics_residual'] * 10, 0.9)
-    state[31] = 0.0  ***REMOVED*** calibration age
+    state[31] = 0.0  # calibration age
     state[32] = context.get('solar_zenith', 0.5)
     state[33] = context.get('clearsky_ghi', 0.5)
-    state[34] = 1.0  ***REMOVED*** pvlib confidence
+    state[34] = 1.0  # pvlib confidence
     
     return state
 
@@ -192,7 +192,7 @@ def generate_rl_transitions(
     """Generate RL transitions from historical test data."""
     transitions = []
     
-    window_size = 2880  ***REMOVED*** 30 days @ 15min
+    window_size = 2880  # 30 days @ 15min
     stride = 96 * stride_days
     
     logger.info(f"Generating {num_samples} transitions with {stride_days}-day stride")
@@ -204,15 +204,15 @@ def generate_rl_transitions(
         if len(transitions) >= num_samples:
             break
         
-        ***REMOVED*** Extract window
+        # Extract window
         window = test_data.iloc[i:i+window_size].copy()
         forecast_start = window['timestamp_utc'].iloc[0]
         ground_truth = window['power_norm'].values
         
-        ***REMOVED*** Compute metrics with simulated forecast errors
+        # Compute metrics with simulated forecast errors
         metrics = compute_metrics_from_ground_truth(ground_truth, window)
         
-        ***REMOVED*** Build context
+        # Build context
         context = {
             'forecast_start': forecast_start,
             'blend_short': 0.33,
@@ -221,16 +221,16 @@ def generate_rl_transitions(
             'actions_since_retrain': i // stride,
             'cloud_cover': float(window['cloud_cover'].iloc[0]) if 'cloud_cover' in window else 0.5,
             'temperature': float(window['temperature_2m'].iloc[0]) if 'temperature_2m' in window else 20.0,
-            'data_drift': np.random.uniform(0.0, 0.05)  ***REMOVED*** Simulate drift
+            'data_drift': np.random.uniform(0.0, 0.05)  # Simulate drift
         }
         
-        ***REMOVED*** Build state
+        # Build state
         state = build_rl_state(metrics, context)
         
-        ***REMOVED*** Simulate action
+        # Simulate action
         action, action_name = simulate_heuristic_action(state)
         
-        ***REMOVED*** Next state (look ahead 1 day)
+        # Next state (look ahead 1 day)
         if i + stride + window_size < len(test_data):
             next_window = test_data.iloc[i+stride:i+stride+window_size].copy()
             next_forecast_start = next_window['timestamp_utc'].iloc[0]
@@ -243,10 +243,10 @@ def generate_rl_transitions(
         else:
             next_state = state.copy()
         
-        ***REMOVED*** Compute reward
+        # Compute reward
         reward = compute_reward(state, action, next_state)
         
-        ***REMOVED*** Build transition
+        # Build transition
         transition = {
             'sample_idx': len(transitions),
             'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
@@ -286,12 +286,12 @@ def main():
     
     args = parser.parse_args()
     
-    ***REMOVED*** Load test data
+    # Load test data
     logger.info(f"Loading test data from {args.test_data}")
     test_data = pd.read_parquet(args.test_data)
     test_data = test_data.sort_values('timestamp_utc').reset_index(drop=True)
     
-    ***REMOVED*** Generate transitions
+    # Generate transitions
     transitions = generate_rl_transitions(
         test_data=test_data,
         num_samples=args.num_samples,
@@ -302,10 +302,10 @@ def main():
         logger.error("No transitions generated!")
         return
     
-    ***REMOVED*** Convert to DataFrame
+    # Convert to DataFrame
     df = pd.DataFrame(transitions)
     
-    ***REMOVED*** Print statistics
+    # Print statistics
     logger.info(f"\n{'='*60}")
     logger.info(f"RL Training Data Summary")
     logger.info(f"{'='*60}")
@@ -323,7 +323,7 @@ def main():
     logger.info(f"  long_rmse_30d:  {df['long_rmse_30d'].mean():.4f} ± {df['long_rmse_30d'].std():.4f}")
     logger.info(f"  physics_residual: {df['physics_residual'].mean():.4f} ± {df['physics_residual'].std():.4f}")
     
-    ***REMOVED*** Save
+    # Save
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(output_path, index=False)

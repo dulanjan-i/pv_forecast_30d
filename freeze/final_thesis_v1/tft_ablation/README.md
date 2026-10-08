@@ -12,7 +12,7 @@ Notes:
 
 Provenance gap:
 - Some run metadata do not include an explicit git commit hash; include repository commit in thesis notes if required for reproducibility.
-***REMOVED*** TFT Ablation Artifacts
+# TFT Ablation Artifacts
 
 This folder contains LaTeX and metadata exports derived from the ablation experiments located at `experiments/tft/runs/germany/ablations/`.
 

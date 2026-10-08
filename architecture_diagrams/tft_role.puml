@@ -8,18 +8,18 @@ skinparam ArrowThickness 3
 title Temporal Fusion Transformer, Role in MiRACLE
 
 ' Colors
-' Inputs:  ***REMOVED***D9EDF7
-' Model:   ***REMOVED***E6E6FA
-' Output:  ***REMOVED***DFF0D8
+' Inputs:  #D9EDF7
+' Model:   #E6E6FA
+' Output:  #DFF0D8
 
 
-rectangle "Physical features\nfrom PVLib" as PHYS ***REMOVED***D9EDF7
-rectangle "Past covariates\n(historic PV + weather)\n as LSTM Encoding" as PAST ***REMOVED***D9EDF7
-rectangle "Future covariates\n(weather forecast,\ncalendar features)\nfrom API polling" as FUT ***REMOVED***D9EDF7
+rectangle "Physical features\nfrom PVLib" as PHYS #D9EDF7
+rectangle "Past covariates\n(historic PV + weather)\n as LSTM Encoding" as PAST #D9EDF7
+rectangle "Future covariates\n(weather forecast,\ncalendar features)\nfrom API polling" as FUT #D9EDF7
 
-rectangle "Temporal Fusion Transformer\n(variable selection + attention\nmulti horizon decoder)" as TFT ***REMOVED***E6E6FA
+rectangle "Temporal Fusion Transformer\n(variable selection + attention\nmulti horizon decoder)" as TFT #E6E6FA
 
-rectangle "30 day PV power forecast\n(multi horizon sequence)" as OUT ***REMOVED***DFF0D8
+rectangle "30 day PV power forecast\n(multi horizon sequence)" as OUT #DFF0D8
 
 
 PHYS --> TFT

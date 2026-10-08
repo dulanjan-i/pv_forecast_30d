@@ -1,10 +1,10 @@
-***REMOVED*** MiRACLE v1.0: Methodology
+# MiRACLE v1.0: Methodology
 
-***REMOVED******REMOVED*** Multi-Horizon Photovoltaic Forecasting via Temporal Fusion Transformers with Physics-Informed Features
+## Multi-Horizon Photovoltaic Forecasting via Temporal Fusion Transformers with Physics-Informed Features
 
 ---
 
-***REMOVED******REMOVED*** 1. Overview
+## 1. Overview
 
 This study presents MiRACLE v1.0 (Meta Intelligent Reinforcement Driven Adaptive Control for Learning Based Ensembles), a hybrid deep learning framework for multi-horizon photovoltaic power forecasting. The current implementation combines data-driven temporal modeling (Temporal Fusion Transformers) with physics-based solar irradiance features (PVLib library). The architecture addresses two distinct forecasting horizons: (1) short-term operational forecasting at 15-minute resolution over a 24-hour horizon (96 timesteps), and (2) long-term strategic forecasting at hourly resolution over a 30-day horizon (720 timesteps).
 
@@ -12,9 +12,9 @@ This study presents MiRACLE v1.0 (Meta Intelligent Reinforcement Driven Adaptive
 
 ---
 
-***REMOVED******REMOVED*** 2. Data Sources and Preprocessing
+## 2. Data Sources and Preprocessing
 
-***REMOVED******REMOVED******REMOVED*** 2.1 Study Site and Dataset
+### 2.1 Study Site and Dataset
 
 The analysis utilizes operational data from five commercial PV installations in Germany (designated plant_01, plant_02, plant_03, plant_05, plant_06) spanning January 2023 through February 2024. Site-specific metadata includes geographic coordinates (latitude, longitude), panel orientation (tilt angle, azimuth), and installed capacity (kW).
 
@@ -23,7 +23,7 @@ The analysis utilizes operational data from five commercial PV installations in 
 - Validation period: December 2, 2023 00:00 UTC – February 29, 2024 23:45 UTC (36,952 samples across 5 plants)
 - Temporal resolution: 15-minute granularity (96 intervals per day)
 
-***REMOVED******REMOVED******REMOVED*** 2.2 Target Variable Construction
+### 2.2 Target Variable Construction
 
 Normalized AC power output serves as the prediction target:
 
@@ -33,7 +33,7 @@ $$
 
 where $P_{\text{AC}}(t)$ represents measured AC power (kW) at time $t$, and $P_{\text{nameplate}}$ denotes the site's installed capacity (kWp). This normalization enables cross-site learning by standardizing output magnitudes while preserving temporal dynamics and efficiency variations.
 
-***REMOVED******REMOVED******REMOVED*** 2.3 Meteorological Inputs
+### 2.3 Meteorological Inputs
 
 Historical weather data provides horizon-known meteorological drivers at 15-minute resolution. The feature set comprises:
 
@@ -62,7 +62,7 @@ Historical weather data provides horizon-known meteorological drivers at 15-minu
 
 All meteorological features are treated as time-varying known reals in the TFT architecture.
 
-***REMOVED******REMOVED******REMOVED*** 2.4 Physics-Based Feature Engineering via PVLib
+### 2.4 Physics-Based Feature Engineering via PVLib
 
 To incorporate first-principles solar physics, we compute auxiliary features using PVLib-Python (version per `environment.yml`). For each site and timestamp, the pipeline executes:
 
@@ -99,7 +99,7 @@ poa = pvlib.irradiance.get_total_irradiance(
     dhi=dhi,
     dni_extra=dni_extra,
     model="haydavies",
-    albedo=0.2,  ***REMOVED*** ground reflectance coefficient
+    albedo=0.2,  # ground reflectance coefficient
 )
 ```
 
@@ -111,7 +111,7 @@ Cell temperature computed using PVLib's SAPM (Sandia Array Performance Model) or
 
 ```python
 def compute_cell_temperature(poa_global, temp_air, wind):
-    ***REMOVED*** Try SAPM with version-compatible API
+    # Try SAPM with version-compatible API
     params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS["sapm"]["open_rack_glass_glass"]
     a, b, deltaT = params["a"], params["b"], params["deltaT"]
     return pvlib.temperature.sapm_cell(poa_global, temp_air, wind, a=a, b=b, deltaT=deltaT)
@@ -135,9 +135,9 @@ Expected power estimated using PVLib's PVWatts model (`pvlib.pvsystem.pvwatts_dc
 
 ---
 
-***REMOVED******REMOVED*** 3. Model Architecture: Temporal Fusion Transformer
+## 3. Model Architecture: Temporal Fusion Transformer
 
-***REMOVED******REMOVED******REMOVED*** 3.1 TFT Framework
+### 3.1 TFT Framework
 
 The Temporal Fusion Transformer (Lim et al., 2021) is a multi-horizon attention-based architecture designed for time series forecasting with heterogeneous input types. The model comprises:
 
@@ -155,7 +155,7 @@ The architecture handles:
 
 **Implementation:** PyTorch Forecasting library's `TemporalFusionTransformer.from_dataset()` method. Model configuration in `src/configs/tft_v1.py`.
 
-***REMOVED******REMOVED******REMOVED*** 3.2 Feature Role Assignment
+### 3.2 Feature Role Assignment
 
 **Temporal Index and Grouping:**
 - `timestamp_utc`: primary time key (15-minute resolution)
@@ -176,13 +176,13 @@ The architecture handles:
 **Static Metadata:**
 - Site identity encoded via categorical `plant_id` (embedded to learnable vector space by TFT)
 
-***REMOVED******REMOVED******REMOVED*** 3.3 Normalization and Scaling
+### 3.3 Normalization and Scaling
 
 - **Target normalization**: `GroupNormalizer(groups=["plant_id"], transformation="softplus")` per PyTorch Forecasting API, ensuring positive outputs and site-specific scaling
 - **Input standardization**: TFT's internal preprocessing applies z-score normalization to continuous reals using training set statistics
 - **Relative time encoding**: `add_relative_time_idx=True` provides position-within-sequence information
 
-***REMOVED******REMOVED******REMOVED*** 3.4 Loss Function and Probabilistic Output
+### 3.4 Loss Function and Probabilistic Output
 
 The model optimizes quantile loss to produce distributional forecasts:
 
@@ -204,9 +204,9 @@ Default quantile set: $Q = \{0.1, 0.5, 0.9\}$ (P10, median, P90). The median (0.
 
 ---
 
-***REMOVED******REMOVED*** 4. Experimental Design
+## 4. Experimental Design
 
-***REMOVED******REMOVED******REMOVED*** 4.1 Ablation Study: Feature Contribution Analysis
+### 4.1 Ablation Study: Feature Contribution Analysis
 
 To quantify the incremental value of PVLib physics features versus pure data-driven approaches, we conducted a controlled ablation study with four configurations:
 
@@ -239,7 +239,7 @@ To quantify the incremental value of PVLib physics features versus pure data-dri
 - Optimizer: AdamW with weight decay 1e-4 (per `src/training/train_tft_v1.py:optimizer` construction)
 - Early stopping: Patience 5 epochs on validation loss
 
-***REMOVED******REMOVED******REMOVED*** 4.2 Multi-Horizon Training Strategy
+### 4.2 Multi-Horizon Training Strategy
 
 **Short-Term Head (15-minute, 24-hour horizon):**
 - Architecture: TFT with `encoder_length=96`, `prediction_length=96`
@@ -255,7 +255,7 @@ To quantify the incremental value of PVLib physics features versus pure data-dri
 - Architecture: TFT with `encoder_length=720`, `prediction_length=720`
 - Data: Hourly resampled via mean aggregation from 15-min source (script: `src/data/make_hourly_from_15min_parquets.py`)
 
-***REMOVED******REMOVED******REMOVED*** 4.3 Pretraining and Transfer Learning Protocol
+### 4.3 Pretraining and Transfer Learning Protocol
 
 **Global Pretraining (Data-Leakage Prevention):**
 
@@ -290,9 +290,9 @@ Two regimes compared via controlled experiment:
 
 ---
 
-***REMOVED******REMOVED*** 5. Training Infrastructure and Implementation
+## 5. Training Infrastructure and Implementation
 
-***REMOVED******REMOVED******REMOVED*** 5.1 Computational Environment
+### 5.1 Computational Environment
 
 - **Hardware:** NVIDIA H100 PCIe GPUs (verified from partition `gpuh100` in SBATCH scripts and `gpu_name` column in `ablation_summary_extended.csv`)
 - **Software Stack:**
@@ -304,7 +304,7 @@ Two regimes compared via controlled experiment:
 
 - **Precision:** FP32 default, with optional mixed-precision (bf16/fp16) via `--precision` and `--enable_amp` flags (implementation: `train_tft_v1.py` lines 470-480)
 
-***REMOVED******REMOVED******REMOVED*** 5.2 Training Monitoring
+### 5.2 Training Monitoring
 
 Per-epoch metrics logged to `<run_dir>/logs/metrics.csv`:
 - `train_loss`, `val_loss`: quantile loss on respective splits
@@ -321,7 +321,7 @@ Per-epoch metrics logged to `<run_dir>/logs/metrics.csv`:
 
 **Implementation:** `src/training/train_tft_v1.py` lines 620-678
 
-***REMOVED******REMOVED******REMOVED*** 5.3 Checkpoint Format and Loading
+### 5.3 Checkpoint Format and Loading
 
 **Checkpoint Save Format:**
 ```python
@@ -339,7 +339,7 @@ model.load_state_dict(sd, strict=True)
 
 **Reference:** `src/validation/eval_short_head.py` lines 160-173
 
-***REMOVED******REMOVED******REMOVED*** 5.4 Data Versioning and Reproducibility
+### 5.4 Data Versioning and Reproducibility
 
 All data transformations scripted via modular Python pipeline:
 - `src/features/germany_build_pvlib_for_tft.py`: PVLib feature computation
@@ -354,7 +354,7 @@ Configuration management:
 
 ---
 
-***REMOVED******REMOVED*** 6. Evaluation Metrics
+## 6. Evaluation Metrics
 
 Performance assessed via point forecast errors on validation split:
 
@@ -377,7 +377,7 @@ $$
 
 ---
 
-***REMOVED******REMOVED*** 7. Quality Assurance and Data Integrity
+## 7. Quality Assurance and Data Integrity
 
 **Preprocessing Checks:**
 - Temporal alignment verification: No duplicate timestamps per site (enforced in `germany_build_tft_weather.py` lines 109-111)
@@ -395,7 +395,7 @@ $$
 
 ---
 
-***REMOVED******REMOVED*** 8. Limitations and Design Constraints
+## 8. Limitations and Design Constraints
 
 1. **Missing LSTM Encoder Integration**: v1.0 excludes upstream LSTM embeddings to prevent data leakage during global pretraining. Future versions will implement safe rollout strategies.
 
@@ -409,7 +409,7 @@ $$
 
 ---
 
-***REMOVED******REMOVED*** References
+## References
 
 1. Lim, B., Arık, S. Ö., Loeff, N., & Pfister, T. (2021). Temporal Fusion Transformers for interpretable multi-horizon time series forecasting. *International Journal of Forecasting*, 37(4), 1748-1764.
 

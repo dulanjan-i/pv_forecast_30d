@@ -1,13 +1,13 @@
-***REMOVED*** Physics-Aware Dual-Head Glue Code Architecture
+# Physics-Aware Dual-Head Glue Code Architecture
 
-***REMOVED******REMOVED*** Scope note (thesis vs. training metrics)
+## Scope note (thesis vs. training metrics)
 
 This document describes the **architecture and design intent** of the dual-head “physics glue” inference approach.
 
 - Values like **RMSE 0.087 (short-head)** and **RMSE 0.076 (long-head)** refer to **model-level training evaluation on sliding windows** (2023-era test-on-windows), not the end-to-end deployed-system backtest.
 - Thesis headline end-to-end metrics should be cited from the canonical 2024 backtest outputs under `freeze/final_thesis_v1/` (e.g., `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/text/results.md`).
 
-***REMOVED******REMOVED*** Overview Pipeline
+## Overview Pipeline
 
 **INPUT:** Weather forecast (next 30 days)
 
@@ -29,36 +29,36 @@ This document describes the **architecture and design intent** of the dual-head 
 
 ---
 
-***REMOVED******REMOVED*** STEP 1: Generate Three Prediction Streams
+## STEP 1: Generate Three Prediction Streams
 
-***REMOVED******REMOVED******REMOVED*** A. Short Head (ML)
+### A. Short Head (ML)
 - **Output:** 96 steps @ 15-min (24h)
 - **Encoder:** 96 steps @ 15-min historical data
 - **Uses:** Historical data + forecast weather (21 features)
 - **Purpose:** Accurate near-term predictions (Day 1 only)
 
-***REMOVED******REMOVED******REMOVED*** B. Long Head (ML)
+### B. Long Head (ML)
 - **Output:** 720 steps @ 1-hour (30 days) ← **SINGLE INFERENCE CALL**
 - **Encoder:** 168 hours (7 days) historical context
 - **Uses:** Historical data + forecast weather (21 features)
 - **Purpose:** Full 30-day strategic forecast in one pass
 
-***REMOVED******REMOVED******REMOVED*** C. PVLib (Physics)
+### C. PVLib (Physics)
 - **Output:** 2880 steps @ 15-min (30 days)
 - **Method:** Pure physics calculation (weather → DC power)
 - **Purpose:** Physics-based baseline (ground truth constraint) + intra-hour shape
 
 ---
 
-***REMOVED******REMOVED*** STEP 2: Physics-Aware Blending (Simplified Architecture)
+## STEP 2: Physics-Aware Blending (Simplified Architecture)
 
-***REMOVED******REMOVED******REMOVED*** Day 1 (first 24h = 96 steps @ 15-min):
+### Day 1 (first 24h = 96 steps @ 15-min):
 1. Use **SHORT HEAD** (high accuracy, matches production time resolution)
 2. Constrain with PVLib baseline
 3. Blend formula: `day1 = α₁ × short_ml + (1-α₁) × pvlib`
    - α₁ ∈ [0.5, 1.0] (controlled by RL)
 
-***REMOVED******REMOVED******REMOVED*** Days 2-30 (remaining 696h = 2784 steps @ 15-min):
+### Days 2-30 (remaining 696h = 2784 steps @ 15-min):
 1. Use **LONG HEAD** single call → 720 steps @ 1-hour
 2. **Upsample** 1-hour → 15-min using PVLib intra-hour shape:
    - For each hour prediction, distribute into 4×15-min intervals
@@ -68,7 +68,7 @@ This document describes the **architecture and design intent** of the dual-head 
    - `days2_30 = α₂ × long_upsampled + (1-α₂) × pvlib`
    - α₂ ∈ [0.3, 0.8] (controlled by RL)
 4. Take first 2784 steps (discard overlap with Day 1)
-***REMOVED******REMOVED******REMOVED*** Final Assembly:
+### Final Assembly:
 - Concatenate: `[day1 (96 steps), days2_30 (2784 steps)]` = **2880 steps @ 15-min**
 - Apply physics constraints globally:
   - If any prediction > PVLib × 1.2 → cap at PVLib × 1.2
@@ -79,28 +79,28 @@ This document describes the **architecture and design intent** of the dual-head 
 
 ---
 
-***REMOVED******REMOVED*** STEP 3: RL Meta-Controller (Adjusts Blend Weights)
+## STEP 3: RL Meta-Controller (Adjusts Blend Weights)
 
-***REMOVED******REMOVED******REMOVED*** State (what RL observes):
+### State (what RL observes):
 - Recent forecast error (RMSE last 7 days)
 - Weather stability (variance of forecasts)
 - API health (latency, missing data flags)
 - Compute budget remaining
 
-***REMOVED******REMOVED******REMOVED*** Action (what RL controls):
+### Action (what RL controls):
 - **Implementation note:** the repository’s meta-controller is implemented as a **DDQN (Double DQN)** agent with a **discrete action space** (actions select among operational presets rather than continuous weights).
 - See: `src/rl/rl_meta_controller.py`.
 
-***REMOVED******REMOVED******REMOVED*** Reward:
+### Reward:
 reward = -RMSE(forecast, actual) - λ × compute_cost
 
-***REMOVED******REMOVED******REMOVED*** Learning Algorithm:
+### Learning Algorithm:
 - **DDQN (Double DQN)** with prioritized replay and soft target updates.
 - Policy evaluation artifacts (baseline vs policy) are generated under `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/`.
 
 ---
 
-***REMOVED******REMOVED*** Key Design Decisions
+## Key Design Decisions
 
 | Aspect | Choice | Rationale |
 |--------|--------|-----------|
@@ -114,13 +114,13 @@ reward = -RMSE(forecast, actual) - λ × compute_cost
 
 ---
 
-***REMOVED******REMOVED*** Implementation Notes
+## Implementation Notes
 
-***REMOVED******REMOVED******REMOVED*** Model Checkpoints:
+### Model Checkpoints:
 - Short head: `experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best.ckpt`
 - Long head: `experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best.ckpt`
 
-***REMOVED******REMOVED******REMOVED*** Validation Results:
+### Validation Results:
 - **Model-level training evaluation (not thesis headline):**
    - Short head: RMSE 0.087 (test, 24h horizon, 4,606 windows)
    - Long head: RMSE 0.076 (test, 720h horizon, 313 windows)
@@ -128,14 +128,14 @@ reward = -RMSE(forecast, actual) - λ × compute_cost
 - Long head error by day: Day 1 (0.079) → Day 15 (0.093) → Day 30 (0.059)
 - Both models use 21 known future covariates (weather + PVLib features)
 
-***REMOVED******REMOVED******REMOVED*** Test Set Coverage:
+### Test Set Coverage:
 - Short head: 442,176 predictions covering Oct 12 - Nov 30, 2023
 - Long head: 225,360 predictions (313 windows × 720 horizons) covering Oct 16 - Nov 30, 2023
 - Validated with proper sliding windows (predict=False mode)
 
 ---
 
-***REMOVED******REMOVED*** Next Implementation Steps
+## Next Implementation Steps
 
 Day 1 Remaining (4 hours):
 - Implement _pvlib_predict() function

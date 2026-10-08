@@ -110,14 +110,14 @@ def _tft_only_from_components(components: Dict[str, Any]) -> np.ndarray:
       - long_upsampled: (2880,)
     We use alpha_short/alpha_long from blend_weights but ignore physics entirely.
     """
-    short_daily = np.asarray(components["short_head_daily"], dtype=np.float32)  ***REMOVED*** (30,96)
-    long_up = np.asarray(components["long_upsampled"], dtype=np.float32).reshape(-1)  ***REMOVED*** (2880,)
+    short_daily = np.asarray(components["short_head_daily"], dtype=np.float32)  # (30,96)
+    long_up = np.asarray(components["long_upsampled"], dtype=np.float32).reshape(-1)  # (2880,)
     weights_daily = components.get("blend_weights", None)
 
     out = np.zeros(2880, dtype=np.float32)
 
     for day in range(30):
-        s = short_daily[day].reshape(-1)  ***REMOVED*** (96,)
+        s = short_daily[day].reshape(-1)  # (96,)
         lo = long_up[day * 96 : (day + 1) * 96]
 
         if weights_daily is not None and day < len(weights_daily):

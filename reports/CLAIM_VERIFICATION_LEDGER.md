@@ -1,12 +1,12 @@
-***REMOVED*** MiRACLE v1.0: Claim Verification Ledger
+# MiRACLE v1.0: Claim Verification Ledger
 
-***REMOVED******REMOVED*** Document Auditing Summary
+## Document Auditing Summary
 
 This ledger tracks every major claim in the methodology and results documents against source code, configuration files, logs, and data artifacts.
 
 ---
 
-***REMOVED******REMOVED*** Methodology Claims
+## Methodology Claims
 
 | Section | Claim | Status | Evidence | Notes |
 |---|---|---|---|---|
@@ -62,7 +62,7 @@ This ledger tracks every major claim in the methodology and results documents ag
 
 ---
 
-***REMOVED******REMOVED*** Results Claims
+## Results Claims
 
 | Section | Claim | Status | Evidence | Notes |
 |---|---|---|---|---|
@@ -93,7 +93,7 @@ This ledger tracks every major claim in the methodology and results documents ag
 
 ---
 
-***REMOVED******REMOVED*** Removed / Corrected Claims
+## Removed / Corrected Claims
 
 | Original Claim | Issue | Correction |
 |---|---|---|
@@ -110,9 +110,9 @@ This ledger tracks every major claim in the methodology and results documents ag
 
 ---
 
-***REMOVED******REMOVED*** Verification Status Summary
+## Verification Status Summary
 
-***REMOVED******REMOVED******REMOVED*** ✅ Fully Verified Claims (Computed from Repo Artifacts)
+### ✅ Fully Verified Claims (Computed from Repo Artifacts)
 
 | Item | Status | Evidence Source |
 |---|---|---|
@@ -128,14 +128,14 @@ This ledger tracks every major claim in the methodology and results documents ag
 | Albedo | ✅ | 0.2 per code line 275 |
 | GPU type | ✅ | NVIDIA H100 PCIe (SBATCH + runtime logs) |
 
-***REMOVED******REMOVED******REMOVED*** ⚠️ Acceptable Gaps (Non-Critical)
+### ⚠️ Acceptable Gaps (Non-Critical)
 
 | Item | Status | Reason |
 |---|---|---|
 | PyTorch/PVLib exact versions | Unversioned | `environment.yml` does not pin versions; determined by conda at runtime |
 | Module-level inverter specs | Not available | Plant metadata lacks inverter model details |
 
-***REMOVED******REMOVED******REMOVED*** ❌ Removed Claims (Speculative/Incorrect)
+### ❌ Removed Claims (Speculative/Incorrect)
 
 - Bilinear spatial interpolation (no code evidence)
 - Seasonal performance analysis (validation period = winter only)
@@ -145,9 +145,9 @@ This ledger tracks every major claim in the methodology and results documents ag
 
 ---
 
-***REMOVED******REMOVED*** Critical Fixes Applied
+## Critical Fixes Applied
 
-***REMOVED******REMOVED******REMOVED*** 1. Checkpoint Format Contradiction (HIGH PRIORITY)
+### 1. Checkpoint Format Contradiction (HIGH PRIORITY)
 
 **Issue:** Results doc claimed "Lightning checkpoints (best.ckpt)" but also stated "state_dict not Lightning."
 
@@ -160,7 +160,7 @@ This ledger tracks every major claim in the methodology and results documents ag
 - **Loading requires rebuilding model architecture then loading weights**
 - Added code example showing correct loading protocol
 
-***REMOVED******REMOVED******REMOVED*** 2. Weather Data Processing (MEDIUM PRIORITY)
+### 2. Weather Data Processing (MEDIUM PRIORITY)
 
 **Issue:** Original doc claimed "bilinear spatial interpolation" without evidence.
 
@@ -168,7 +168,7 @@ This ledger tracks every major claim in the methodology and results documents ag
 
 **Fix:** Removed interpolation claim; noted that weather processing details require verification in upstream preprocessing.
 
-***REMOVED******REMOVED******REMOVED*** 3. MiRACLE Acronym (MEDIUM PRIORITY)
+### 3. MiRACLE Acronym (MEDIUM PRIORITY)
 
 **Issue:** Incorrectly expanded as "Multi-Resolution Adaptive Context Learning Engine"
 
@@ -176,7 +176,7 @@ This ledger tracks every major claim in the methodology and results documents ag
 
 ---
 
-***REMOVED******REMOVED*** Verification Confidence Levels
+## Verification Confidence Levels
 
 - ✅ **Verified (High Confidence):** Claim backed by explicit code, config, or log file
 - ⚠️ **Requires Verification:** Claim stated but not yet directly verified from repo artifacts

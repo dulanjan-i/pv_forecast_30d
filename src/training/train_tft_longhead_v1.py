@@ -1,4 +1,4 @@
-***REMOVED*** src/training/train_tft_longhead_v1.py
+# src/training/train_tft_longhead_v1.py
 """
 Longhead TFT trainer, intentionally identical to train_tft_v1.py logic.
 
@@ -64,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--prefetch_factor", type=int, default=2)
     p.add_argument("--disable_prefetcher", action="store_true")
 
-    ***REMOVED*** Support BOTH flag styles so your sbatch scripts don't need refactors
+    # Support BOTH flag styles so your sbatch scripts don't need refactors
     p.add_argument("--encoder_len", "--enc_len", dest="encoder_len", type=int, default=168)
     p.add_argument("--pred_len", type=int, default=720)
 
@@ -100,7 +100,7 @@ def parse_args() -> argparse.Namespace:
         help="Strict loading for init_state_dict (default: non-strict).",
     )
 
-    ***REMOVED*** Keep this flag because your v1 workflow uses it sometimes
+    # Keep this flag because your v1 workflow uses it sometimes
     p.add_argument("--use_lstm_encodings", action="store_true")
     p.add_argument("--enc_lag", type=int, default=None)
 

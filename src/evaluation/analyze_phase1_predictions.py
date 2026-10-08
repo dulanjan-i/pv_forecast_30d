@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Analyze Phase 1 prediction quality.
 
@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-***REMOVED*** Load predictions
+# Load predictions
 print("=" * 70)
 print("PHASE 1 PREDICTION QUALITY ANALYSIS")
 print("=" * 70)
@@ -28,15 +28,15 @@ print(f"   Date range: {df['timestamp_utc'].min()} → {df['timestamp_utc'].max(
 print(f"   Unique forecasts: {df['forecast_idx'].nunique()}")
 print(f"   Power range: [{df['predicted_power_norm'].min():.4f}, {df['predicted_power_norm'].max():.4f}]")
 
-***REMOVED*** 1. FORECAST DISAGREEMENT ANALYSIS (Pseudo-RMSE)
+# 1. FORECAST DISAGREEMENT ANALYSIS (Pseudo-RMSE)
 print(f"\n" + "="*70)
 print("1. FORECAST DISAGREEMENT (Overlapping Windows)")
 print("="*70)
 
-***REMOVED*** For each timestamp that appears in multiple forecasts, compute std dev
+# For each timestamp that appears in multiple forecasts, compute std dev
 df['date'] = pd.to_datetime(df['timestamp_utc']).dt.date
 overlap_stats = df.groupby('timestamp_utc')['predicted_power_norm'].agg(['count', 'mean', 'std', 'min', 'max'])
-overlap_stats = overlap_stats[overlap_stats['count'] > 1]  ***REMOVED*** Only overlapping timestamps
+overlap_stats = overlap_stats[overlap_stats['count'] > 1]  # Only overlapping timestamps
 
 print(f"   Timestamps with multiple forecasts: {len(overlap_stats):,}")
 print(f"   Mean forecast disagreement (std): {overlap_stats['std'].mean():.5f}")
@@ -44,24 +44,24 @@ print(f"   Median forecast disagreement: {overlap_stats['std'].median():.5f}")
 print(f"   Max disagreement: {overlap_stats['std'].max():.5f}")
 print(f"   \n   Pseudo-RMSE (mean std across overlaps): {overlap_stats['std'].mean():.5f}")
 
-***REMOVED*** Worst disagreements
+# Worst disagreements
 worst_10 = overlap_stats.nlargest(10, 'std')
 print(f"\n   Top 10 worst disagreements:")
 for ts, row in worst_10.iterrows():
     print(f"      {ts}: {row['count']:.0f} forecasts, std={row['std']:.4f}, range=[{row['min']:.3f}, {row['max']:.3f}]")
 
-***REMOVED*** 2. TEMPORAL CONSISTENCY
+# 2. TEMPORAL CONSISTENCY
 print(f"\n" + "="*70)
 print("2. TEMPORAL CONSISTENCY (Smoothness)")
 print("="*70)
 
-***REMOVED*** Check for each forecast: how smooth is the time series?
+# Check for each forecast: how smooth is the time series?
 smoothness_scores = []
 for fc_idx in df['forecast_idx'].unique():
     fc_data = df[df['forecast_idx'] == fc_idx].sort_values('timestamp_utc')
     power = fc_data['predicted_power_norm'].values
     
-    ***REMOVED*** Compute first derivative (hour-to-hour change)
+    # Compute first derivative (hour-to-hour change)
     diffs = np.abs(np.diff(power))
     smoothness_scores.append({
         'forecast_idx': fc_idx,
@@ -75,7 +75,7 @@ print(f"   Mean absolute 15-min change: {smooth_df['mean_abs_change'].mean():.5f
 print(f"   Max change across all forecasts: {smooth_df['max_abs_change'].max():.5f}")
 print(f"   Forecasts with >10 spikes (Δ>0.1): {(smooth_df['spikes_gt_0.1'] > 10).sum()}/{len(smooth_df)}")
 
-***REMOVED*** 3. DIURNAL PATTERN ANALYSIS
+# 3. DIURNAL PATTERN ANALYSIS
 print(f"\n" + "="*70)
 print("3. DIURNAL PATTERNS (Day/Night Cycles)")
 print("="*70)
@@ -96,12 +96,12 @@ print(f"   Day mean (hrs 8-16): {day_mean:.5f}")
 print(f"   Peak hour: {peak_hour}:00 with mean power {peak_value:.4f}")
 print(f"   Day/Night ratio: {day_mean/night_mean:.1f}x" if night_mean > 0 else "   Day/Night ratio: inf (perfect night zeros)")
 
-***REMOVED*** Check for anomalies (high power at night)
+# Check for anomalies (high power at night)
 night_mask = df['hour'].isin(night_hours)
 night_violations = df[night_mask & (df['predicted_power_norm'] > 0.05)]
 print(f"   Night violations (power>0.05 during hrs 0-5,20-23): {len(night_violations)} / {night_mask.sum()} ({100*len(night_violations)/night_mask.sum():.2f}%)")
 
-***REMOVED*** 4. SEASONAL TRENDS
+# 4. SEASONAL TRENDS
 print(f"\n" + "="*70)
 print("4. SEASONAL TRENDS (Monthly Aggregates)")
 print("="*70)
@@ -125,7 +125,7 @@ print(f"\n   Winter (Dec-Feb) mean: {winter_mean:.4f}")
 print(f"   Summer (Jun-Aug) mean: {summer_mean:.4f}")
 print(f"   Summer/Winter ratio: {summer_mean/winter_mean:.2f}x")
 
-***REMOVED*** 5. PHYSICAL PLAUSIBILITY
+# 5. PHYSICAL PLAUSIBILITY
 print(f"\n" + "="*70)
 print("5. PHYSICAL PLAUSIBILITY CHECKS")
 print("="*70)
@@ -138,19 +138,19 @@ print(f"   Negative values: {neg_count} / {len(df)} ({100*neg_count/len(df):.2f}
 print(f"   Values > 1.0: {above_one} / {len(df)} ({100*above_one/len(df):.2f}%)")
 print(f"   Exact zeros: {zeros} / {len(df)} ({100*zeros/len(df):.2f}%)")
 
-***REMOVED*** Check ramp rates (physical systems can't change instantly)
+# Check ramp rates (physical systems can't change instantly)
 max_ramps_per_forecast = []
 for fc_idx in df['forecast_idx'].unique():
     fc_data = df[df['forecast_idx'] == fc_idx].sort_values('timestamp_utc')
     power = fc_data['predicted_power_norm'].values
-    ramp_rates = np.abs(np.diff(power)) / (15/60)  ***REMOVED*** per hour
+    ramp_rates = np.abs(np.diff(power)) / (15/60)  # per hour
     max_ramps_per_forecast.append(ramp_rates.max())
 
 max_ramp_overall = max(max_ramps_per_forecast)
 print(f"   Max ramp rate (15min): {max_ramp_overall:.4f} per hour")
 print(f"   Physical limit check: {'✓ PASS' if max_ramp_overall < 2.0 else '✗ FAIL (too fast)'}")
 
-***REMOVED*** 6. SUMMARY QUALITY SCORE
+# 6. SUMMARY QUALITY SCORE
 print(f"\n" + "="*70)
 print("6. OVERALL QUALITY ASSESSMENT")
 print("="*70)

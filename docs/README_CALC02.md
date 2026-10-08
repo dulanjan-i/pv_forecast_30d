@@ -1,12 +1,12 @@
-***REMOVED*** calc02 VM Setup - Quick Reference
+# calc02 VM Setup - Quick Reference
 
-***REMOVED******REMOVED*** 📁 Files for calc02
+## 📁 Files for calc02
 
 1. **`requirements_calc02.txt`** - Human-readable requirements (what to install)
 2. **`requirements_calc02_frozen.txt`** - Exact versions (194 packages, frozen snapshot)
 3. **`INSTALL_CALC02.md`** - Complete installation guide and usage instructions
 
-***REMOVED******REMOVED*** ✅ Status: Installation Complete!
+## ✅ Status: Installation Complete!
 
 Your `~/.venvs/pvforecast` environment is ready with:
 - PyTorch 2.5.1+cu124
@@ -17,20 +17,20 @@ Your `~/.venvs/pvforecast` environment is ready with:
 - Visualization (matplotlib, seaborn, plotly, streamlit)
 - JupyterLab 4.5.0
 
-***REMOVED******REMOVED*** 🚀 Quick Start
+## 🚀 Quick Start
 
 ```bash
-***REMOVED*** Activate environment
+# Activate environment
 source ~/.venvs/pvforecast/bin/activate
 
-***REMOVED*** Verify GPU access
+# Verify GPU access
 python -c "import torch; print(f'GPUs: {torch.cuda.device_count()}')"
 
-***REMOVED*** Run training
+# Run training
 python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107.yaml
 ```
 
-***REMOVED******REMOVED*** 🖥️ System Info
+## 🖥️ System Info
 
 - **Machine**: calc02 VM
 - **GPUs**: 4x NVIDIA L4 (23GB VRAM each)
@@ -38,7 +38,7 @@ python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107
 - **Python**: 3.12.3
 - **No conda**: Using pip + venv only
 
-***REMOVED******REMOVED*** 📝 Important Notes
+## 📝 Important Notes
 
 1. **pytorch-lightning 2.4.0** installed (not 2.5.6 - quarantined by proxy)
 2. **CUDA 12.4** PyTorch build works with CUDA 12.6/12.8 system ✅

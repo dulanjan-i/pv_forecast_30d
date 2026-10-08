@@ -1,4 +1,4 @@
-***REMOVED*** inspect_ckpt.py
+# inspect_ckpt.py
 import torch, pprint, sys
 paths = sys.argv[1:]
 for p in paths:
@@ -7,7 +7,7 @@ for p in paths:
     print("Type:", type(ck))
     if isinstance(ck, dict):
         print("Top-level keys:", list(ck.keys()))
-        ***REMOVED*** Pretty-print a few likely metadata keys if present
+        # Pretty-print a few likely metadata keys if present
         for k in ("epoch","best_loss","best_val_loss","train_stats","metrics","reward_mean"):
             if k in ck:
                 print(f"{k}: {ck[k]}")

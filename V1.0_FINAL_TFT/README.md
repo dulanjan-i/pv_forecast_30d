@@ -1,4 +1,4 @@
-***REMOVED*** V1.0_FINAL_TFT - Production TFT Checkpoints
+# V1.0_FINAL_TFT - Production TFT Checkpoints
 
 **Version**: 1.0  
 **Date**: 2026-01-02  
@@ -6,7 +6,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Overview
+## Overview
 
 This directory contains the **verified, production-ready TFT model checkpoints** for the hierarchical 30-day PV power forecasting pipeline.
 
@@ -18,30 +18,30 @@ This directory contains the **verified, production-ready TFT model checkpoints**
 
 ---
 
-***REMOVED******REMOVED*** Directory Structure
+## Directory Structure
 
 ```
 V1.0_FINAL_TFT/
 ├── shorthead_seed42/
-│   ├── best.pt                ***REMOVED*** Primary checkpoint (state_dict format)
-│   ├── best.ckpt              ***REMOVED*** Alternative format (Lightning)
-│   ├── run_config.json        ***REMOVED*** Training hyperparameters
-│   └── README.md              ***REMOVED*** Model documentation
+│   ├── best.pt                # Primary checkpoint (state_dict format)
+│   ├── best.ckpt              # Alternative format (Lightning)
+│   ├── run_config.json        # Training hyperparameters
+│   └── README.md              # Model documentation
 ├── longhead_seed43/
-│   ├── best.pt                ***REMOVED*** Primary checkpoint (state_dict format)
-│   ├── best.ckpt              ***REMOVED*** Alternative format (Lightning)
-│   ├── run_config.json        ***REMOVED*** Training hyperparameters
-│   └── README.md              ***REMOVED*** Model documentation
+│   ├── best.pt                # Primary checkpoint (state_dict format)
+│   ├── best.ckpt              # Alternative format (Lightning)
+│   ├── run_config.json        # Training hyperparameters
+│   └── README.md              # Model documentation
 ├── plant_metadata/
-│   └── plant_03.json          ***REMOVED*** Plant configuration
-└── README.md                  ***REMOVED*** This file
+│   └── plant_03.json          # Plant configuration
+└── README.md                  # This file
 ```
 
 ---
 
-***REMOVED******REMOVED*** Model Specifications
+## Model Specifications
 
-***REMOVED******REMOVED******REMOVED*** Short-Head TFT (Seed 42)
+### Short-Head TFT (Seed 42)
 - **Resolution**: 15-minute
 - **Architecture**: 96-step encoder, 96-step decoder
 - **Horizon**: 24 hours (96 × 15min)
@@ -52,7 +52,7 @@ V1.0_FINAL_TFT/
 - **Training Date**: 2025-12-29
 - **Source**: `experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/`
 
-***REMOVED******REMOVED******REMOVED*** Long-Head TFT (Seed 43)
+### Long-Head TFT (Seed 43)
 - **Resolution**: 1-hour
 - **Architecture**: 168-step encoder, 720-step decoder
 - **Horizon**: 30 days (720 hours)
@@ -65,51 +65,51 @@ V1.0_FINAL_TFT/
 
 ---
 
-***REMOVED******REMOVED*** Usage
+## Usage
 
-***REMOVED******REMOVED******REMOVED*** Standard Inference
+### Standard Inference
 ```python
 from pathlib import Path
 from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
 
-***REMOVED*** Initialize forecaster with V1.0 checkpoints
+# Initialize forecaster with V1.0 checkpoints
 forecaster = PhysicsAwareForecaster(
     short_ckpt="V1.0_FINAL_TFT/shorthead_seed42/best.pt",
     long_ckpt="V1.0_FINAL_TFT/longhead_seed43/best.pt",
     plant_metadata="V1.0_FINAL_TFT/plant_metadata/plant_03.json",
     short_train_parquet="data/processed/plant_level/plant_03/15min_pca32/train.parquet",
     long_train_parquet="data/processed/plant_level/plant_03/hourly_longhead/train.parquet",
-    device="cuda"  ***REMOVED*** or "cpu"
+    device="cuda"  # or "cpu"
 )
 
-***REMOVED*** Generate 30-day forecast
+# Generate 30-day forecast
 forecast = forecaster.predict_30d(
     forecast_start="2026-01-02 00:00:00",
     weather_df=weather_data,
     historical_df=historical_data
 )
 
-***REMOVED*** Or use live weather
+# Or use live weather
 forecast = forecaster.predict_30d(
     forecast_start="2026-01-02 00:00:00",
-    use_live_weather=True  ***REMOVED*** Fetches from OpenMeteo API
+    use_live_weather=True  # Fetches from OpenMeteo API
 )
 ```
 
-***REMOVED******REMOVED******REMOVED*** Running Tests
+### Running Tests
 ```bash
-***REMOVED*** Full pipeline test (31 TFT calls)
+# Full pipeline test (31 TFT calls)
 python test_full_pipeline_real_tft.py
 
-***REMOVED*** Live weather integration test
+# Live weather integration test
 python test_live_weather_forecast.py
 ```
 
 ---
 
-***REMOVED******REMOVED*** Verification
+## Verification
 
-***REMOVED******REMOVED******REMOVED*** Seeds Confirmed
+### Seeds Confirmed
 ```bash
 $ python -c "
 import json
@@ -121,7 +121,7 @@ shorthead_seed42: seed = 42  ✅
 longhead_seed43: seed = 43   ✅
 ```
 
-***REMOVED******REMOVED******REMOVED*** Checkpoint Integrity
+### Checkpoint Integrity
 ```bash
 $ ls -lh V1.0_FINAL_TFT/*/best.pt
 -rw-rw-r-- 1.8M Jan  2 17:24 V1.0_FINAL_TFT/longhead_seed43/best.pt
@@ -130,9 +130,9 @@ $ ls -lh V1.0_FINAL_TFT/*/best.pt
 
 ---
 
-***REMOVED******REMOVED*** Performance Benchmarks
+## Performance Benchmarks
 
-***REMOVED******REMOVED******REMOVED*** Test Set Metrics (Plant 03)
+### Test Set Metrics (Plant 03)
 
 **Short-Head (24-hour, 15-min resolution)**:
 - MAE: 0.049 (normalized power)
@@ -153,9 +153,9 @@ $ ls -lh V1.0_FINAL_TFT/*/best.pt
 
 ---
 
-***REMOVED******REMOVED*** Provenance & Traceability
+## Provenance & Traceability
 
-***REMOVED******REMOVED******REMOVED*** Checkpoint Lineage
+### Checkpoint Lineage
 
 **Short-Head**:
 1. Global pretraining on all plants (seed unknown)
@@ -169,9 +169,9 @@ $ ls -lh V1.0_FINAL_TFT/*/best.pt
 3. Best checkpoint selected (epoch unknown, validation loss minimum)
 4. Copied to V1.0_FINAL_TFT: 2026-01-02
 
-***REMOVED******REMOVED******REMOVED*** Git Commit (for tracking)
+### Git Commit (for tracking)
 ```bash
-***REMOVED*** Tag this version for future reference
+# Tag this version for future reference
 git add V1.0_FINAL_TFT/
 git commit -m "Add V1.0 production TFT checkpoints (seeds 42+43)"
 git tag -a v1.0-tft -m "Production TFT models: short-head (seed42) + long-head (seed43)"
@@ -179,7 +179,7 @@ git tag -a v1.0-tft -m "Production TFT models: short-head (seed42) + long-head (
 
 ---
 
-***REMOVED******REMOVED*** Version History
+## Version History
 
 | Version | Date | Changes | Seeds | Status |
 |---------|------|---------|-------|--------|
@@ -187,15 +187,15 @@ git tag -a v1.0-tft -m "Production TFT models: short-head (seed42) + long-head (
 
 ---
 
-***REMOVED******REMOVED*** Migration from Old Paths
+## Migration from Old Paths
 
-***REMOVED******REMOVED******REMOVED*** Before (Nested Paths)
+### Before (Nested Paths)
 ```python
 short_ckpt = "experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best_state_dict.pt"
 long_ckpt = "experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best_state_dict.pt"
 ```
 
-***REMOVED******REMOVED******REMOVED*** After (Clean Paths)
+### After (Clean Paths)
 ```python
 short_ckpt = "V1.0_FINAL_TFT/shorthead_seed42/best.pt"
 long_ckpt = "V1.0_FINAL_TFT/longhead_seed43/best.pt"
@@ -209,21 +209,21 @@ long_ckpt = "V1.0_FINAL_TFT/longhead_seed43/best.pt"
 
 ---
 
-***REMOVED******REMOVED*** Future Versions
+## Future Versions
 
-***REMOVED******REMOVED******REMOVED*** V1.1 (Planned)
+### V1.1 (Planned)
 - Add ensemble of seeds (42, 43, 44)
 - Include performance benchmarks
 - Add calibration metrics
 
-***REMOVED******REMOVED******REMOVED*** V2.0 (Future)
+### V2.0 (Future)
 - Multi-plant support
 - Online learning capability
 - Uncertainty quantification
 
 ---
 
-***REMOVED******REMOVED*** Support & Issues
+## Support & Issues
 
 - **Documentation**: See [CHECKPOINT_VERIFICATION_REPORT.md](../CHECKPOINT_VERIFICATION_REPORT.md)
 - **Weather API**: See [WEATHER_API_INTEGRATION_SUMMARY.md](../WEATHER_API_INTEGRATION_SUMMARY.md)

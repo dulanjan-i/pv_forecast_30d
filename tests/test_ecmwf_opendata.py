@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Test ECMWF Open Data API (Free Real-Time Forecasts)
 
@@ -27,7 +27,7 @@ def test_ecmwf_opendata_ifs_hres():
     print("Testing ECMWF Open Data - IFS HRES (10-day deterministic)")
     print("="*70)
     
-    ***REMOVED*** Load plant metadata
+    # Load plant metadata
     meta_path = Path("/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json")
     with open(meta_path) as f:
         metadata = json.load(f)
@@ -37,20 +37,20 @@ def test_ecmwf_opendata_ifs_hres():
     
     print(f"Location: {lat:.4f}°N, {lon:.4f}°E (plant_03)")
     
-    ***REMOVED*** Initialize client
-    client = Client(source="ecmwf")  ***REMOVED*** Can also use "aws", "azure", "gcp"
+    # Initialize client
+    client = Client(source="ecmwf")  # Can also use "aws", "azure", "gcp"
     
-    ***REMOVED*** Available parameters for surface level
+    # Available parameters for surface level
     parameters = [
-        "2t",      ***REMOVED*** 2m temperature
-        "10u",     ***REMOVED*** 10m u-wind
-        "10v",     ***REMOVED*** 10m v-wind
-        "sp",      ***REMOVED*** Surface pressure
-        "tp",      ***REMOVED*** Total precipitation
-        "tcc",     ***REMOVED*** Total cloud cover
-        ***REMOVED*** Solar radiation (may not be directly available - need derived)
-        "ssrd",    ***REMOVED*** Surface solar radiation downwards (accumulated)
-        "strd",    ***REMOVED*** Surface thermal radiation downwards
+        "2t",      # 2m temperature
+        "10u",     # 10m u-wind
+        "10v",     # 10m v-wind
+        "sp",      # Surface pressure
+        "tp",      # Total precipitation
+        "tcc",     # Total cloud cover
+        # Solar radiation (may not be directly available - need derived)
+        "ssrd",    # Surface solar radiation downwards (accumulated)
+        "strd",    # Surface thermal radiation downwards
     ]
     
     try:
@@ -60,11 +60,11 @@ def test_ecmwf_opendata_ifs_hres():
         print(f"  Resolution: 0.25° (~28km)")
         print(f"  Parameters: {', '.join(parameters)}")
         
-        ***REMOVED*** Request latest forecast
-        ***REMOVED*** Note: ECMWF Open Data uses GRIB2 format
+        # Request latest forecast
+        # Note: ECMWF Open Data uses GRIB2 format
         result = client.retrieve(
-            step=list(range(0, 241, 3)),  ***REMOVED*** 0-240 hours, 3-hourly
-            type="fc",  ***REMOVED*** Forecast
+            step=list(range(0, 241, 3)),  # 0-240 hours, 3-hourly
+            type="fc",  # Forecast
             param=parameters,
             target="ecmwf_ifs_hres.grib2"
         )
@@ -73,7 +73,7 @@ def test_ecmwf_opendata_ifs_hres():
         print(f"  Saved to: ecmwf_ifs_hres.grib2")
         print(f"  Steps: 0-240h @ 3-hourly (81 timesteps)")
         
-        ***REMOVED*** TODO: Parse GRIB2 with cfgrib/xarray
+        # TODO: Parse GRIB2 with cfgrib/xarray
         print(f"\n⚠️  GRIB2 parsing requires cfgrib package")
         print(f"  Install: pip install cfgrib")
         
@@ -90,7 +90,7 @@ def test_ecmwf_opendata_ifs_ens():
     print("Testing ECMWF Open Data - IFS ENS (15-day ensemble)")
     print("="*70)
     
-    ***REMOVED*** Load plant metadata
+    # Load plant metadata
     meta_path = Path("/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json")
     with open(meta_path) as f:
         metadata = json.load(f)
@@ -111,12 +111,12 @@ def test_ecmwf_opendata_ifs_ens():
         print(f"  Resolution: 0.5° (~55km)")
         print(f"  Members: 51 (control + 50 perturbed)")
         
-        ***REMOVED*** Request ensemble forecast
+        # Request ensemble forecast
         result = client.retrieve(
-            step=list(range(0, 361, 6)),  ***REMOVED*** 0-360 hours, 6-hourly
-            type="ef",  ***REMOVED*** Ensemble forecast
+            step=list(range(0, 361, 6)),  # 0-360 hours, 6-hourly
+            type="ef",  # Ensemble forecast
             param=parameters,
-            number=[0] + list(range(1, 51)),  ***REMOVED*** Control + perturbed members
+            number=[0] + list(range(1, 51)),  # Control + perturbed members
             target="ecmwf_ifs_ens.grib2"
         )
         
@@ -174,18 +174,18 @@ def print_comparison():
 
 def main():
     """Run ECMWF Open Data tests."""
-    print("\n" + "***REMOVED***"*70)
-    print("***REMOVED*** ECMWF OPEN DATA API TEST")
-    print("***REMOVED*** Free real-time forecasts (no credentials required)")
-    print("***REMOVED***"*70)
+    print("\n" + "#"*70)
+    print("# ECMWF OPEN DATA API TEST")
+    print("# Free real-time forecasts (no credentials required)")
+    print("#"*70)
     
-    ***REMOVED*** Test IFS HRES
+    # Test IFS HRES
     hres_ok = test_ecmwf_opendata_ifs_hres()
     
-    ***REMOVED*** Test IFS ENS
-    ***REMOVED*** ens_ok = test_ecmwf_opendata_ifs_ens()  ***REMOVED*** Skip for now (large download)
+    # Test IFS ENS
+    # ens_ok = test_ecmwf_opendata_ifs_ens()  # Skip for now (large download)
     
-    ***REMOVED*** Print comparison
+    # Print comparison
     print_comparison()
     
     if hres_ok:

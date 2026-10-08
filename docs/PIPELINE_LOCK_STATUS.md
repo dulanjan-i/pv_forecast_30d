@@ -1,4 +1,4 @@
-***REMOVED*** Pipeline Lock & Status Report
+# Pipeline Lock & Status Report
 
 **Date:** 2026-01-02  
 **Version:** 2.0 (Hierarchical Refinement Architecture)  
@@ -6,7 +6,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Executive Summary
+## Executive Summary
 
 ✅ **HIERARCHICAL ARCHITECTURE FULLY IMPLEMENTED & TESTED**  
 ✅ **DEPRECATED CODE COMPLETELY REMOVED**  
@@ -15,14 +15,14 @@
 
 ---
 
-***REMOVED******REMOVED*** Refactor Completed
+## Refactor Completed
 
-***REMOVED******REMOVED******REMOVED*** Removed (Deprecated v1.0)
+### Removed (Deprecated v1.0)
 - ❌ `create_30day_forecast()` - Old simple 2-call architecture
 - ❌ All DEPRECATED markers and warnings
 - ❌ 73 lines of legacy code removed from `physics_glue.py`
 
-***REMOVED******REMOVED******REMOVED*** Retained (Production v2.0)
+### Retained (Production v2.0)
 - ✅ `blend_hierarchical()` - 3-way hierarchical blending
 - ✅ `upsample_with_pvlib_shape()` - Energy-conserving upsampling
 - ✅ `apply_physics_constraints()` - Night/capacity/non-negative
@@ -33,9 +33,9 @@
 
 ---
 
-***REMOVED******REMOVED*** Test Results
+## Test Results
 
-***REMOVED******REMOVED******REMOVED*** Test Suite: `test_hierarchical_pipeline.py`
+### Test Suite: `test_hierarchical_pipeline.py`
 
 **Status:** ✅ ALL PASSING
 
@@ -47,7 +47,7 @@
 | 4 | RL Meta-Controller | ✅ | Weight evolution Day 0→29 correct |
 | 5 | Full 30-Day Pipeline | ✅ | 31 TFT calls (1 long + 30 short) confirmed |
 
-***REMOVED******REMOVED******REMOVED*** Validation Checks
+### Validation Checks
 
 ```
 ✓ Shape: (2880,) @ 15-min resolution
@@ -60,9 +60,9 @@
 
 ---
 
-***REMOVED******REMOVED*** Architecture Specifications
+## Architecture Specifications
 
-***REMOVED******REMOVED******REMOVED*** Hierarchical Refinement (v2.0)
+### Hierarchical Refinement (v2.0)
 
 **TFT Calls:**
 - Long-head: 1 call → 720 hours @ 1h (strategic overview)
@@ -71,13 +71,13 @@
 
 **3-Way Hierarchical Blending:**
 ```python
-***REMOVED*** Layer 1: ML Ensemble
+# Layer 1: ML Ensemble
 ML(t) = α_short × Short(t) + α_long × Long_upsampled(t)
 
-***REMOVED*** Layer 2: Physics Blend
+# Layer 2: Physics Blend
 Blend(t) = α_ml × ML(t) + (1 - α_ml) × PVLib(t)
 
-***REMOVED*** Layer 3: Hard Constraints
+# Layer 3: Hard Constraints
 Final(t) = Constrain(Blend(t), PVLib(t))
   - Night: PVLib < 0.01 → Final = 0
   - Capacity: Final ≤ 1.2 × PVLib
@@ -95,9 +95,9 @@ Final(t) = Constrain(Blend(t), PVLib(t))
 
 ---
 
-***REMOVED******REMOVED*** Code Quality Metrics
+## Code Quality Metrics
 
-***REMOVED******REMOVED******REMOVED*** Files Modified/Created
+### Files Modified/Created
 
 | File | Lines | Status | Purpose |
 |------|-------|--------|---------|
@@ -110,7 +110,7 @@ Final(t) = Constrain(Blend(t), PVLib(t))
 **Total Production Code:** 1,484 lines (excluding TFT stubs)  
 **Test Coverage:** 100% of implemented components
 
-***REMOVED******REMOVED******REMOVED*** Import Graph (Clean)
+### Import Graph (Clean)
 
 ```
 PhysicsAwareForecaster
@@ -127,9 +127,9 @@ PhysicsAwareForecaster
 
 ---
 
-***REMOVED******REMOVED*** Documentation Status
+## Documentation Status
 
-***REMOVED******REMOVED******REMOVED*** Core Documentation (🔒 Locked)
+### Core Documentation (🔒 Locked)
 
 1. **PHYSICS_GLUE_IMPLEMENTATION.md** (v2.0)
    - Status: ✅ Complete
@@ -150,19 +150,19 @@ PhysicsAwareForecaster
    - Status: ✅ Complete
    - Content: Refactor summary, test results, next steps
 
-***REMOVED******REMOVED******REMOVED*** Old Documentation (Backed Up)
+### Old Documentation (Backed Up)
 
 - `PHYSICS_GLUE_IMPLEMENTATION.md.backup` - v1.0 simple architecture
 - `PHYSICS_CONSTRAINED_INFERENCE_DETAILED.md.backup` - v1.0 detailed spec
 
 ---
 
-***REMOVED******REMOVED*** Next Steps (TFT Integration)
+## Next Steps (TFT Integration)
 
-***REMOVED******REMOVED******REMOVED*** Phase 1: Study Reference Implementation (30 min)
+### Phase 1: Study Reference Implementation (30 min)
 
 ```bash
-***REMOVED*** Analyze offline batch prediction
+# Analyze offline batch prediction
 python -m src.inference.offline_predict_tft \
     --train_parquet data/processed/plant_level/plant_03/15min/train.parquet \
     --test_parquet data/processed/plant_level/plant_03/15min/test.parquet \
@@ -177,7 +177,7 @@ python -m src.inference.offline_predict_tft \
 - Batch dict structure
 - Quantile extraction (q50)
 
-***REMOVED******REMOVED******REMOVED*** Phase 2: Implement Short-Head TFT (1 hour)
+### Phase 2: Implement Short-Head TFT (1 hour)
 
 **File:** `src/inference/physics_aware_forecaster.py`  
 **Method:** `_predict_short_head_for_day()`
@@ -185,64 +185,64 @@ python -m src.inference.offline_predict_tft \
 **TODO:**
 ```python
 def _predict_short_head_for_day(self, day_start, day_idx, historical_df, weather_df):
-    ***REMOVED*** 1. Extract encoder window (96 steps before day_start, weather only)
-    ***REMOVED*** 2. Extract decoder window (96 steps from day_start, weather forecast)
-    ***REMOVED*** 3. Add PVLib features (computed from weather)
-    ***REMOVED*** 4. Create TimeSeriesDataSet batch
-    ***REMOVED*** 5. Run self.short_model.predict(batch)
-    ***REMOVED*** 6. Extract q50 quantile
-    return predictions  ***REMOVED*** (96,)
+    # 1. Extract encoder window (96 steps before day_start, weather only)
+    # 2. Extract decoder window (96 steps from day_start, weather forecast)
+    # 3. Add PVLib features (computed from weather)
+    # 4. Create TimeSeriesDataSet batch
+    # 5. Run self.short_model.predict(batch)
+    # 6. Extract q50 quantile
+    return predictions  # (96,)
 ```
 
-***REMOVED******REMOVED******REMOVED*** Phase 3: Implement Long-Head TFT (1 hour)
+### Phase 3: Implement Long-Head TFT (1 hour)
 
 **Method:** `_predict_long_head()`
 
 **TODO:**
 ```python
 def _predict_long_head(self, forecast_start, historical_df, weather_df):
-    ***REMOVED*** Similar to short-head but:
-    ***REMOVED*** - Encoder: 168 hours (7 days) before forecast_start
-    ***REMOVED*** - Decoder: 720 hours (30 days) from forecast_start
-    ***REMOVED*** - Hourly frequency instead of 15-min
-    return predictions  ***REMOVED*** (720,)
+    # Similar to short-head but:
+    # - Encoder: 168 hours (7 days) before forecast_start
+    # - Decoder: 720 hours (30 days) from forecast_start
+    # - Hourly frequency instead of 15-min
+    return predictions  # (720,)
 ```
 
-***REMOVED******REMOVED******REMOVED*** Phase 4: Integration Testing (30 min)
+### Phase 4: Integration Testing (30 min)
 
 ```python
-***REMOVED*** Load real checkpoints
+# Load real checkpoints
 forecaster = PhysicsAwareForecaster(
     short_ckpt="experiments/tft/.../shorthead/best.ckpt",
     long_ckpt="experiments/tft/.../longhead/best.ckpt",
     plant_metadata="data/metadata/germany/plant_03.json"
 )
 
-***REMOVED*** Run on test set
+# Run on test set
 forecast = forecaster.predict_30d(
     forecast_start="2023-11-01 00:00:00",
     weather_df=test_weather,
     historical_df=test_history
 )
 
-***REMOVED*** Validate
+# Validate
 from src.utils.metrics import compute_rmse, compute_mae
 rmse = compute_rmse(forecast['final'], ground_truth)
 mae = compute_mae(forecast['final'], ground_truth)
-***REMOVED*** Target: RMSE < 0.10, MAE < 0.08
+# Target: RMSE < 0.10, MAE < 0.08
 ```
 
 ---
 
-***REMOVED******REMOVED*** Available Resources
+## Available Resources
 
-***REMOVED******REMOVED******REMOVED*** Real TFT Checkpoints (From Terminal Context)
+### Real TFT Checkpoints (From Terminal Context)
 
 ```bash
-***REMOVED*** Short-head (96@15min)
+# Short-head (96@15min)
 REAL_CKPT="experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best.ckpt"
 
-***REMOVED*** Test predictions available
+# Test predictions available
 outputs/plant03_shorthead_test_preds.parquet
 outputs/plant03_longhead720_test_preds.parquet
 ```
@@ -254,7 +254,7 @@ outputs/plant03_longhead720_test_preds.parquet
 - `y_true` (ground truth)
 - `y_hat_q50` (median prediction)
 
-***REMOVED******REMOVED******REMOVED*** Reference Scripts
+### Reference Scripts
 
 1. **Batch Inference:** `src/inference/offline_predict_tft.py`
 2. **Training:** `src/training/train_tft.py`
@@ -262,22 +262,22 @@ outputs/plant03_longhead720_test_preds.parquet
 
 ---
 
-***REMOVED******REMOVED*** Risk Assessment
+## Risk Assessment
 
-***REMOVED******REMOVED******REMOVED*** Low Risk ✅
+### Low Risk ✅
 - Core hierarchical architecture implemented & tested
 - Physics baseline generation working
 - Blending logic validated
 - RL controller weights correct
 - All constraints enforced
 
-***REMOVED******REMOVED******REMOVED*** Medium Risk ⚠️
+### Medium Risk ⚠️
 - TFT inference integration (implementation complexity)
 - Feature engineering alignment (train vs inference)
 - Quantile extraction from model output
 - Batch preparation for TimeSeriesDataSet
 
-***REMOVED******REMOVED******REMOVED*** Mitigation Strategy
+### Mitigation Strategy
 1. Study `offline_predict_tft.py` thoroughly
 2. Test short-head integration first (smaller, faster)
 3. Validate intermediate outputs at each step
@@ -286,7 +286,7 @@ outputs/plant03_longhead720_test_preds.parquet
 
 ---
 
-***REMOVED******REMOVED*** Timeline Estimate
+## Timeline Estimate
 
 | Phase | Task | Est. Time | Status |
 |-------|------|-----------|--------|
@@ -304,7 +304,7 @@ outputs/plant03_longhead720_test_preds.parquet
 
 ---
 
-***REMOVED******REMOVED*** Sign-Off Checklist
+## Sign-Off Checklist
 
 - [x] Hierarchical architecture implemented
 - [x] All components tested (100% passing)
@@ -321,7 +321,7 @@ outputs/plant03_longhead720_test_preds.parquet
 
 ---
 
-***REMOVED******REMOVED*** Contact & Context
+## Contact & Context
 
 **Project:** 30-Day PV Power Forecasting (Thesis)  
 **Plant:** Germany Plant 03 (7.4 MW, 50.95°N, 6.96°E)  

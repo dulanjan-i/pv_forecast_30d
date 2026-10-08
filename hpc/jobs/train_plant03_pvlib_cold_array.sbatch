@@ -1,15 +1,15 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH -J plant03_pvlib_cold
-***REMOVED***SBATCH -p gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH -c 16
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH --array=42-44
-***REMOVED***SBATCH -o /shared/%u/miracle/logs/%x_%A_%a.out
-***REMOVED***SBATCH -e /shared/%u/miracle/logs/%x_%A_%a.err
-***REMOVED*** Optional pin (uncomment if you want):
-***REMOVED******REMOVED***SBATCH --nodelist=dbfz-hpc23-gnode4
+#!/bin/bash
+#SBATCH -J plant03_pvlib_cold
+#SBATCH -p gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH -c 16
+#SBATCH --mem=64G
+#SBATCH --time=04:00:00
+#SBATCH --array=42-44
+#SBATCH -o /shared/%u/miracle/logs/%x_%A_%a.out
+#SBATCH -e /shared/%u/miracle/logs/%x_%A_%a.err
+# Optional pin (uncomment if you want):
+##SBATCH --nodelist=dbfz-hpc23-gnode4
 
 set -euo pipefail
 
@@ -26,7 +26,7 @@ PLANT_DIR="$REPO/data/processed/plant_level/plant_03/15min_pca32"
 TRAIN="$PLANT_DIR/train.parquet"
 VAL="$PLANT_DIR/val.parquet"
 
-***REMOVED*** fail fast if paths wrong
+# fail fast if paths wrong
 [[ -f "$TRAIN" ]] || { echo "Missing TRAIN: $TRAIN"; exit 2; }
 [[ -f "$VAL"   ]] || { echo "Missing VAL:   $VAL";   exit 2; }
 

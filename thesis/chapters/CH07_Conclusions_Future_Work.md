@@ -1,6 +1,6 @@
-***REMOVED*** Chapter 7 — Conclusions & Future Work
+# Chapter 7 — Conclusions & Future Work
 
-***REMOVED******REMOVED*** 7.1 Summary of contributions
+## 7.1 Summary of contributions
 
 This thesis introduced MiRACLE, a long-horizon PV forecasting framework integrating:
 
@@ -13,7 +13,7 @@ This thesis introduced MiRACLE, a long-horizon PV forecasting framework integrat
 The canonical 2024 backtests demonstrate that MiRACLE v1.0 Core achieves substantially better accuracy than single-component baselines under the fixed evaluation protocol.
 
 
-***REMOVED******REMOVED*** 7.2 Broader impact
+## 7.2 Broader impact
 
 MiRACLE’s design principles generalize beyond a single PV plant:
 
@@ -22,15 +22,15 @@ MiRACLE’s design principles generalize beyond a single PV plant:
 - multi-resolution inference supports both tactical (near-term) and strategic (long-term) decisions.
 
 
-***REMOVED******REMOVED*** 7.3 Future research directions
+## 7.3 Future research directions
 
-***REMOVED******REMOVED******REMOVED*** 7.3.1 Short-term extensions
+### 7.3.1 Short-term extensions
 
 - **Multi-plant validation:** expand the canonical evaluation suite beyond Plant 03.
 - **Operational backend:** implement database + dashboard end-to-end (metrics store, drift monitor, alerting).
 - **Probabilistic forecasting:** train quantile/uncertainty-aware forecasts end-to-end and evaluate calibration.
 
-***REMOVED******REMOVED******REMOVED*** 7.3.2 Long-term research avenues
+### 7.3.2 Long-term research avenues
 
 - **Generalization to other renewables:** wind or hydro forecasting with analogous physics constraints.
 - **Federated or privacy-preserving pretraining:** learning regional encoders without centralized raw data.
@@ -39,6 +39,6 @@ MiRACLE’s design principles generalize beyond a single PV plant:
 - **RL controller improvement:** richer environment simulation, reward shaping aligned to deployment costs, and broader training coverage.
 
 
-***REMOVED******REMOVED*** 7.4 Closing summary
+## 7.4 Closing summary
 
 MiRACLE demonstrates that long-horizon, high-resolution PV forecasting benefits from a disciplined integration of physics priors, transferable temporal encodings, and multi-horizon transformers, with adaptive control as a forward-looking component for robust deployment.

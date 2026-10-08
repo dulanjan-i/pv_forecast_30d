@@ -45,10 +45,10 @@ def load_tft_config(run_dir: Path) -> Dict[str, Any]:
     """
     run_dir = Path(run_dir)
     
-    ***REMOVED*** Load run_config.json
+    # Load run_config.json
     run_config_path = run_dir / "run_config.json"
     if not run_config_path.exists():
-        ***REMOVED*** Attempt to find run_config.json inside immediate child directories
+        # Attempt to find run_config.json inside immediate child directories
         for child in run_dir.iterdir():
             if child.is_dir():
                 cand = child / "run_config.json"
@@ -57,7 +57,7 @@ def load_tft_config(run_dir: Path) -> Dict[str, Any]:
                     run_dir = child
                     break
         else:
-            ***REMOVED*** As a last resort, try a recursive search (pick first match)
+            # As a last resort, try a recursive search (pick first match)
             matches = list(run_dir.rglob("run_config.json"))
             if matches:
                 run_config_path = matches[0]
@@ -68,17 +68,17 @@ def load_tft_config(run_dir: Path) -> Dict[str, Any]:
     with open(run_config_path, 'r') as f:
         run_cfg = json.load(f)
     
-    ***REMOVED*** Extract CLI args (support both nested and flat structures)
+    # Extract CLI args (support both nested and flat structures)
     cfg = run_cfg.get("cfg", run_cfg)
     if "cli_args" in cfg:
         cli_args = cfg["cli_args"]
     else:
         cli_args = cfg
     
-    ***REMOVED*** Load column_roles.json
+    # Load column_roles.json
     roles_path = run_dir / "column_roles.json"
     if not roles_path.exists():
-        ***REMOVED*** If column_roles.json missing in selected run_dir, search nearby (same strategy as run_config)
+        # If column_roles.json missing in selected run_dir, search nearby (same strategy as run_config)
         for child in run_dir.iterdir():
             if child.is_dir():
                 cand = child / "column_roles.json"
@@ -95,10 +95,10 @@ def load_tft_config(run_dir: Path) -> Dict[str, Any]:
     with open(roles_path, 'r') as f:
         roles_raw = json.load(f)
     
-    ***REMOVED*** Normalize roles (handle both schema styles)
+    # Normalize roles (handle both schema styles)
     roles = _infer_roles(roles_raw)
     
-    ***REMOVED*** Extract key hyperparameters with fallbacks
+    # Extract key hyperparameters with fallbacks
     encoder_len = int(cli_args.get("max_encoder_length", cli_args.get("encoder_len", 96)))
     pred_len = int(cli_args.get("max_prediction_length", cli_args.get("pred_len", 96)))
     hidden_size = int(cli_args.get("hidden_size", 64))
@@ -132,7 +132,7 @@ def _infer_roles(roles: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Normalized roles dictionary
     """
-    ***REMOVED*** MiRACLE v1 schema
+    # MiRACLE v1 schema
     if "known_time_reals" in roles and "time_idx_col" in roles:
         target = roles["target"]
         time_col = roles.get("time_col", "timestamp_utc")
@@ -155,7 +155,7 @@ def _infer_roles(roles: Dict[str, Any]) -> Dict[str, Any]:
             "lagged_encoding_cols": lagged,
         }
     
-    ***REMOVED*** Standard PyTorch Forecasting schema fallback
+    # Standard PyTorch Forecasting schema fallback
     target = roles.get("target", "power_norm")
     time_col = roles.get("time_col", "timestamp_utc")
     time_idx_col = roles.get("time_idx", roles.get("time_idx_col", "time_idx"))
@@ -194,7 +194,7 @@ def ensure_time_columns(df: pd.DataFrame, roles: Dict[str, Any]) -> pd.DataFrame
     time_idx_col = roles["time_idx_col"]
     group_ids = roles["group_ids"]
     
-    ***REMOVED*** Best-effort fallback if time_col isn't present
+    # Best-effort fallback if time_col isn't present
     if time_col not in df.columns:
         for cand in ["timestamp_utc", "timestamp", "time", "datetime"]:
             if cand in df.columns:
@@ -203,18 +203,18 @@ def ensure_time_columns(df: pd.DataFrame, roles: Dict[str, Any]) -> pd.DataFrame
         else:
             raise KeyError(f"Time column not found. Expected '{roles['time_col']}'")
     
-    ***REMOVED*** Ensure datetime type with UTC timezone
+    # Ensure datetime type with UTC timezone
     df[time_col] = pd.to_datetime(df[time_col], utc=True)
     
-    ***REMOVED*** Ensure group columns exist
+    # Ensure group columns exist
     for g in group_ids:
         if g not in df.columns:
             df[g] = "plant_unk"
     
-    ***REMOVED*** Sort by group and time
+    # Sort by group and time
     df = df.sort_values(group_ids + [time_col]).reset_index(drop=True)
     
-    ***REMOVED*** CRITICAL: Always recompute time_idx to guarantee step=1 per group (no gaps)
+    # CRITICAL: Always recompute time_idx to guarantee step=1 per group (no gaps)
     df[time_idx_col] = df.groupby(group_ids, observed=True).cumcount().astype("int64")
     
     return df
@@ -244,10 +244,10 @@ def create_training_dataset(
     Returns:
         TimeSeriesDataSet instance
     """
-    ***REMOVED*** Ensure time columns are valid
+    # Ensure time columns are valid
     train_df = ensure_time_columns(train_df, roles)
     
-    ***REMOVED*** Default normalizer if not provided
+    # Default normalizer if not provided
     if target_normalizer is None:
         target_normalizer = GroupNormalizer(
             groups=roles["group_ids"],
@@ -300,10 +300,10 @@ def load_tft_model(
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     
-    ***REMOVED*** Create loss function
+    # Create loss function
     loss = QuantileLoss(quantiles=config['quantiles'])
     
-    ***REMOVED*** Create model from dataset
+    # Create model from dataset
     model = TemporalFusionTransformer.from_dataset(
         train_dataset,
         learning_rate=float(config['cli_args'].get('learning_rate', config['cli_args'].get('lr', 1e-3))),
@@ -315,10 +315,10 @@ def load_tft_model(
         reduce_on_plateau_patience=int(config['cli_args'].get('patience', 3)),
     )
     
-    ***REMOVED*** Load weights
+    # Load weights
     _load_weights_into_model(model, checkpoint_dir, strict)
     
-    ***REMOVED*** Move to device and set to eval mode
+    # Move to device and set to eval mode
     model.to(device)
     model.eval()
     
@@ -348,11 +348,11 @@ def _load_weights_into_model(
     
     state: Dict[str, Any] | None = None
     
-    ***REMOVED*** Try best_state_dict.pt first (preferred format)
+    # Try best_state_dict.pt first (preferred format)
     if sd_path.exists():
         obj = torch.load(sd_path, map_location="cpu")
         state = obj if isinstance(obj, dict) else None
-    ***REMOVED*** Fallback to best.ckpt
+    # Fallback to best.ckpt
     elif ckpt_path.exists():
         obj = torch.load(ckpt_path, map_location="cpu")
         if isinstance(obj, dict) and "state_dict" in obj:
@@ -370,7 +370,7 @@ def _load_weights_into_model(
     if state is None:
         raise RuntimeError("Could not interpret checkpoint format.")
     
-    ***REMOVED*** Strip common prefixes that may exist from Lightning wrappers
+    # Strip common prefixes that may exist from Lightning wrappers
     def _strip_prefix(sd: Dict[str, torch.Tensor], prefix: str) -> Dict[str, torch.Tensor]:
         if not all(k.startswith(prefix) for k in sd.keys()):
             return sd
@@ -379,7 +379,7 @@ def _load_weights_into_model(
     for prefix in ["model.", "tft.", "net."]:
         state = _strip_prefix(state, prefix)
     
-    ***REMOVED*** Load state dict
+    # Load state dict
     try:
         model.load_state_dict(state, strict=strict)
     except RuntimeError as e:
@@ -409,26 +409,26 @@ def extract_q50_prediction(
     Raises:
         ValueError: If q50 not in quantiles
     """
-    ***REMOVED*** Get prediction tensor: (B, P, Q)
+    # Get prediction tensor: (B, P, Q)
     pred = output.prediction
     
-    ***REMOVED*** Find q50 index
+    # Find q50 index
     if 0.5 not in quantiles:
-        ***REMOVED*** Fallback: use middle quantile
+        # Fallback: use middle quantile
         q50_idx = len(quantiles) // 2
     else:
         q50_idx = quantiles.index(0.5)
     
-    ***REMOVED*** Extract q50: (B, P, Q) → (B, P)
+    # Extract q50: (B, P, Q) → (B, P)
     if pred.ndim == 3:
         pred_q50 = pred[:, :, q50_idx]
     elif pred.ndim == 2:
-        ***REMOVED*** Already 2D (single quantile or mean)
+        # Already 2D (single quantile or mean)
         pred_q50 = pred
     else:
         raise ValueError(f"Unexpected prediction shape: {pred.shape}")
     
-    ***REMOVED*** Convert to numpy
+    # Convert to numpy
     if torch.is_tensor(pred_q50):
         pred_q50 = pred_q50.detach().cpu().numpy()
     else:
@@ -459,31 +459,31 @@ def create_inference_dataframe(
     Returns:
         Combined DataFrame ready for TimeSeriesDataSet
     """
-    ***REMOVED*** Get target column name
+    # Get target column name
     target_col = roles.get('target', 'power_norm')
     
-    ***REMOVED*** Fill decoder's target with dummy values (TimeSeriesDataSet needs it for validation)
-    ***REMOVED*** The TFT model WON'T use these values during inference (predict=True ignores decoder target)
+    # Fill decoder's target with dummy values (TimeSeriesDataSet needs it for validation)
+    # The TFT model WON'T use these values during inference (predict=True ignores decoder target)
     if target_col not in decoder_df.columns:
         decoder_df = decoder_df.copy()
-        decoder_df[target_col] = 0.0  ***REMOVED*** Dummy value - not used in prediction
+        decoder_df[target_col] = 0.0  # Dummy value - not used in prediction
     
-    ***REMOVED*** Concatenate encoder + decoder
+    # Concatenate encoder + decoder
     inference_df = pd.concat([encoder_df, decoder_df], ignore_index=True)
     
-    ***REMOVED*** Ensure plant_id column exists
+    # Ensure plant_id column exists
     if 'plant_id' not in inference_df.columns:
         inference_df['plant_id'] = plant_id
     
-    ***REMOVED*** Ensure proper time columns
+    # Ensure proper time columns
     inference_df = ensure_time_columns(inference_df, roles)
-    ***REMOVED*** Defensive: coerce/clip/fill any non-finite target values across the
-    ***REMOVED*** combined inference dataframe so TimeSeriesDataSet validation cannot fail.
+    # Defensive: coerce/clip/fill any non-finite target values across the
+    # combined inference dataframe so TimeSeriesDataSet validation cannot fail.
     target_col = roles.get('target', 'power_norm')
     inference_df[target_col] = pd.to_numeric(inference_df[target_col], errors="coerce")
-    ***REMOVED*** replace infinities with NaN, then fill
+    # replace infinities with NaN, then fill
     inference_df.loc[~np.isfinite(inference_df[target_col]), target_col] = np.nan
-    ***REMOVED*** Clip to reasonable physical bounds and fill any remaining NaNs with 0.0
+    # Clip to reasonable physical bounds and fill any remaining NaNs with 0.0
     inference_df[target_col] = inference_df[target_col].clip(lower=0.0, upper=1.5)
     inference_df[target_col] = inference_df[target_col].fillna(0.0)
     
@@ -513,7 +513,7 @@ def validate_inference_window(
         )
 
 
-***REMOVED*** ==================== Testing & Debugging ====================
+# ==================== Testing & Debugging ====================
 
 if __name__ == "__main__":
     """Quick test of utility functions."""
@@ -524,7 +524,7 @@ if __name__ == "__main__":
     print("TFT UTILS - QUICK TEST")
     print("="*70)
     
-    ***REMOVED*** Test 1: Load short-head config
+    # Test 1: Load short-head config
     print("\n[TEST 1] Load short-head config")
     try:
         short_run = Path("experiments/tft/runs/germany/plant_03/15min/pvlib_coldstart/20251229_134850")
@@ -540,7 +540,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"  ❌ FAILED: {e}")
     
-    ***REMOVED*** Test 2: Load long-head config
+    # Test 2: Load long-head config
     print("\n[TEST 2] Load long-head config")
     try:
         import subprocess
@@ -560,7 +560,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"  ❌ FAILED: {e}")
     
-    ***REMOVED*** Test 3: Test time column handling
+    # Test 3: Test time column handling
     print("\n[TEST 3] Test time column handling")
     try:
         test_df = pd.DataFrame({
@@ -580,13 +580,13 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"  ❌ FAILED: {e}")
     
-    ***REMOVED*** Test 4: Test quantile extraction
+    # Test 4: Test quantile extraction
     print("\n[TEST 4] Test quantile extraction")
     try:
-        ***REMOVED*** Simulate model output
+        # Simulate model output
         class MockOutput:
             def __init__(self):
-                ***REMOVED*** (B=2, P=96, Q=7)
+                # (B=2, P=96, Q=7)
                 self.prediction = torch.randn(2, 96, 7)
         
         quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98]

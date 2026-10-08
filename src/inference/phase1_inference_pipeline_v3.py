@@ -93,7 +93,7 @@ def add_lstm_pca_lags(df: pd.DataFrame, lag_steps: int = 96) -> pd.DataFrame:
             created += 1
 
     if created > 0:
-        ***REMOVED*** Fill missing lags at the beginning with zeros (safe fallback)
+        # Fill missing lags at the beginning with zeros (safe fallback)
         lag_cols = [f"{c}{lag_suffix}" for c in base_cols]
         out[lag_cols] = out[lag_cols].fillna(0.0)
 
@@ -137,8 +137,8 @@ def _tft_only_from_components(components: Dict[str, Any]) -> np.ndarray:
     """
     Combine short + long only (no physics) using alpha_short/alpha_long from blend_weights if present.
     """
-    short_daily = np.asarray(components["short_head_daily"], dtype=np.float32)  ***REMOVED*** (30,96)
-    long_up = np.asarray(components["long_upsampled"], dtype=np.float32).reshape(-1)  ***REMOVED*** (2880,)
+    short_daily = np.asarray(components["short_head_daily"], dtype=np.float32)  # (30,96)
+    long_up = np.asarray(components["long_upsampled"], dtype=np.float32).reshape(-1)  # (2880,)
     weights_daily = components.get("blend_weights", None)
 
     out = np.zeros(2880, dtype=np.float32)
@@ -308,7 +308,7 @@ def main() -> None:
 
             pred_hybrid = np.asarray(comp["final"], dtype=np.float32).reshape(-1)
             pred_pvlib = np.asarray(comp["pvlib_15min"], dtype=np.float32).reshape(-1)
-            pred_short = np.asarray(comp["short_head_daily"], dtype=np.float32).reshape(-1)  ***REMOVED*** 30*96 -> 2880
+            pred_short = np.asarray(comp["short_head_daily"], dtype=np.float32).reshape(-1)  # 30*96 -> 2880
             pred_long = np.asarray(comp["long_upsampled"], dtype=np.float32).reshape(-1)
 
             if args.pred_mode == "hybrid":

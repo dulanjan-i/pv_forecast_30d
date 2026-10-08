@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 : '
@@ -34,17 +34,17 @@ echo "WEATHER_DIR: $WEATHER_DIR"
 echo "OUT_DIR:     $OUT_DIR"
 echo "================================================================================"
 
-***REMOVED*** Optional venv activation (do not fail if missing)
+# Optional venv activation (do not fail if missing)
 VENV_ACT="$REPO_ROOT/.venvs/pvforecast/bin/activate"
 if [[ -f "$VENV_ACT" ]]; then
   echo "[INFO] Activating venv: $VENV_ACT"
-  ***REMOVED*** shellcheck disable=SC1090
+  # shellcheck disable=SC1090
   source "$VENV_ACT"
 else
   echo "[WARN] venv activate not found at $VENV_ACT, continuing (assuming env already active)."
 fi
 
-***REMOVED*** Critical: allow "from src...." imports
+# Critical: allow "from src...." imports
 export PYTHONPATH="$REPO_ROOT"
 
 echo "[INFO] Cleaning previous outputs..."

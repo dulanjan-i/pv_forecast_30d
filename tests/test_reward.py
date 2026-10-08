@@ -19,9 +19,9 @@ from src.rl.reward import (
 )
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** ACTION_COSTS
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# ACTION_COSTS
+# ---------------------------------------------------------------------------
 
 class TestActionCosts:
     def test_all_eight_actions_present(self):
@@ -37,20 +37,20 @@ class TestActionCosts:
         assert all(v >= 0.0 for v in ACTION_COSTS.values())
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** RewardWeights dataclasses
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# RewardWeights dataclasses
+# ---------------------------------------------------------------------------
 
 class TestRewardWeights:
     def test_v1_defaults_are_frozen(self):
         w = RewardWeightsV1()
         with pytest.raises((AttributeError, TypeError)):
-            w.w_short = 99.0  ***REMOVED*** type: ignore[misc]
+            w.w_short = 99.0  # type: ignore[misc]
 
     def test_v2_defaults_are_frozen(self):
         w = RewardWeightsV2()
         with pytest.raises((AttributeError, TypeError)):
-            w.w_acc = 99.0  ***REMOVED*** type: ignore[misc]
+            w.w_acc = 99.0  # type: ignore[misc]
 
     def test_v1_custom_weights(self):
         w = RewardWeightsV1(w_short=2.0, w_long=1.0)
@@ -62,9 +62,9 @@ class TestRewardWeights:
         assert w.scale_denom > 0.0
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Helper functions _rmse and _tv
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Helper functions _rmse and _tv
+# ---------------------------------------------------------------------------
 
 class TestHelpers:
     def test_rmse_perfect(self):
@@ -94,9 +94,9 @@ class TestHelpers:
         assert _tv(np.array([])) == 0.0
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** compute_reward_v1
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# compute_reward_v1
+# ---------------------------------------------------------------------------
 
 class TestComputeRewardV1:
     def _state(self, short, long, phys=0.0):
@@ -145,7 +145,7 @@ class TestComputeRewardV1:
     def test_custom_weights_respected(self):
         w = RewardWeightsV1(w_short=10.0, w_long=0.0, w_phys=0.0, w_cost=0.0, scale_denom=1.0)
         s = self._state(0.10, 0.10)
-        ns = self._state(0.09, 0.10)  ***REMOVED*** only short improves by 0.01
+        ns = self._state(0.09, 0.10)  # only short improves by 0.01
         r = compute_reward_v1(s, ns, action=0, weights=w)
         assert r == pytest.approx(10.0 * 0.01, rel=1e-5)
 
@@ -155,9 +155,9 @@ class TestComputeRewardV1:
         assert isinstance(compute_reward_v1(s, ns, action=0), float)
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** compute_reward_v2
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# compute_reward_v2
+# ---------------------------------------------------------------------------
 
 class TestComputeRewardV2:
     def _make_inputs(self, n=48, improvement=True):
@@ -179,8 +179,8 @@ class TestComputeRewardV2:
         """A flat (over-smooth) y_hat should score lower than a noisy one."""
         rng = np.random.default_rng(0)
         y = np.abs(rng.normal(0.5, 0.2, 48))
-        y_flat = np.full(48, y.mean())         ***REMOVED*** over-smooth
-        y_noisy = y + rng.normal(0, 0.05, 48)  ***REMOVED*** preserves variability
+        y_flat = np.full(48, y.mean())         # over-smooth
+        y_noisy = y + rng.normal(0, 0.05, 48)  # preserves variability
 
         s = np.array([0.10, 0.10, 0.0])
         ns = np.array([0.08, 0.10, 0.0])
@@ -193,7 +193,7 @@ class TestComputeRewardV2:
         ns = np.array([0.08, 0.10, 0.0])
         y = np.ones(48)
         yh = np.ones(48)
-        bad_mask = np.ones(10, dtype=bool)  ***REMOVED*** wrong size
+        bad_mask = np.ones(10, dtype=bool)  # wrong size
         with pytest.raises(ValueError, match="is_daylight shape"):
             compute_reward_v2(s, ns, action=0, y=y, y_hat=yh, is_daylight=bad_mask)
 

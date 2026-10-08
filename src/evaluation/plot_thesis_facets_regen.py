@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Canonical thesis plot regenerator for MiRACLE.
 
@@ -36,19 +36,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-***REMOVED*** -----------------------
-***REMOVED*** Thesis color constants
-***REMOVED*** -----------------------
-COL_TRUTH = "***REMOVED***888888"   ***REMOVED*** grey
-COL_CORE  = "***REMOVED***00AA00"   ***REMOVED*** green
-COL_COMP  = "***REMOVED***6BA3D8"   ***REMOVED*** light blue
+# -----------------------
+# Thesis color constants
+# -----------------------
+COL_TRUTH = "#888888"   # grey
+COL_CORE  = "#00AA00"   # green
+COL_COMP  = "#6BA3D8"   # light blue
 
 DPI = 300
 
 
-***REMOVED*** -----------------------
-***REMOVED*** Helpers
-***REMOVED*** -----------------------
+# -----------------------
+# Helpers
+# -----------------------
 def _must_exist(p: Path) -> Path:
     if not p.exists():
         raise FileNotFoundError(str(p))
@@ -90,7 +90,7 @@ def _stitch_most_recent(df: pd.DataFrame) -> pd.DataFrame:
         out = d.groupby("timestamp_utc", as_index=False).first()
         return out
 
-    ***REMOVED*** Fallback: if neither exists, just keep first occurrence per timestamp_utc
+    # Fallback: if neither exists, just keep first occurrence per timestamp_utc
     d = df.sort_values(["timestamp_utc"])
     return d.groupby("timestamp_utc", as_index=False).first()
 
@@ -115,7 +115,7 @@ def _rmse(a: np.ndarray, b: np.ndarray) -> float:
 
 
 def _month_key(ts: pd.Series) -> pd.Series:
-    ***REMOVED*** ts must be datetime64[ns, UTC]
+    # ts must be datetime64[ns, UTC]
     return ts.dt.strftime("%Y-%m")
 
 
@@ -126,9 +126,9 @@ class ModelSpec:
     color: str
 
 
-***REMOVED*** -----------------------
-***REMOVED*** Plot builders
-***REMOVED*** -----------------------
+# -----------------------
+# Plot builders
+# -----------------------
 def plot_case_study_4panel(
     outpath: Path,
     truth: pd.DataFrame,
@@ -138,7 +138,7 @@ def plot_case_study_4panel(
     end: pd.Timestamp,
     title: str,
 ) -> None:
-    ***REMOVED*** Prepare truth series
+    # Prepare truth series
     truth_small = truth[["timestamp_utc", "power_norm"]].rename(columns={"power_norm": "y_true"})
     truth_win = truth_small[(truth_small["timestamp_utc"] >= start) & (truth_small["timestamp_utc"] <= end)].sort_values("timestamp_utc")
 
@@ -212,11 +212,11 @@ def plot_monthly_rmse_all(
     fig = plt.figure(figsize=(16, 6), dpi=DPI)
     ax = fig.add_subplot(1, 1, 1)
 
-    ***REMOVED*** Build month grid from truth
+    # Build month grid from truth
     months = sorted(truth_small["timestamp_utc"].dt.strftime("%Y-%m").unique().tolist())
 
     for ms in stitched_models:
-        j = _align(ms_df_map[ms.name], truth)  ***REMOVED*** uses global map filled in main
+        j = _align(ms_df_map[ms.name], truth)  # uses global map filled in main
         j["month"] = _month_key(j["timestamp_utc"])
 
         rmse_by_m = []
@@ -284,7 +284,7 @@ def plot_leadtime_rmse_4panel(
     fig = plt.figure(figsize=(18, 9), dpi=DPI)
     fig.suptitle(title, fontsize=20, fontweight="bold")
 
-    ***REMOVED*** Each panel is Core vs one comparison
+    # Each panel is Core vs one comparison
     for i, (comp_name, comp_full) in enumerate(comps_full):
         ax = fig.add_subplot(2, 2, i + 1)
 
@@ -306,7 +306,7 @@ def plot_leadtime_rmse_4panel(
     plt.close()
 
 
-***REMOVED*** Global map for monthly plot convenience (filled in main)
+# Global map for monthly plot convenience (filled in main)
 ms_df_map: Dict[str, pd.DataFrame] = {}
 
 
@@ -321,7 +321,7 @@ def main() -> None:
     ap.add_argument("--long", required=True, help="Long-only predictions parquet")
     ap.add_argument("--outdir", required=True, help="Output directory for figures")
 
-    ***REMOVED*** Fixed windows to match your shown plots
+    # Fixed windows to match your shown plots
     ap.add_argument("--winter-start", default="2024-01-10T00:00:00Z")
     ap.add_argument("--winter-end",   default="2024-01-17T00:00:00Z")
     ap.add_argument("--summer-start", default="2024-07-01T00:00:00Z")
@@ -347,7 +347,7 @@ def main() -> None:
     short_st = _stitch_most_recent(short_full)
     long_st  = _stitch_most_recent(long_full)
 
-    ***REMOVED*** Fill monthly map
+    # Fill monthly map
     global ms_df_map
     ms_df_map = {
         "MiRACLE v1.0 Core": core_st,
@@ -357,7 +357,7 @@ def main() -> None:
         "Long-TFT-Only": long_st,
     }
 
-    ***REMOVED*** 4-panel comparisons list in the exact order of your figure
+    # 4-panel comparisons list in the exact order of your figure
     comps_st = [
         ("PVLib-Physics-Only", pvlib_st),
         ("TFT-Only", tft_st),

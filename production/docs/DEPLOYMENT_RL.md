@@ -1,6 +1,6 @@
-***REMOVED*** RL Meta-Controller Deployment Notes
+# RL Meta-Controller Deployment Notes
 
-***REMOVED******REMOVED*** Canonical Thesis Checkpoints
+## Canonical Thesis Checkpoints
 
 All intermediate and candidate checkpoints were removed during cleanup (2026-07-06).
 The thesis-canonical checkpoints are in `freeze/final_thesis_v1/rl/` and are
@@ -17,9 +17,9 @@ Verify integrity before any deployment:
 shasum -a 256 -c freeze/CHECKPOINT_MANIFEST.sha256
 ```
 
-***REMOVED******REMOVED*** Usage Example (inference)
+## Usage Example (inference)
 ```bash
-***REMOVED*** Use v2 best (recommended for production)
+# Use v2 best (recommended for production)
 python -m src.inference.phase1_inference_with_policy \
   --policy-ckpt freeze/final_thesis_v1/rl/ddqn_minenv_v2/ddqn_best.pt \
   --start-date 2024-01-01 --end-date 2024-12-31 \
@@ -32,7 +32,7 @@ python -m src.inference.phase1_inference_with_policy \
   --sarns-norm freeze/final_thesis_v1/phase1_2024daily_final/rl/sarns_norm_stats.json
 ```
 
-***REMOVED******REMOVED*** Notes
+## Notes
 - State dim: 35, Action dim: 8 (MiRACLE action space)
 - Architecture: MLP [35 → 128 → 64 → 8], DDQN with soft target updates (τ=0.005)
 - Trained with Prioritized Experience Replay (PER) on H100 GPU

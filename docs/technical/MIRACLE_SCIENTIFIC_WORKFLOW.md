@@ -1,4 +1,4 @@
-***REMOVED*** MiRACLE: A Hierarchical Reinforcement Learning Framework for Multi-Horizon Photovoltaic Power Forecasting
+# MiRACLE: A Hierarchical Reinforcement Learning Framework for Multi-Horizon Photovoltaic Power Forecasting
 
 **Scientific Workflow Documentation**
 
@@ -8,15 +8,15 @@
 
 ---
 
-***REMOVED******REMOVED*** Abstract
+## Abstract
 
 This document presents the complete scientific workflow for MiRACLE, a hierarchical deep learning framework that combines dual-resolution Temporal Fusion Transformers (TFT), physics-based modeling (PVLib), and a Double Deep Q-Network (DDQN) meta-controller for adaptive ensemble forecasting of photovoltaic power output across horizons ranging from 1 hour to 30 days. The system employs a policy-over-policies architecture where three rule-based advisors monitor subsystem performance while a single DDQN agent learns optimal control policies for model management and ensemble weighting.
 
 ---
 
-***REMOVED******REMOVED*** 1. System Architecture
+## 1. System Architecture
 
-***REMOVED******REMOVED******REMOVED*** 1.1 Hierarchical Design
+### 1.1 Hierarchical Design
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
@@ -84,7 +84,7 @@ This document presents the complete scientific workflow for MiRACLE, a hierarchi
          └─────────────────────────┘
 ```
 
-***REMOVED******REMOVED******REMOVED*** 1.2 Component Specifications
+### 1.2 Component Specifications
 
 | Component | Type | Input Dim | Output Dim | Parameters | Training |
 |-----------|------|-----------|------------|------------|----------|
@@ -98,11 +98,11 @@ This document presents the complete scientific workflow for MiRACLE, a hierarchi
 
 ---
 
-***REMOVED******REMOVED*** 2. Data Processing Pipeline
+## 2. Data Processing Pipeline
 
-***REMOVED******REMOVED******REMOVED*** 2.1 Input Data Sources
+### 2.1 Input Data Sources
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2.1.1 Historical PV Power Data
+#### 2.1.1 Historical PV Power Data
 - **Source:** PVDAQ (US), HSEPM (Germany)
 - **Temporal Resolution:** 15-minute intervals
 - **Features:** P_AC (kW), timestamp
@@ -111,7 +111,7 @@ This document presents the complete scientific workflow for MiRACLE, a hierarchi
   - Missing value imputation: Linear interpolation (<5% gaps), forward-fill (>5%)
   - Outlier removal: Z-score > 3.5 flagged and replaced
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2.1.2 Numerical Weather Prediction (NWP)
+#### 2.1.2 Numerical Weather Prediction (NWP)
 - **Primary Sources:** 
   - Forecast.solar API (0-7 days, hourly)
   - ECMWF ERA5 (8-15 days, 0.25° resolution)
@@ -122,32 +122,32 @@ This document presents the complete scientific workflow for MiRACLE, a hierarchi
   - Temporal resampling: 15-min (short-head), 1-hour (long-head)
   - Feature scaling: Min-max normalization per variable
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2.1.3 Static Metadata
+#### 2.1.3 Static Metadata
 - **Panel Configuration:** Tilt angle, azimuth, rated capacity
 - **Geographic:** Latitude, longitude, elevation
 - **System:** Inverter efficiency, temperature coefficients
 
-***REMOVED******REMOVED******REMOVED*** 2.2 Feature Engineering
+### 2.2 Feature Engineering
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2.2.1 Temporal Features
+#### 2.2.1 Temporal Features
 ```python
-***REMOVED*** Cyclical encoding for periodicity
+# Cyclical encoding for periodicity
 hour_sin = sin(2π × hour / 24)
 hour_cos = cos(2π × hour / 24)
 day_sin = sin(2π × day_of_year / 365)
 day_cos = cos(2π × day_of_year / 365)
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2.2.2 Solar Geometry (PVLib)
+#### 2.2.2 Solar Geometry (PVLib)
 ```python
-***REMOVED*** Computed via pvlib.solarposition
+# Computed via pvlib.solarposition
 solar_zenith = f(lat, lon, timestamp)
 solar_azimuth = f(lat, lon, timestamp)
 air_mass = f(solar_zenith)
 extraterrestrial_dni = 1367 W/m² (solar constant)
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2.2.3 Sequence Construction
+#### 2.2.3 Sequence Construction
 
 **Short-Head (15-minute resolution):**
 - Input window: 96 steps (24 hours lookback)
@@ -163,11 +163,11 @@ extraterrestrial_dni = 1367 W/m² (solar constant)
 
 ---
 
-***REMOVED******REMOVED*** 3. Model Training Workflow
+## 3. Model Training Workflow
 
-***REMOVED******REMOVED******REMOVED*** 3.1 Phase 1: TFT Pretraining (Supervised Learning)
+### 3.1 Phase 1: TFT Pretraining (Supervised Learning)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 3.1.1 Short-Head TFT Training
+#### 3.1.1 Short-Head TFT Training
 
 **Objective:**
 Minimize mean squared error (MSE) between predicted and observed power:
@@ -178,7 +178,7 @@ $$
 
 **Training Protocol:**
 ```python
-***REMOVED*** Hyperparameters (optimized via Optuna)
+# Hyperparameters (optimized via Optuna)
 learning_rate = 1e-3
 batch_size = 32
 hidden_size = 128
@@ -186,17 +186,17 @@ num_heads = 4
 dropout = 0.1
 gradient_clip_val = 1.0
 
-***REMOVED*** Training schedule
+# Training schedule
 max_epochs = 100
 early_stopping_patience = 10
 lr_scheduler = ReduceLROnPlateau(patience=5, factor=0.5)
 
-***REMOVED*** Data split
+# Data split
 train: 70% (chronological)
 validation: 15%
 test: 15%
 
-***REMOVED*** Augmentation
+# Augmentation
 - Random noise injection: σ = 0.01
 - Temporal jittering: ±1 timestep
 - Dropout: 0.1 on attention layers
@@ -206,25 +206,25 @@ test: 15%
 ```
 FOR epoch = 1 TO max_epochs:
     FOR batch IN train_loader:
-        ***REMOVED*** Forward pass
+        # Forward pass
         y_pred = short_tft(x_past, x_future, static_features)
         loss = MSE(y_pred, y_true)
         
-        ***REMOVED*** Backward pass
+        # Backward pass
         optimizer.zero_grad()
         loss.backward()
         clip_grad_norm_(parameters, max_norm=1.0)
         optimizer.step()
     
-    ***REMOVED*** Validation
+    # Validation
     val_loss = evaluate(val_loader)
     lr_scheduler.step(val_loss)
     
-    ***REMOVED*** Early stopping check
+    # Early stopping check
     IF val_loss not improved for 10 epochs:
         BREAK
     
-    ***REMOVED*** Checkpoint
+    # Checkpoint
     save_checkpoint(f"short_tft_epoch{epoch}.pt")
 END FOR
 ```
@@ -240,7 +240,7 @@ END FOR
 - R²: Coefficient of determination
 - sMAPE: Symmetric mean absolute percentage error
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 3.1.2 Long-Head TFT Training
+#### 3.1.2 Long-Head TFT Training
 
 **Objective:**
 Multi-horizon quantile loss for uncertainty quantification:
@@ -253,32 +253,32 @@ where $\rho_q(u) = u(q - \mathbb{1}_{u < 0})$ is the quantile loss, and $Q = \{0
 
 **Training Protocol:**
 ```python
-***REMOVED*** Hyperparameters (different from short-head)
-learning_rate = 5e-4  ***REMOVED*** Lower for stability
-batch_size = 16       ***REMOVED*** Smaller due to longer sequences
-hidden_size = 160     ***REMOVED*** Larger for long-term dependencies
+# Hyperparameters (different from short-head)
+learning_rate = 5e-4  # Lower for stability
+batch_size = 16       # Smaller due to longer sequences
+hidden_size = 160     # Larger for long-term dependencies
 num_heads = 8
-dropout = 0.15        ***REMOVED*** Higher to prevent overfitting
+dropout = 0.15        # Higher to prevent overfitting
 gradient_clip_val = 0.5
 
-***REMOVED*** Training schedule
+# Training schedule
 max_epochs = 150
 early_stopping_patience = 15
 lr_scheduler = CosineAnnealingWarmRestarts(T_0=10, T_mult=2)
 
-***REMOVED*** Data split (same as short-head)
+# Data split (same as short-head)
 train: 70%, validation: 15%, test: 15%
 ```
 
 **Multi-Horizon Loss Weighting:**
 ```python
-***REMOVED*** Exponential decay to prioritize near-term accuracy
-horizon_weights = exp(-0.01 * t)  ***REMOVED*** t ∈ [0, 360]
+# Exponential decay to prioritize near-term accuracy
+horizon_weights = exp(-0.01 * t)  # t ∈ [0, 360]
 
 loss = sum(horizon_weights[t] * quantile_loss(y_pred[t], y_true[t]))
 ```
 
-***REMOVED******REMOVED******REMOVED*** 3.2 Phase 2: PVLib Calibration
+### 3.2 Phase 2: PVLib Calibration
 
 **Objective:**
 Minimize residual between PVLib physics model and observed power:
@@ -291,13 +291,13 @@ where $\theta = \{\text{tilt}, \text{azimuth}, \text{soiling}, \text{degradation
 
 **Calibration Procedure:**
 ```python
-***REMOVED*** Grid search over panel parameters
+# Grid search over panel parameters
 tilt_range = [optimal - 5°, optimal + 5°]
 azimuth_range = [optimal - 10°, optimal + 10°]
-soiling_range = [0.90, 1.00]  ***REMOVED*** Loss factor
-degradation_range = [0.005, 0.015]  ***REMOVED*** %/year
+soiling_range = [0.90, 1.00]  # Loss factor
+degradation_range = [0.005, 0.015]  # %/year
 
-***REMOVED*** Bayesian optimization (faster than grid search)
+# Bayesian optimization (faster than grid search)
 from skopt import gp_minimize
 
 def objective(params):
@@ -313,7 +313,7 @@ def objective(params):
     rmse = sqrt(mean((predictions - observations)**2))
     return rmse
 
-***REMOVED*** Optimize
+# Optimize
 result = gp_minimize(objective, search_space, n_calls=100)
 optimal_params = result.x
 ```
@@ -323,9 +323,9 @@ optimal_params = result.x
 - Seasonal performance check (winter/summer)
 - Edge case handling (snow, dust storms)
 
-***REMOVED******REMOVED******REMOVED*** 3.3 Phase 3: RL Meta-Controller Training
+### 3.3 Phase 3: RL Meta-Controller Training
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 3.3.1 Experience Collection (Heuristic Policy)
+#### 3.3.1 Experience Collection (Heuristic Policy)
 
 **Objective:**
 Collect diverse state-action-reward trajectories using rule-based baseline.
@@ -338,10 +338,10 @@ LOAD pretrained TFT checkpoints (short + long)
 LOAD calibrated PVLib model
 
 FOR episode = 1 TO 5000:
-    ***REMOVED*** Sample historical timestamp
+    # Sample historical timestamp
     timestamp = sample_uniform(train_period)
     
-    ***REMOVED*** Initialize environment
+    # Initialize environment
     weather_data = fetch_weather(timestamp, horizon=30d)
     ground_truth = load_ground_truth(timestamp + horizon)
     
@@ -350,42 +350,42 @@ FOR episode = 1 TO 5000:
     episode_reward = 0
     
     WHILE NOT done:
-        ***REMOVED*** Heuristic action selection
+        # Heuristic action selection
         action_t = rl_system.meta_controller.select_action(
             state_t, mode="heuristic"
         )
         
-        ***REMOVED*** Execute action in environment
+        # Execute action in environment
         action_info = rl_system.step(metrics_t)
         
-        ***REMOVED*** Generate forecasts with current weights
+        # Generate forecasts with current weights
         forecast_short = short_tft.predict(weather_data)
         forecast_long = long_tft.predict(weather_data)
         forecast_physics = pvlib.predict(weather_data)
         
-        ***REMOVED*** Ensemble blending (RL-controlled weights)
+        # Ensemble blending (RL-controlled weights)
         forecast_ensemble = (
             action_info['blend_weights']['short'] * forecast_short +
             action_info['blend_weights']['long'] * forecast_long +
             action_info['blend_weights']['physics'] * forecast_physics
         )
         
-        ***REMOVED*** Compute reward
+        # Compute reward
         metrics_next = evaluate_forecast(forecast_ensemble, ground_truth)
         reward_t = rl_system.compute_reward(metrics_t, metrics_next)
         
-        ***REMOVED*** Store transition
+        # Store transition
         state_next = build_meta_state(metrics_next)
         replay_buffer.store(state_t, action_t, reward_t, state_next, done)
         
-        ***REMOVED*** Update state
+        # Update state
         state_t = state_next
         episode_reward += reward_t
         
-        ***REMOVED*** Episode termination (1 forecast cycle)
+        # Episode termination (1 forecast cycle)
         done = True
     
-    ***REMOVED*** Log episode statistics
+    # Log episode statistics
     log(f"Episode {episode}: Reward={episode_reward:.2f}, "
         f"RMSE={metrics_next['ensemble_rmse']:.3f}")
     
@@ -393,7 +393,7 @@ FOR episode = 1 TO 5000:
         save_replay_buffer(f"experience_ep{episode}.pkl")
 END FOR
 
-***REMOVED*** Save final experience dataset
+# Save final experience dataset
 save_replay_buffer("experience_heuristic_5k.pkl")
 ```
 
@@ -403,7 +403,7 @@ save_replay_buffer("experience_heuristic_5k.pkl")
 - Coverage: All seasons, weather conditions, system states
 - Diversity: Ensure exploration of all 8 actions
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 3.3.2 DDQN Training (Off-Policy Learning)
+#### 3.3.2 DDQN Training (Off-Policy Learning)
 
 **Theoretical Foundation:**
 
@@ -519,22 +519,22 @@ $$
 
 **Training Protocol:**
 ```python
-***REMOVED*** DDQN hyperparameters (from MiRACLE paper)
+# DDQN hyperparameters (from MiRACLE paper)
 learning_rate = 1e-4
-gamma = 0.95                  ***REMOVED*** Discount factor
+gamma = 0.95                  # Discount factor
 batch_size = 64
 buffer_capacity = 20000
-epsilon_start = 1.0           ***REMOVED*** Initial exploration rate
-epsilon_end = 0.1             ***REMOVED*** Minimum exploration (never fully greedy)
-epsilon_decay = 10000         ***REMOVED*** Linear decay over 10k steps
-target_update_freq = 1        ***REMOVED*** Soft update every step (smooth weather tracking)
-tau = 0.005                   ***REMOVED*** Soft update coefficient (0.5% per step, 50% convergence in 1386 steps)
-alpha = 0.6                   ***REMOVED*** Prioritization exponent
-beta_start = 0.4              ***REMOVED*** Importance sampling
+epsilon_start = 1.0           # Initial exploration rate
+epsilon_end = 0.1             # Minimum exploration (never fully greedy)
+epsilon_decay = 10000         # Linear decay over 10k steps
+target_update_freq = 1        # Soft update every step (smooth weather tracking)
+tau = 0.005                   # Soft update coefficient (0.5% per step, 50% convergence in 1386 steps)
+alpha = 0.6                   # Prioritization exponent
+beta_start = 0.4              # Importance sampling
 beta_end = 1.0
 beta_frames = 100000
 
-***REMOVED*** Network architecture
+# Network architecture
 state_dim = 35
 action_dim = 8
 hidden_dim = 256
@@ -552,59 +552,59 @@ INITIALIZE policy_net, target_net
 INITIALIZE optimizer
 
 FOR step = 1 TO 100000:
-    ***REMOVED*** Sample prioritized batch
+    # Sample prioritized batch
     beta = min(1.0, beta_start + step * (1.0 - beta_start) / beta_frames)
     batch, indices, weights = replay_buffer.sample(batch_size, beta)
     
-    ***REMOVED*** Unpack batch
+    # Unpack batch
     states, actions, rewards, next_states, dones = batch
     
-    ***REMOVED*** Compute current Q-values
+    # Compute current Q-values
     q_values = policy_net(states).gather(1, actions)
     
-    ***REMOVED*** Compute target Q-values (DDQN)
+    # Compute target Q-values (DDQN)
     with torch.no_grad():
-        ***REMOVED*** Select action with policy network
+        # Select action with policy network
         next_actions = policy_net(next_states).argmax(dim=1, keepdim=True)
-        ***REMOVED*** Evaluate with target network
+        # Evaluate with target network
         next_q_values = target_net(next_states).gather(1, next_actions)
         target_q_values = rewards + gamma * next_q_values * (1 - dones)
     
-    ***REMOVED*** TD-error for priority update
+    # TD-error for priority update
     td_errors = abs(q_values - target_q_values)
     replay_buffer.update_priorities(indices, td_errors + 1e-6)
     
-    ***REMOVED*** Weighted MSE loss (importance sampling)
+    # Weighted MSE loss (importance sampling)
     loss = (weights * (q_values - target_q_values)**2).mean()
     
-    ***REMOVED*** Optimize
+    # Optimize
     optimizer.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 1.0)
     optimizer.step()
     
-    ***REMOVED*** Soft target network update (every step for smooth weather tracking)
-    ***REMOVED*** Polyak averaging: θ⁻ ← τθ + (1-τ)θ⁻
-    IF step % target_update_freq == 0:  ***REMOVED*** target_update_freq = 1
+    # Soft target network update (every step for smooth weather tracking)
+    # Polyak averaging: θ⁻ ← τθ + (1-τ)θ⁻
+    IF step % target_update_freq == 0:  # target_update_freq = 1
         FOR param_target, param_policy IN zip(
             target_net.parameters(), policy_net.parameters()
         ):
             param_target.data.copy_(
                 tau * param_policy.data + (1 - tau) * param_target.data
             )
-        ***REMOVED*** Note: With τ=0.005, target lags policy by ~1400 steps (50% convergence)
+        # Note: With τ=0.005, target lags policy by ~1400 steps (50% convergence)
     
-    ***REMOVED*** Logging
+    # Logging
     IF step % 1000 == 0:
         log(f"Step {step}: Loss={loss:.4f}, "
             f"Epsilon={epsilon:.3f}, Beta={beta:.3f}")
     
-    ***REMOVED*** Validation every 10k steps
+    # Validation every 10k steps
     IF step % 10000 == 0:
         val_performance = evaluate_policy(policy_net, val_episodes)
         save_checkpoint(f"meta_controller_step{step}.pt")
     
-    ***REMOVED*** Convergence check
+    # Convergence check
     IF moving_avg_loss_delta < 1e-3 FOR 5000 steps:
         log("Converged!")
         BREAK
@@ -625,9 +625,9 @@ END FOR
 
 ---
 
-***REMOVED******REMOVED*** 4. Inference Workflow
+## 4. Inference Workflow
 
-***REMOVED******REMOVED******REMOVED*** 4.1 Real-Time Forecasting Pipeline
+### 4.1 Real-Time Forecasting Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -742,7 +742,7 @@ END FOR
     └─ Return forecast object
         {
             'timestamp_start': '2026-01-02T14:00:00Z',
-            'forecast_kw': array([...]),  ***REMOVED*** (360,)
+            'forecast_kw': array([...]),  # (360,)
             'horizon_hours': array([1, 2, ..., 360]),
             'quantiles': {0.1: [...], 0.5: [...], 0.9: [...]},
             'blend_weights': {short: 0.5, long: 0.4, physics: 0.1},
@@ -763,7 +763,7 @@ END FOR
 TOTAL LATENCY: ~2.0 seconds (end-to-end)
 ```
 
-***REMOVED******REMOVED******REMOVED*** 4.2 Batch Forecasting (Historical Backtesting)
+### 4.2 Batch Forecasting (Historical Backtesting)
 
 ```python
 def batch_forecast_pipeline(
@@ -774,7 +774,7 @@ def batch_forecast_pipeline(
     """
     Generate forecasts for multiple timestamps (backtesting).
     """
-    ***REMOVED*** Load models
+    # Load models
     short_tft = load_tft_model("V1.0_FINAL_TFT/shorthead_seed42")
     long_tft = load_tft_model("V1.0_FINAL_TFT/longhead_seed43")
     pvlib_model = initialize_pvlib(plant_metadata)
@@ -784,31 +784,31 @@ def batch_forecast_pipeline(
     results = []
     
     for ts in timestamps:
-        ***REMOVED*** Fetch weather
+        # Fetch weather
         weather = fetch_weather_batch(ts, horizon_days=15)
         
-        ***REMOVED*** Preprocess
+        # Preprocess
         X_short, X_long = preprocess_inputs(weather, ts, plant_metadata)
         
-        ***REMOVED*** TFT inference
+        # TFT inference
         forecast_short = short_tft.predict(X_short)
         forecast_long = long_tft.predict(X_long)
         forecast_physics = pvlib_model.predict(weather)
         
-        ***REMOVED*** Collect metrics (use last known RMSE)
+        # Collect metrics (use last known RMSE)
         metrics = build_metrics(ts, forecast_short, forecast_long, 
                                 forecast_physics, ground_truth=None)
         
-        ***REMOVED*** RL decision
+        # RL decision
         action_info = rl_system.step(metrics)
         
-        ***REMOVED*** Ensemble
+        # Ensemble
         forecast_final = ensemble_blend(
             forecast_short, forecast_long, forecast_physics,
             weights=action_info['blend_weights']
         )
         
-        ***REMOVED*** Store result
+        # Store result
         results.append({
             'timestamp': ts,
             'forecast': forecast_final,
@@ -821,9 +821,9 @@ def batch_forecast_pipeline(
 
 ---
 
-***REMOVED******REMOVED*** 5. Experimental Validation Workflow
+## 5. Experimental Validation Workflow
 
-***REMOVED******REMOVED******REMOVED*** 5.1 Cross-Validation Strategy
+### 5.1 Cross-Validation Strategy
 
 **Temporal Cross-Validation (Forward Chaining):**
 ```
@@ -843,7 +843,7 @@ FOR fold = 1 TO 5:
     log_metrics(fold, train_rmse, val_rmse)
 ```
 
-***REMOVED******REMOVED******REMOVED*** 5.2 Ablation Studies
+### 5.2 Ablation Studies
 
 **Experimental Matrix:**
 
@@ -881,7 +881,7 @@ for horizons $h \in \{1, 6, 24, 168, 360\}$ hours.
 - Paired t-test for mean RMSE differences (α = 0.05)
 - Wilcoxon signed-rank test for non-normal distributions
 
-***REMOVED******REMOVED******REMOVED*** 5.3 Computational Performance Benchmarking
+### 5.3 Computational Performance Benchmarking
 
 **Hardware Configuration:**
 - Training: 2× NVIDIA L4 GPUs (48GB VRAM total), 64-core AMD EPYC
@@ -908,9 +908,9 @@ for horizons $h \in \{1, 6, 24, 168, 360\}$ hours.
 
 ---
 
-***REMOVED******REMOVED*** 6. Continuous Learning & Deployment
+## 6. Continuous Learning & Deployment
 
-***REMOVED******REMOVED******REMOVED*** 6.1 Online Learning Protocol
+### 6.1 Online Learning Protocol
 
 **Trigger Conditions for Model Updates:**
 1. **Scheduled Retraining:** Weekly (Sundays, 00:00 UTC)
@@ -924,32 +924,32 @@ def incremental_training_cycle():
     """
     Weekly incremental update of TFT models.
     """
-    ***REMOVED*** Fetch new data (last 7 days)
+    # Fetch new data (last 7 days)
     new_data = fetch_recent_data(days=7)
     
-    ***REMOVED*** Validate data quality
+    # Validate data quality
     IF data_quality_check(new_data) < 0.9:
         log("Poor data quality, skipping update")
         RETURN
     
-    ***REMOVED*** Load current model
+    # Load current model
     model = load_checkpoint("current_model.pt")
     
-    ***REMOVED*** Fine-tune with small learning rate
-    optimizer = Adam(model.parameters(), lr=1e-5)  ***REMOVED*** 10× lower
+    # Fine-tune with small learning rate
+    optimizer = Adam(model.parameters(), lr=1e-5)  # 10× lower
     
-    FOR epoch IN range(10):  ***REMOVED*** Short fine-tuning
+    FOR epoch IN range(10):  # Short fine-tuning
         loss = train_epoch(model, new_data)
         log(f"Fine-tune epoch {epoch}: loss={loss:.4f}")
     
-    ***REMOVED*** Validate on held-out data
+    # Validate on held-out data
     val_rmse = evaluate(model, validation_set)
     
-    ***REMOVED*** A/B test: compare old vs new
+    # A/B test: compare old vs new
     old_rmse = evaluate(old_model, test_set)
     new_rmse = evaluate(model, test_set)
     
-    IF new_rmse < old_rmse * 0.95:  ***REMOVED*** 5% improvement threshold
+    IF new_rmse < old_rmse * 0.95:  # 5% improvement threshold
         save_checkpoint(model, "current_model.pt")
         log("Model updated successfully")
     ELSE:
@@ -957,7 +957,7 @@ def incremental_training_cycle():
         rollback()
 ```
 
-***REMOVED******REMOVED******REMOVED*** 6.2 A/B Testing Framework
+### 6.2 A/B Testing Framework
 
 **Deployment Strategy:**
 ```
@@ -994,11 +994,11 @@ def incremental_training_cycle():
 ```python
 from scipy.stats import ttest_ind
 
-***REMOVED*** Collect forecasts over 7 days
+# Collect forecasts over 7 days
 errors_A = [compute_error(forecast_A, truth) for t in test_period]
 errors_B = [compute_error(forecast_B, truth) for t in test_period]
 
-***REMOVED*** Two-sample t-test
+# Two-sample t-test
 t_stat, p_value = ttest_ind(errors_A, errors_B)
 
 IF p_value < 0.05 AND mean(errors_B) < mean(errors_A):
@@ -1007,7 +1007,7 @@ ELSE:
     keep_model_A()
 ```
 
-***REMOVED******REMOVED******REMOVED*** 6.3 Monitoring Dashboard
+### 6.3 Monitoring Dashboard
 
 **Key Performance Indicators (KPIs):**
 
@@ -1054,19 +1054,19 @@ ELSE:
 
 ---
 
-***REMOVED******REMOVED*** 7. Reproducibility & Documentation
+## 7. Reproducibility & Documentation
 
-***REMOVED******REMOVED******REMOVED*** 7.1 Experiment Tracking
+### 7.1 Experiment Tracking
 
 **MLflow Integration:**
 ```python
 import mlflow
 
-***REMOVED*** Start experiment
+# Start experiment
 mlflow.set_experiment("MiRACLE_TFT_Training")
 
 with mlflow.start_run():
-    ***REMOVED*** Log parameters
+    # Log parameters
     mlflow.log_params({
         "model": "short_tft",
         "learning_rate": 1e-3,
@@ -1077,26 +1077,26 @@ with mlflow.start_run():
         "seed": 42
     })
     
-    ***REMOVED*** Training loop
+    # Training loop
     for epoch in range(max_epochs):
         train_loss = train_epoch(model, train_loader)
         val_loss = evaluate(model, val_loader)
         
-        ***REMOVED*** Log metrics
+        # Log metrics
         mlflow.log_metrics({
             "train_loss": train_loss,
             "val_loss": val_loss
         }, step=epoch)
     
-    ***REMOVED*** Log final model
+    # Log final model
     mlflow.pytorch.log_model(model, "model")
     
-    ***REMOVED*** Log artifacts
+    # Log artifacts
     mlflow.log_artifact("config.yaml")
     mlflow.log_artifact("training_log.txt")
 ```
 
-***REMOVED******REMOVED******REMOVED*** 7.2 Version Control
+### 7.2 Version Control
 
 **Git Structure:**
 ```
@@ -1122,37 +1122,37 @@ pv_forecast_30d/
     ├── MIRACLE_SAR_SPACE_CLEAN.md
     └── MIRACLE_SCIENTIFIC_WORKFLOW.md (this file)
 
-***REMOVED*** Git tags for releases
+# Git tags for releases
 git tag -a v1.0.0-miracle -m "MiRACLE V1.0: Initial production release"
 git push origin v1.0.0-miracle
 ```
 
-***REMOVED******REMOVED******REMOVED*** 7.3 Environment Management
+### 7.3 Environment Management
 
 **Docker Container:**
 ```dockerfile
 FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
-***REMOVED*** Install Python 3.11
+# Install Python 3.11
 RUN apt-get update && apt-get install -y python3.11 python3-pip
 
-***REMOVED*** Install dependencies
+# Install dependencies
 COPY requirements.txt /app/
 RUN pip install -r /app/requirements.txt
 
-***REMOVED*** Copy code
+# Copy code
 COPY src/ /app/src/
 COPY V1.0_FINAL_TFT/ /app/V1.0_FINAL_TFT/
 COPY checkpoints/ /app/checkpoints/
 
-***REMOVED*** Set environment variables
+# Set environment variables
 ENV PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
 ENV OMP_NUM_THREADS=8
 
-***REMOVED*** Expose API port
+# Expose API port
 EXPOSE 8000
 
-***REMOVED*** Run inference server
+# Run inference server
 CMD ["python3", "/app/src/api/server.py"]
 ```
 
@@ -1181,9 +1181,9 @@ From: nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 ---
 
-***REMOVED******REMOVED*** 8. Future Extensions
+## 8. Future Extensions
 
-***REMOVED******REMOVED******REMOVED*** 8.1 Planned Enhancements (V1.1+)
+### 8.1 Planned Enhancements (V1.1+)
 
 1. **LSTM Encoder Reintroduction:**
    - Role: Temporal feature extraction from raw time series
@@ -1207,7 +1207,7 @@ From: nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
    - Continuous action space for blend weights
    - Better exploration in high-dimensional space
 
-***REMOVED******REMOVED******REMOVED*** 8.2 Research Directions
+### 8.2 Research Directions
 
 1. **Causal Inference:**
    - Identify causal weather-power relationships
@@ -1226,9 +1226,9 @@ From: nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 ---
 
-***REMOVED******REMOVED*** 9. References
+## 9. References
 
-***REMOVED******REMOVED******REMOVED*** Reinforcement Learning Theory
+### Reinforcement Learning Theory
 
 1. **Foundational RL:**
    - Sutton, R. S., & Barto, A. G. (2018). *Reinforcement Learning: An Introduction* (2nd ed.). MIT Press.
@@ -1252,26 +1252,26 @@ From: nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
    - Bacon, P.-L., Harb, J., & Precup, D. (2017). "The Option-Critic Architecture," *AAAI 2017*.
    - Vezhnevets, A. S., et al. (2017). "FeUdal Networks for Hierarchical Reinforcement Learning," *ICML 2017*.
 
-***REMOVED******REMOVED******REMOVED*** Transformer Architecture
+### Transformer Architecture
 
 6. **Attention Mechanisms:**
    - Vaswani, A., et al. (2017). "Attention Is All You Need," *NeurIPS 2017*.
    - Lim, B., Arık, S. Ö., Loeff, N., & Pfister, T. (2021). "Temporal Fusion Transformers for Interpretable Multi-horizon Time Series Forecasting," *International Journal of Forecasting*, 37(4), 1748-1764.
 
-***REMOVED******REMOVED******REMOVED*** Physics-Based Modeling
+### Physics-Based Modeling
 
 7. **Solar Energy:**
    - Holmgren, W. F., Hansen, C. W., & Mikofski, M. A. (2018). "pvlib python: A python package for modeling solar energy systems," *Journal of Open Source Software*, 3(29), 884.
    - Duffie, J. A., & Beckman, W. A. (2013). *Solar Engineering of Thermal Processes* (4th ed.). Wiley.
    - Perez, R., et al. (1990). "Modeling daylight availability and irradiance components from direct and global irradiance," *Solar Energy*, 44(5), 271-289.
 
-***REMOVED******REMOVED******REMOVED*** Time Series Forecasting
+### Time Series Forecasting
 
 8. **Statistical Methods:**
    - Hyndman, R. J., & Athanasopoulos, G. (2021). *Forecasting: Principles and Practice* (3rd ed.). OTexts.
    - Makridakis, S., Spiliotis, E., & Assimakopoulos, V. (2018). "The M4 Competition: Results, findings, conclusions and way forward," *International Journal of Forecasting*, 34(4), 802-808.
 
-***REMOVED******REMOVED******REMOVED*** Domain Applications
+### Domain Applications
 
 9. **PV Forecasting:**
    - Antonanzas, J., et al. (2016). "Review of photovoltaic power forecasting," *Solar Energy*, 136, 78-111.
@@ -1280,7 +1280,7 @@ From: nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 ---
 
-***REMOVED******REMOVED*** Appendix A: Notation & Terminology
+## Appendix A: Notation & Terminology
 
 | Symbol | Description | Dimension |
 |--------|-------------|-----------|
@@ -1298,7 +1298,7 @@ From: nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 ---
 
-***REMOVED******REMOVED*** Appendix B: Computational Resources
+## Appendix B: Computational Resources
 
 **Training Resource Requirements:**
 

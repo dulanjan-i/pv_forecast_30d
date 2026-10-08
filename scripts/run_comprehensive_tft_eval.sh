@@ -1,5 +1,5 @@
-***REMOVED***!/bin/bash
-***REMOVED*** Comprehensive TFT RMSE/MAE evaluation across all phases
+#!/bin/bash
+# Comprehensive TFT RMSE/MAE evaluation across all phases
 set -e
 
 cd ~/pv_forecast_30d
@@ -9,7 +9,7 @@ echo "========================================="
 echo "Phase 1: Ablation Study (Short-head only)"
 echo "========================================="
 
-***REMOVED*** Short-head ablation already exists at experiments/tft/notes/short_head_eval.csv
+# Short-head ablation already exists at experiments/tft/notes/short_head_eval.csv
 echo "✓ Ablation short-head eval already exists"
 cat experiments/tft/notes/short_head_eval.csv
 

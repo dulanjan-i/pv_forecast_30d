@@ -116,11 +116,11 @@ def preprocess_plant_weather(plant_id: str) -> Path:
     if "date" not in df.columns:
         raise ValueError(f"{plant_id}: expected 'date' column in hourly weather parquet")
 
-    ***REMOVED*** 1. Convert naive local time to UTC
-    ***REMOVED***
-    ***REMOVED*** Open-Meteo archive returns timestamps in local Europe/Berlin time,
-    ***REMOVED*** without timezone info, already adjusted for DST.
-    ***REMOVED*** We localize to Europe/Berlin then convert to UTC to match PV data.
+    # 1. Convert naive local time to UTC
+    #
+    # Open-Meteo archive returns timestamps in local Europe/Berlin time,
+    # without timezone info, already adjusted for DST.
+    # We localize to Europe/Berlin then convert to UTC to match PV data.
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"])
 
@@ -130,28 +130,28 @@ def preprocess_plant_weather(plant_id: str) -> Path:
         .dt.tz_convert(TIMEZONE_UTC)
     )
 
-    ***REMOVED*** Drop any NaT timestamps from DST ambiguity before setting index
+    # Drop any NaT timestamps from DST ambiguity before setting index
     df = df.dropna(subset=["timestamp_utc"])
 
-    ***REMOVED*** 2. Enforce a regular 1 hour index before resampling
+    # 2. Enforce a regular 1 hour index before resampling
     df = df.set_index("timestamp_utc").sort_index()
     
-    ***REMOVED*** Remove duplicate timestamps (e.g., from DST transitions)
+    # Remove duplicate timestamps (e.g., from DST transitions)
     df = df[~df.index.duplicated(keep='first')]
 
-    ***REMOVED*** For safety, coerce all numeric columns to numeric
+    # For safety, coerce all numeric columns to numeric
     for col in df.columns:
         if col == "weather_code":
             continue
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
-    ***REMOVED*** 3. Resample to 15 minute grid
-    ***REMOVED***
-    ***REMOVED*** Use asfreq first to place existing hourly values on the new grid,
-    ***REMOVED*** then apply filling / interpolation per variable group.
+    # 3. Resample to 15 minute grid
+    #
+    # Use asfreq first to place existing hourly values on the new grid,
+    # then apply filling / interpolation per variable group.
     df_15 = df.asfreq("15min")
 
-    ***REMOVED*** Identify column groups
+    # Identify column groups
     radiation_cols = [
         "shortwave_radiation_instant",
         "direct_radiation_instant",
@@ -169,30 +169,30 @@ def preprocess_plant_weather(plant_id: str) -> Path:
         "surface_pressure",
     ]
 
-    ***REMOVED*** Keep only columns that are actually present
+    # Keep only columns that are actually present
     radiation_cols = [c for c in radiation_cols if c in df_15.columns]
     meteo_cols = [c for c in meteo_cols if c in df_15.columns]
 
-    ***REMOVED*** 4. Apply interpolation and filling
-    ***REMOVED***
-    ***REMOVED*** Radiation: linear interpolation over time
+    # 4. Apply interpolation and filling
+    #
+    # Radiation: linear interpolation over time
     if radiation_cols:
         df_15[radiation_cols] = df_15[radiation_cols].interpolate(
             method="time", limit_direction="both"
         )
 
-    ***REMOVED*** Meteo: forward fill, then backfill at the start
+    # Meteo: forward fill, then backfill at the start
     if meteo_cols:
         df_15[meteo_cols] = df_15[meteo_cols].ffill().bfill()
 
-    ***REMOVED*** Weather code: treat as categorical, only ffill/bfill
+    # Weather code: treat as categorical, only ffill/bfill
     if "weather_code" in df_15.columns:
         df_15["weather_code"] = df_15["weather_code"].ffill().bfill()
 
-    ***REMOVED*** 5. Finalize output
+    # 5. Finalize output
     df_15 = df_15.reset_index().rename(columns={"timestamp_utc": "timestamp_utc"})
 
-    ***REMOVED*** Ensure timestamp_utc is timezone aware UTC
+    # Ensure timestamp_utc is timezone aware UTC
     df_15["timestamp_utc"] = pd.to_datetime(df_15["timestamp_utc"]).dt.tz_convert(TIMEZONE_UTC)
 
     out_path = INTERIM_GER / f"{plant_id}_weather_15min.parquet"

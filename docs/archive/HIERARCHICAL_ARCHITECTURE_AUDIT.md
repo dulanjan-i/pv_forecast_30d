@@ -1,12 +1,12 @@
-***REMOVED*** Hierarchical Architecture Implementation Audit
+# Hierarchical Architecture Implementation Audit
 **Date:** January 2, 2026  
 **Status:** ✅ VERIFIED - Matches all requirements
 
 ---
 
-***REMOVED******REMOVED*** 🎯 User Requirements vs Implementation
+## 🎯 User Requirements vs Implementation
 
-***REMOVED******REMOVED******REMOVED*** ✅ 1. Hierarchical Refinement ("Drone + Fighter Jet")
+### ✅ 1. Hierarchical Refinement ("Drone + Fighter Jet")
 
 **USER REQUIREMENT:**
 - Long-head: Predict all 720 hours in ONE call (strategic overview, 40% weight)
@@ -21,18 +21,18 @@
 - **Total calls:** 1 long + 30 short = 31 TFT inference calls
 
 ```python
-***REMOVED*** Step 2: Long-head inference (strategic overview: 720 hours)
-long_head_pred = self._predict_long_head(...)  ***REMOVED*** ONE call
+# Step 2: Long-head inference (strategic overview: 720 hours)
+long_head_pred = self._predict_long_head(...)  # ONE call
 
-***REMOVED*** Step 3: Rolling daily refinement (short-head for each day)
-for day in range(30):  ***REMOVED*** 30 calls
+# Step 3: Rolling daily refinement (short-head for each day)
+for day in range(30):  # 30 calls
     short_day_pred = self._predict_short_head_for_day(...)
     day_forecast = blend_hierarchical(short_day_pred, long_slice, pvlib_slice, ...)
 ```
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ✅ 2. 3-Way Hierarchical Blending
+### ✅ 2. 3-Way Hierarchical Blending
 
 **USER REQUIREMENT:**
 - Layer 1: ML ensemble (short 60% + long 40%)
@@ -47,13 +47,13 @@ for day in range(30):  ***REMOVED*** 30 calls
 ```python
 def blend_hierarchical(short_pred, long_upsampled, pvlib_baseline, 
                        alpha_short=0.6, alpha_long=0.4, alpha_ml=0.7, ...):
-    ***REMOVED*** Layer 1: ML Ensemble (short precision + long strategy)
+    # Layer 1: ML Ensemble (short precision + long strategy)
     ml_blend = alpha_short * short_pred + alpha_long * long_upsampled
     
-    ***REMOVED*** Layer 2: Physics-Aware Blend (ML data-driven + PVLib physics)
+    # Layer 2: Physics-Aware Blend (ML data-driven + PVLib physics)
     physics_blend = alpha_ml * ml_blend + (1.0 - alpha_ml) * pvlib_baseline
     
-    ***REMOVED*** Layer 3: Hard Constraints (enforce physical reality)
+    # Layer 3: Hard Constraints (enforce physical reality)
     final = apply_physics_constraints(physics_blend, pvlib_baseline, ...)
 ```
 
@@ -65,7 +65,7 @@ def blend_hierarchical(short_pred, long_upsampled, pvlib_baseline,
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ✅ 3. RL Meta-Controller (Adaptive Weights)
+### ✅ 3. RL Meta-Controller (Adaptive Weights)
 
 **USER REQUIREMENT:**
 - Select weather API (OpenMeteo base/ensemble)
@@ -91,15 +91,15 @@ def blend_hierarchical(short_pred, long_upsampled, pvlib_baseline,
 | @ day 29  | 0.35    | 0.65   | 0.57 | Far horizon trusts physics |
 
 ```python
-***REMOVED*** Rule 1: Short-head weight decreases with horizon
+# Rule 1: Short-head weight decreases with horizon
 if day < 7:
-    alpha_short = 0.65; alpha_long = 0.35  ***REMOVED*** Near: trust short
+    alpha_short = 0.65; alpha_long = 0.35  # Near: trust short
 elif day < 14:
-    alpha_short = 0.5; alpha_long = 0.5    ***REMOVED*** Mid: balanced
+    alpha_short = 0.5; alpha_long = 0.5    # Mid: balanced
 else:
-    alpha_short = 0.35; alpha_long = 0.65  ***REMOVED*** Far: trust long
+    alpha_short = 0.35; alpha_long = 0.65  # Far: trust long
 
-***REMOVED*** Rule 2: ML weight decreases with horizon and confidence
+# Rule 2: ML weight decreases with horizon and confidence
 alpha_ml = base_ml_weight - confidence_penalty - horizon_penalty
 ```
 
@@ -107,7 +107,7 @@ alpha_ml = base_ml_weight - confidence_penalty - horizon_penalty
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ✅ 4. Weather-Only Encoding (Novelty)
+### ✅ 4. Weather-Only Encoding (Novelty)
 
 **USER REQUIREMENT:**
 - Encoder uses ONLY historical weather + PVLib computed from weather
@@ -124,19 +124,19 @@ alpha_ml = base_ml_weight - confidence_penalty - horizon_penalty
 **TODO for TFT Integration:**
 ```python
 def _predict_short_head_for_day(...):
-    ***REMOVED*** Real implementation needs:
-    ***REMOVED*** 1. Extract encoder window: weather features ONLY (no PV)
-    ***REMOVED*** 2. Extract decoder window: weather forecast (no PV)
-    ***REMOVED*** 3. Add PVLib features computed from weather
-    ***REMOVED*** 4. Run model.predict()
-    ***REMOVED*** 5. Extract q50 quantile
+    # Real implementation needs:
+    # 1. Extract encoder window: weather features ONLY (no PV)
+    # 2. Extract decoder window: weather forecast (no PV)
+    # 3. Add PVLib features computed from weather
+    # 4. Run model.predict()
+    # 5. Extract q50 quantile
 ```
 
 **Verified:** ✅ Architecture supports weather-only encoding (implementation pending)
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ✅ 5. Total TFT Calls
+### ✅ 5. Total TFT Calls
 
 **USER REQUIREMENT:**
 - 31 total calls: 1 long-head + 30 short-head
@@ -148,9 +148,9 @@ def _predict_short_head_for_day(...):
 
 ---
 
-***REMOVED******REMOVED*** 📦 File Inventory & Status
+## 📦 File Inventory & Status
 
-***REMOVED******REMOVED******REMOVED*** ✅ Core Implementation Files (Keep All)
+### ✅ Core Implementation Files (Keep All)
 
 | File | Purpose | Status | Lines |
 |------|---------|--------|-------|
@@ -164,9 +164,9 @@ def _predict_short_head_for_day(...):
 
 ---
 
-***REMOVED******REMOVED*** ⚠️ Deprecated/Unused Code
+## ⚠️ Deprecated/Unused Code
 
-***REMOVED******REMOVED******REMOVED*** 1. `create_30day_forecast()` in physics_glue.py
+### 1. `create_30day_forecast()` in physics_glue.py
 
 **Status:** ⚠️ **DEPRECATED** (but harmless to keep)
 
@@ -192,21 +192,21 @@ NOTE: This is the SIMPLE architecture (Day 1 short + Days 2-30 long upsampled).
 
 ---
 
-***REMOVED******REMOVED*** 🔍 Cross-Verification Checklist
+## 🔍 Cross-Verification Checklist
 
-***REMOVED******REMOVED******REMOVED*** Architecture Requirements
+### Architecture Requirements
 - [x] Long-head predicts 720 hours in ONE call (strategic)
 - [x] Short-head refines EACH of 30 days (tactical)
 - [x] Long-head preserved in blend (40% weight, not discarded)
 - [x] 3-way hierarchical blend (short+long+physics)
 - [x] Total 31 TFT calls (1+30)
 
-***REMOVED******REMOVED******REMOVED*** Blending Strategy
+### Blending Strategy
 - [x] Layer 1: ML ensemble (60% short, 40% long)
 - [x] Layer 2: Physics blend (70% ML, 30% PVLib)
 - [x] Layer 3: Hard constraints (night=0, capacity≤120%)
 
-***REMOVED******REMOVED******REMOVED*** RL Controller
+### RL Controller
 - [x] Adaptive weights by day/horizon
 - [x] Near-term (Days 0-6): Higher short-head weight (0.65)
 - [x] Mid-term (Days 7-13): Balanced (0.5)
@@ -215,21 +215,21 @@ NOTE: This is the SIMPLE architecture (Day 1 short + Days 2-30 long upsampled).
 - [x] Weather API selection logic
 - [x] Placeholder for future RL training
 
-***REMOVED******REMOVED******REMOVED*** Weather-Only Encoding
+### Weather-Only Encoding
 - [x] Design supports weather-only encoder
 - [x] No PV measurements in encoder/decoder (confirmed)
 - [x] PVLib computed from weather (not sensor data)
 - [x] Robust to missing SCADA (design goal confirmed)
 - [ ] **PENDING:** Real TFT implementation (currently synthetic)
 
-***REMOVED******REMOVED******REMOVED*** Output Format
+### Output Format
 - [x] Final shape: (2880,) = 30 days @ 15-min
 - [x] Components available: final, short_daily, long, pvlib, weights
 - [x] Validation checks: shape, range, night=0, daylight reasonable
 
 ---
 
-***REMOVED******REMOVED*** 📊 Test Results
+## 📊 Test Results
 
 All tests passed with synthetic data:
 
@@ -258,9 +258,9 @@ All tests passed with synthetic data:
 
 ---
 
-***REMOVED******REMOVED*** 🚧 Next Steps
+## 🚧 Next Steps
 
-***REMOVED******REMOVED******REMOVED*** 1. TFT Integration (2-3 hours)
+### 1. TFT Integration (2-3 hours)
 - Study `offline_predict_tft.py` batch preparation
 - Implement `_predict_short_head_for_day()` with real TFT
 - Implement `_predict_long_head()` with real TFT
@@ -268,18 +268,18 @@ All tests passed with synthetic data:
 - Feature engineering to match training format
 - Extract q50 quantile predictions
 
-***REMOVED******REMOVED******REMOVED*** 2. Optional Cleanup
+### 2. Optional Cleanup
 - **Decision:** Keep or remove `create_30day_forecast()` from physics_glue.py?
 - **Decision:** Remove unused import in physics_aware_forecaster.py line 47?
 
-***REMOVED******REMOVED******REMOVED*** 3. Documentation Updates
+### 3. Documentation Updates
 - Update docstrings with real TFT usage examples
 - Add weather-only encoding details to README
 - Document RL training procedure for v2.0
 
 ---
 
-***REMOVED******REMOVED*** ✅ FINAL VERDICT
+## ✅ FINAL VERDICT
 
 **Implementation Status:** ✅ **FULLY MATCHES USER REQUIREMENTS**
 

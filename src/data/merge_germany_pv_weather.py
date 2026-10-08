@@ -29,7 +29,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 INTERIM = REPO_ROOT / "data" / "interim" / "germany"
 PROCESSED = REPO_ROOT / "data" / "processed" / "germany"
 
-***REMOVED*** Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
+# Version 02: Excluded plant_04 (data quality issue - 100% zeros in Mar-Jun 2024)
 PLANT_IDS: List[str] = ["plant_01","plant_02","plant_03","plant_05","plant_06"]
 
 
@@ -45,20 +45,20 @@ def merge_one(plant_id: str) -> Path:
     df_pv = pd.read_parquet(pv_path)
     df_wx = pd.read_parquet(wx_path)
 
-    ***REMOVED*** Ensure timestamp column exists and is datetime
+    # Ensure timestamp column exists and is datetime
     for df, name in [(df_pv, "pv"), (df_wx, "weather")]:
         if "timestamp_utc" not in df.columns:
             raise ValueError(f"{plant_id}: {name} missing timestamp_utc")
         df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
 
-    ***REMOVED*** Drop redundant 'date' column from weather if present
+    # Drop redundant 'date' column from weather if present
     if "date" in df_wx.columns:
         df_wx = df_wx.drop(columns=["date"])
 
-    ***REMOVED*** Inner join = intersection of timestamps
+    # Inner join = intersection of timestamps
     df = df_pv.merge(df_wx, on="timestamp_utc", how="inner", validate="one_to_one")
 
-    ***REMOVED*** Sort and write
+    # Sort and write
     df = df.sort_values("timestamp_utc").reset_index(drop=True)
 
     PROCESSED.mkdir(parents=True, exist_ok=True)

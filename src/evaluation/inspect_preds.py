@@ -14,7 +14,7 @@ def pred_col(df):
     for c in ["y_hat","y_pred","pred","power_pred","power_norm_pred","prediction","p_hat"]:
         if c in df.columns:
             return c
-    ***REMOVED*** fallback: first numeric column
+    # fallback: first numeric column
     num = [c for c in df.columns if is_numeric_dtype(df[c])]
     return num[0] if num else None
 
@@ -32,7 +32,7 @@ for name,p in files.items():
     if c is None:
         print(f"{name}: no numeric prediction column found in {p}")
         continue
-    ***REMOVED*** coerce to numeric safely
+    # coerce to numeric safely
     try:
         vals = pd.to_numeric(df[c], errors="coerce")
         if vals.dropna().empty:

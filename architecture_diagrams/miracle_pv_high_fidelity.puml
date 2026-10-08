@@ -4,9 +4,9 @@
 ' -----------------------------
 skinparam backgroundColor white
 skinparam componentStyle rectangle
-skinparam databaseBackgroundColor ***REMOVED***F5F5F5
-skinparam databaseBorderColor ***REMOVED***555
-skinparam rectangleBorderColor ***REMOVED***0066cc
+skinparam databaseBackgroundColor #F5F5F5
+skinparam databaseBorderColor #555
+skinparam rectangleBorderColor #0066cc
 skinparam rectangleFontColor black
 skinparam shadowing false
 skinparam linetype ortho
@@ -16,23 +16,23 @@ title MiRACLE V1.0 Architecture
 ' -----------------------------
 ' Color Legend
 ' -----------------------------
-' Inputs / Data Sources: ***REMOVED***D9EDF7 (light blue)
-' Models: ***REMOVED***E6E6FA (lavender)
-' Intermediate outputs / pipeline: ***REMOVED***FCF8E3 (light yellow)
-' Final outputs: ***REMOVED***DFF0D8 (light green)
-' Error / Metrics: ***REMOVED***F2DEDE (light red)
-' Storage / DB: ***REMOVED***F5F5F5 (light gray)
+' Inputs / Data Sources: #D9EDF7 (light blue)
+' Models: #E6E6FA (lavender)
+' Intermediate outputs / pipeline: #FCF8E3 (light yellow)
+' Final outputs: #DFF0D8 (light green)
+' Error / Metrics: #F2DEDE (light red)
+' Storage / DB: #F5F5F5 (light gray)
 
 ' -----------------------------
 ' Data Sources (top)
 ' -----------------------------
-package "Data Source 1: PV Plant" as DS1 ***REMOVED***D9EDF7 {
+package "Data Source 1: PV Plant" as DS1 #D9EDF7 {
     [Historical PV Output] as HIST_PV
     [Historical Weather Data] as HIST_W
     [PV Plant Metadata] as PVM
 }
 
-package "Data Source 2: OpenMeteo (Forecasts)" as DS2 ***REMOVED***D9EDF7 {
+package "Data Source 2: OpenMeteo (Forecasts)" as DS2 #D9EDF7 {
     [Forecast API] as FORECAST_API
     package "Ensemble API" as ENS {
         [GFS Ensemble] as GFS
@@ -48,36 +48,36 @@ package "Data Source 2: OpenMeteo (Forecasts)" as DS2 ***REMOVED***D9EDF7 {
 ' -----------------------------
 ' RL Meta-controller (center top)
 ' -----------------------------
-node "RL Meta-Controller\n(Adaptive Control Loop)" as RL ***REMOVED***E6E6FA
+node "RL Meta-Controller\n(Adaptive Control Loop)" as RL #E6E6FA
 
 ' -----------------------------
 ' Historical Store + Preprocessors
 ' -----------------------------
-database "Historical Store" as HDB ***REMOVED***F5F5F5
-rectangle "Preprocessor A\n(Data Normalization)" as PA ***REMOVED***FCF8E3
-rectangle "Preprocessor B\n(Real-time Preprocessing)" as PB ***REMOVED***FCF8E3
+database "Historical Store" as HDB #F5F5F5
+rectangle "Preprocessor A\n(Data Normalization)" as PA #FCF8E3
+rectangle "Preprocessor B\n(Real-time Preprocessing)" as PB #FCF8E3
 
 ' -----------------------------
 ' Feature / Model / Metadata / Error / Output stores (DB icons)
 ' -----------------------------
-database "Feature Store" as FS ***REMOVED***F5F5F5
-database "Model Store" as MS ***REMOVED***F5F5F5
-database "Metadata Table\n(Pipeline & Model Metadata)" as MT ***REMOVED***F5F5F5
-database "Error Metrics Table" as EM ***REMOVED***F2DEDE
-database "TFT Output Table" as OT ***REMOVED***FCF8E3
+database "Feature Store" as FS #F5F5F5
+database "Model Store" as MS #F5F5F5
+database "Metadata Table\n(Pipeline & Model Metadata)" as MT #F5F5F5
+database "Error Metrics Table" as EM #F2DEDE
+database "TFT Output Table" as OT #FCF8E3
 
 ' -----------------------------
 ' Models & Pipeline Blocks (middle)
 ' -----------------------------
-rectangle "LSTM Encoder\n(Temporal Encodings)" as LSTM ***REMOVED***E6E6FA
-rectangle "PVLib Physical Model\n(Baseline physics simulation)" as PVLIB ***REMOVED***E6E6FA
-rectangle "Temporal Fusion Transformer\n(Main Forecasting Model)" as TFT ***REMOVED***E6E6FA
+rectangle "LSTM Encoder\n(Temporal Encodings)" as LSTM #E6E6FA
+rectangle "PVLib Physical Model\n(Baseline physics simulation)" as PVLIB #E6E6FA
+rectangle "Temporal Fusion Transformer\n(Main Forecasting Model)" as TFT #E6E6FA
 
 ' -----------------------------
 ' Dashboard & Final Output (bottom)
 ' -----------------------------
-rectangle "Streamlit Dashboard\n(Explainability & Decision Support)" as DASH ***REMOVED***FCF8E3
-rectangle "Predicted PV Power Output" as OUT ***REMOVED***DFF0D8
+rectangle "Streamlit Dashboard\n(Explainability & Decision Support)" as DASH #FCF8E3
+rectangle "Predicted PV Power Output" as OUT #DFF0D8
 
 ' -----------------------------
 ' Main arrow thickness

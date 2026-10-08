@@ -1,4 +1,4 @@
-***REMOVED*** RL counterfactual experiment — plant_03
+# RL counterfactual experiment — plant_03
 
 Root ground truth (do not modify):
 - `data/processed/plant_level/plant_03/ground_truth_from_sheet_15min_utc_capnorm.parquet`

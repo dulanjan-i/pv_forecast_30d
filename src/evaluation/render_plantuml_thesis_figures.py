@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """Render selected PlantUML diagrams to thesis-ready PNG + PDF.
 
 Why this exists:
@@ -37,12 +37,12 @@ def _plantuml_encode(text: str) -> str:
     """Encode PlantUML text using the server's deflate + custom base64."""
 
     compressed = zlib.compress(text.encode("utf-8"), level=9)
-    ***REMOVED*** PlantUML expects raw DEFLATE stream (no zlib headers)
+    # PlantUML expects raw DEFLATE stream (no zlib headers)
     raw_deflate = compressed[2:-4]
     encoded = base64.b64encode(raw_deflate).decode("ascii")
 
-    ***REMOVED*** Translate standard base64 into PlantUML's encoding alphabet.
-    ***REMOVED*** See PlantUML server encoding.
+    # Translate standard base64 into PlantUML's encoding alphabet.
+    # See PlantUML server encoding.
     return (
         encoded.replace("+", "-")
         .replace("/", "_")
@@ -57,11 +57,11 @@ def _fetch(url: str, timeout_s: float = 60.0) -> bytes:
 
 
 def _write_pdf_from_png(png_path: pathlib.Path, pdf_path: pathlib.Path) -> None:
-    ***REMOVED*** Use landscape A4; this works reasonably well for pipeline diagrams.
+    # Use landscape A4; this works reasonably well for pipeline diagrams.
     page_w, page_h = landscape(A4)
     c = canvas.Canvas(str(pdf_path), pagesize=(page_w, page_h))
 
-    ***REMOVED*** Leave margins; fit image preserving aspect ratio.
+    # Leave margins; fit image preserving aspect ratio.
     margin = 0.5 * inch
     avail_w = page_w - 2 * margin
     avail_h = page_h - 2 * margin

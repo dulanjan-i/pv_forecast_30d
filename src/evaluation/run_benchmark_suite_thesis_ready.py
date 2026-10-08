@@ -1,4 +1,4 @@
-***REMOVED*** src/evaluation/run_benchmark_suite_thesis_ready.py
+# src/evaluation/run_benchmark_suite_thesis_ready.py
 """
 Thesis-ready benchmark visualization suite with:
 - Proper labels: "Ground Truth Plant 03" instead of "truth"
@@ -21,9 +21,9 @@ import matplotlib.dates as mdates
 from scipy import stats
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** IO
-***REMOVED*** -----------------------------
+# -----------------------------
+# IO
+# -----------------------------
 def read_parquet(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Missing parquet: {path}")
@@ -39,7 +39,7 @@ def to_utc_datetime(s: pd.Series) -> pd.Series:
 
 
 def parse_name_path(x: str) -> Tuple[str, str]:
-    ***REMOVED*** NAME:/abs/or/rel/path.parquet
+    # NAME:/abs/or/rel/path.parquet
     if ":" not in x:
         raise ValueError(f"Bad --model spec '{x}'. Expected NAME:/path/to.parquet")
     name, path = x.split(":", 1)
@@ -52,9 +52,9 @@ def parse_name_path(x: str) -> Tuple[str, str]:
     return name, path
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Metrics
-***REMOVED*** -----------------------------
+# -----------------------------
+# Metrics
+# -----------------------------
 def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     mask = np.isfinite(y_true) & np.isfinite(y_pred)
     if not mask.any():
@@ -112,9 +112,9 @@ def write_csv_and_tex(df: pd.DataFrame, csv_path: Path, tex_path: Path, index: b
         print(f"[WARN] Could not write LaTeX: {e}")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Core joins
-***REMOVED*** -----------------------------
+# -----------------------------
+# Core joins
+# -----------------------------
 def load_truth(truth_path: Path) -> pd.DataFrame:
     truth = read_parquet(truth_path)
     if "timestamp_utc" not in truth.columns:
@@ -138,7 +138,7 @@ def load_pred(pred_path: Path) -> pd.DataFrame:
     df["timestamp_utc"] = to_utc_datetime(df["timestamp_utc"])
     df["forecast_start"] = to_utc_datetime(df["forecast_start"])
 
-    ***REMOVED*** normalize dtypes (avoid float32/float64 chaos)
+    # normalize dtypes (avoid float32/float64 chaos)
     df["hours_ahead"] = pd.to_numeric(df["hours_ahead"], errors="coerce")
     df["predicted_power_norm"] = pd.to_numeric(df["predicted_power_norm"], errors="coerce")
 
@@ -167,9 +167,9 @@ def filter_window(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
     return df[(df["timestamp_utc"] >= s) & (df["timestamp_utc"] <= e)].copy()
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Plotting helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Plotting helpers
+# -----------------------------
 def _apply_time_axis(ax: plt.Axes) -> None:
     """Fix jumbled year labels with concise date formatting"""
     locator = mdates.AutoDateLocator(minticks=4, maxticks=8)
@@ -213,7 +213,7 @@ def plot_case_facet_grid(
     Each subplot: truth vs baseline vs model_i.
     Uses shared x/y scales, readable dates, NO OVERLAPPING LABELS.
     """
-    ***REMOVED*** window
+    # window
     t0 = filter_window(truth_stitched, start, end)
     b0 = filter_window(baseline_stitched, start, end)
 
@@ -221,7 +221,7 @@ def plot_case_facet_grid(
         print(f"[WARN] empty window for {title}: {start} -> {end}")
         return
 
-    ***REMOVED*** prep models (window + align on timestamp)
+    # prep models (window + align on timestamp)
     models_in_window: Dict[str, pd.DataFrame] = {}
     for name, dfm in model_stitched_map.items():
         w = filter_window(dfm, start, end)
@@ -237,13 +237,13 @@ def plot_case_facet_grid(
     n = len(names)
     nrows = int(np.ceil(n / ncols))
 
-    ***REMOVED*** shared y-limits across all panels
+    # shared y-limits across all panels
     y_series = [t0["y_true"], b0["y_baseline"]]
     for nm in names:
         y_series.append(models_in_window[nm]["y_model"])
     ylo, yhi = _shared_ylim_from_series(y_series)
 
-    ***REMOVED*** Larger figure for readability
+    # Larger figure for readability
     fig, axes = plt.subplots(
         nrows=nrows, 
         ncols=ncols, 
@@ -264,7 +264,7 @@ def plot_case_facet_grid(
 
         m0 = models_in_window[nm]
 
-        ***REMOVED*** Plot with better styling
+        # Plot with better styling
         ax.plot(t0["timestamp_utc"].values, t0["y_true"].values, 
                 label=truth_label, color='black', linewidth=1.5, alpha=0.9)
         ax.plot(b0["timestamp_utc"].values, b0["y_baseline"].values, 
@@ -278,17 +278,17 @@ def plot_case_facet_grid(
         ax.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
         _apply_time_axis(ax)
 
-        ***REMOVED*** Legend: place OUTSIDE plot area to avoid overlap
+        # Legend: place OUTSIDE plot area to avoid overlap
         if i == 0:
             ax.legend(
                 loc="upper left", 
                 fontsize=9, 
                 framealpha=0.95, 
                 edgecolor='gray',
-                bbox_to_anchor=(0.0, 1.0),  ***REMOVED*** Keep inside for first subplot
+                bbox_to_anchor=(0.0, 1.0),  # Keep inside for first subplot
             )
 
-    ***REMOVED*** hide empty panels
+    # hide empty panels
     for j in range(n, nrows * ncols):
         r = j // ncols
         c = j % ncols
@@ -314,7 +314,7 @@ def plot_scatter_predicted_vs_actual(
     Shows perfect prediction line (y=x) and R² score.
     """
     n_models = len(model_stitched_map)
-    ncols = min(3, n_models + 1)  ***REMOVED*** +1 for baseline
+    ncols = min(3, n_models + 1)  # +1 for baseline
     nrows = int(np.ceil((n_models + 1) / ncols))
 
     fig, axes = plt.subplots(nrows, ncols, figsize=(5.5 * ncols, 5 * nrows))
@@ -324,7 +324,7 @@ def plot_scatter_predicted_vs_actual(
 
     fig.suptitle("Predicted vs. Actual Power (Scatter)", fontsize=15, weight='bold')
 
-    ***REMOVED*** Baseline
+    # Baseline
     ax = axes[0]
     x = baseline_stitched["y_baseline"].values
     y = baseline_stitched["y_true"].values
@@ -344,7 +344,7 @@ def plot_scatter_predicted_vs_actual(
     ax.grid(True, alpha=0.3, linestyle=':')
     ax.legend(fontsize=9, loc='lower right')
 
-    ***REMOVED*** Models
+    # Models
     for i, (nm, df_model) in enumerate(model_stitched_map.items(), start=1):
         ax = axes[i]
         x = df_model["y_model"].values
@@ -365,7 +365,7 @@ def plot_scatter_predicted_vs_actual(
         ax.grid(True, alpha=0.3, linestyle=':')
         ax.legend(fontsize=9, loc='lower right')
 
-    ***REMOVED*** Hide unused panels
+    # Hide unused panels
     for j in range(n_models + 1, len(axes)):
         axes[j].axis('off')
 
@@ -398,7 +398,7 @@ def plot_residuals_histogram(
 
     fig.suptitle("Residual Distribution (Ground Truth - Predicted)", fontsize=15, weight='bold')
 
-    ***REMOVED*** Baseline
+    # Baseline
     ax = axes[0]
     residuals = baseline_stitched["y_true"].values - baseline_stitched["y_baseline"].values
     residuals = residuals[np.isfinite(residuals)]
@@ -419,7 +419,7 @@ def plot_residuals_histogram(
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.3, linestyle=':')
 
-    ***REMOVED*** Models
+    # Models
     for i, (nm, df_model) in enumerate(model_stitched_map.items(), start=1):
         ax = axes[i]
         residuals = df_model["y_true"].values - df_model["y_model"].values
@@ -441,7 +441,7 @@ def plot_residuals_histogram(
         ax.legend(fontsize=9)
         ax.grid(True, alpha=0.3, linestyle=':')
 
-    ***REMOVED*** Hide unused
+    # Hide unused
     for j in range(n_models + 1, len(axes)):
         axes[j].axis('off')
 
@@ -473,7 +473,7 @@ def plot_qq_plot(
 
     fig.suptitle("Q-Q Plot: Residual Normality Check", fontsize=15, weight='bold')
 
-    ***REMOVED*** Baseline
+    # Baseline
     ax = axes[0]
     residuals = baseline_stitched["y_true"].values - baseline_stitched["y_baseline"].values
     residuals = residuals[np.isfinite(residuals)]
@@ -482,7 +482,7 @@ def plot_qq_plot(
     ax.set_title(baseline_label, fontsize=11, weight='semibold')
     ax.grid(True, alpha=0.3, linestyle=':')
 
-    ***REMOVED*** Models
+    # Models
     for i, (nm, df_model) in enumerate(model_stitched_map.items(), start=1):
         ax = axes[i]
         residuals = df_model["y_true"].values - df_model["y_model"].values
@@ -492,7 +492,7 @@ def plot_qq_plot(
         ax.set_title(nm, fontsize=11, weight='semibold')
         ax.grid(True, alpha=0.3, linestyle=':')
 
-    ***REMOVED*** Hide unused
+    # Hide unused
     for j in range(n_models + 1, len(axes)):
         axes[j].axis('off')
 
@@ -510,9 +510,9 @@ def build_stitched_series_hours_max(truth: pd.DataFrame, pred: pd.DataFrame, y_c
     return stitched
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Table Generation
-***REMOVED*** -----------------------------
+# -----------------------------
+# Table Generation
+# -----------------------------
 def generate_overall_metrics_table(
     baseline_stitched: pd.DataFrame,
     model_stitched_map: Dict[str, pd.DataFrame],
@@ -522,14 +522,14 @@ def generate_overall_metrics_table(
     """Generate overall performance metrics table (CSV + LaTeX)"""
     rows = []
     
-    ***REMOVED*** Baseline
+    # Baseline
     metrics = compute_metrics(baseline_stitched["y_true"].values, baseline_stitched["y_baseline"].values)
     metrics["Model"] = baseline_label
     rows.append(metrics)
     
-    ***REMOVED*** Models
+    # Models
     for name, df_model in model_stitched_map.items():
-        ***REMOVED*** df_model has columns: timestamp_utc, y_true, y_model
+        # df_model has columns: timestamp_utc, y_true, y_model
         metrics = compute_metrics(df_model["y_true"].values, df_model["y_model"].values)
         metrics["Model"] = name
         rows.append(metrics)
@@ -554,7 +554,7 @@ def generate_monthly_metrics_table(
     baseline_label: str,
 ) -> pd.DataFrame:
     """Generate monthly performance breakdown table (CSV + LaTeX)"""
-    ***REMOVED*** Baseline
+    # Baseline
     baseline_copy = baseline_stitched.copy()
     baseline_copy["month"] = baseline_copy["timestamp_utc"].dt.to_period("M").astype(str)
     
@@ -564,7 +564,7 @@ def generate_monthly_metrics_table(
         row.update(compute_metrics(grp["y_true"].values, grp["y_baseline"].values))
         monthly_rows.append(row)
     
-    ***REMOVED*** Models
+    # Models
     for name, df_model in model_stitched_map.items():
         model_copy = df_model.copy()
         model_copy["month"] = model_copy["timestamp_utc"].dt.to_period("M").astype(str)
@@ -604,18 +604,18 @@ def generate_horizon_stratified_table(
             return "1-6h"
         elif hours <= 24:
             return "6-24h"
-        elif hours <= 168:  ***REMOVED*** 7 days
+        elif hours <= 168:  # 7 days
             return "1-7d"
         else:
             return "7-30d"
     
     rows = []
     
-    ***REMOVED*** Baseline
+    # Baseline
     merged = baseline_pred.merge(truth, on="timestamp_utc")
     merged["horizon_bin"] = merged["hours_ahead"].apply(horizon_bin)
     
-    ***REMOVED*** Determine truth column name (either y_true or power_norm)
+    # Determine truth column name (either y_true or power_norm)
     truth_col = "y_true" if "y_true" in merged.columns else "power_norm"
     
     for bin_name, grp in merged.groupby("horizon_bin"):
@@ -623,7 +623,7 @@ def generate_horizon_stratified_table(
         row.update(compute_metrics(grp[truth_col].values, grp["predicted_power_norm"].values))
         rows.append(row)
     
-    ***REMOVED*** Models
+    # Models
     for name, pred_df in model_pred_map.items():
         merged = pred_df.merge(truth, on="timestamp_utc")
         merged["horizon_bin"] = merged["hours_ahead"].apply(horizon_bin)
@@ -634,7 +634,7 @@ def generate_horizon_stratified_table(
             rows.append(row)
     
     df = pd.DataFrame(rows)
-    ***REMOVED*** Sort by horizon bins
+    # Sort by horizon bins
     horizon_order = ["0-1h", "1-6h", "6-24h", "1-7d", "7-30d"]
     df["horizon_order"] = df["Horizon"].apply(lambda x: horizon_order.index(x) if x in horizon_order else 999)
     df = df.sort_values(["horizon_order", "Model"]).drop(columns=["horizon_order"])
@@ -657,19 +657,19 @@ def generate_skill_score_table(
     baseline_label: str,
 ) -> None:
     """Generate skill score table (% improvement vs baseline)"""
-    ***REMOVED*** Get baseline RMSE
+    # Get baseline RMSE
     base_rmse = rmse(baseline_stitched["y_true"].values, baseline_stitched["y_baseline"].values)
     
     rows = []
     
-    ***REMOVED*** Baseline (0% improvement)
+    # Baseline (0% improvement)
     rows.append({
         "Model": baseline_label,
         "RMSE": base_rmse,
         "Skill_Score_pct": 0.0,
     })
     
-    ***REMOVED*** Models
+    # Models
     for name, df_model in model_stitched_map.items():
         model_rmse = rmse(df_model["y_true"].values, df_model["y_model"].values)
         skill_score = ((base_rmse - model_rmse) / base_rmse) * 100.0
@@ -691,9 +691,9 @@ def generate_skill_score_table(
     print(f"[OK] wrote {tables_dir / 'skill_scores.tex'}")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Build stitched series for plotting
-***REMOVED*** -----------------------------
+# -----------------------------
+# Build stitched series for plotting
+# -----------------------------
 def build_stitched_series(truth: pd.DataFrame, pred: pd.DataFrame, y_col_name: str) -> pd.DataFrame:
     joined = join_truth_pred(truth, pred, y_col_name)
     stitched = stitch_most_recent(joined, y_col_name)
@@ -707,9 +707,9 @@ def build_stitched_series_hours_max(truth: pd.DataFrame, pred: pd.DataFrame, y_c
     return stitched
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** CLI main
-***REMOVED*** -----------------------------
+# -----------------------------
+# CLI main
+# -----------------------------
 def main() -> None:
     ap = argparse.ArgumentParser(description="Thesis-ready benchmark visualization suite")
 
@@ -730,7 +730,7 @@ def main() -> None:
     ap.add_argument("--case-winter-start", type=str, default="2024-01-10T00:00:00Z")
     ap.add_argument("--case-winter-end", type=str, default="2024-01-17T00:00:00Z")
 
-    ***REMOVED*** Optional second facet group for short-head ablation plots
+    # Optional second facet group for short-head ablation plots
     ap.add_argument("--ablation-baseline-name", type=str, default="")
     ap.add_argument("--ablation-baseline", type=str, default="")
     ap.add_argument("--ablation-model", action="append", default=[], help="NAME:/path/to.parquet (repeatable)")
@@ -746,21 +746,21 @@ def main() -> None:
 
     truth = load_truth(Path(args.truth))
 
-    ***REMOVED*** -------- main group --------
+    # -------- main group --------
     baseline_name = args.baseline_name
     truth_label = args.truth_label
     
     baseline_pred = load_pred(Path(args.baseline))
     baseline_stitched_raw = build_stitched_series(truth, baseline_pred, "y_baseline")
 
-    ***REMOVED*** For table generation: use baseline_stitched directly (it has y_true, y_baseline)
+    # For table generation: use baseline_stitched directly (it has y_true, y_baseline)
     baseline_stitched = baseline_stitched_raw.copy()
     
-    ***REMOVED*** For plotting: extract truth_stitched separately (plots expect separate truth dataframe)
+    # For plotting: extract truth_stitched separately (plots expect separate truth dataframe)
     truth_stitched = baseline_stitched_raw[["timestamp_utc", "y_true"]].copy()
 
     model_map: Dict[str, pd.DataFrame] = {}
-    model_pred_map: Dict[str, pd.DataFrame] = {}  ***REMOVED*** For horizon-stratified metrics
+    model_pred_map: Dict[str, pd.DataFrame] = {}  # For horizon-stratified metrics
     for spec in args.model:
         nm, pth = parse_name_path(spec)
         pred = load_pred(Path(pth))
@@ -768,7 +768,7 @@ def main() -> None:
         model_map[nm] = st
         model_pred_map[nm] = pred
 
-    ***REMOVED*** ========== GENERATE TABLES ==========
+    # ========== GENERATE TABLES ==========
     print("\n[INFO] Generating tables...")
     
     generate_overall_metrics_table(
@@ -800,10 +800,10 @@ def main() -> None:
         baseline_label=baseline_name,
     )
 
-    ***REMOVED*** ========== THESIS-READY PLOTS ==========
+    # ========== THESIS-READY PLOTS ==========
     print("\n[INFO] Generating figures...")
     
-    ***REMOVED*** 1. Case study: summer week
+    # 1. Case study: summer week
     title_summer = f"Case Study: Summer Week Forecast Comparison"
     plot_case_facet_grid(
         title=title_summer,
@@ -818,7 +818,7 @@ def main() -> None:
         baseline_label=baseline_name,
     )
 
-    ***REMOVED*** 2. Case study: winter week
+    # 2. Case study: winter week
     title_winter = f"Case Study: Winter Week Forecast Comparison"
     plot_case_facet_grid(
         title=title_winter,
@@ -833,7 +833,7 @@ def main() -> None:
         baseline_label=baseline_name,
     )
 
-    ***REMOVED*** 3. Scatter: Predicted vs Actual
+    # 3. Scatter: Predicted vs Actual
     plot_scatter_predicted_vs_actual(
         truth_stitched=truth_stitched,
         baseline_stitched=baseline_stitched,
@@ -843,7 +843,7 @@ def main() -> None:
         baseline_label=baseline_name,
     )
 
-    ***REMOVED*** 4. Residual histogram
+    # 4. Residual histogram
     plot_residuals_histogram(
         truth_stitched=truth_stitched,
         baseline_stitched=baseline_stitched,
@@ -852,7 +852,7 @@ def main() -> None:
         baseline_label=baseline_name,
     )
 
-    ***REMOVED*** 5. Q-Q plot for normality check
+    # 5. Q-Q plot for normality check
     plot_qq_plot(
         truth_stitched=truth_stitched,
         baseline_stitched=baseline_stitched,
@@ -861,7 +861,7 @@ def main() -> None:
         baseline_label=baseline_name,
     )
 
-    ***REMOVED*** -------- optional ablation group (0-24h by default) --------
+    # -------- optional ablation group (0-24h by default) --------
     if args.ablation_baseline and args.ablation_model:
         abl_base_name = args.ablation_baseline_name or "Ablation Baseline"
         abl_base_pred = load_pred(Path(args.ablation_baseline))

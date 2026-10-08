@@ -1,9 +1,9 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-***REMOVED*** -----------------
-***REMOVED*** Common inputs
-***REMOVED*** -----------------
+# -----------------
+# Common inputs
+# -----------------
 ORIG_PHASE_DIR="freeze/final_thesis_v1/phase1_2024daily_final"
 LAG_PHASE_DIR="freeze/final_thesis_v1/publication_phase_lag96"
 
@@ -22,9 +22,9 @@ LONG_CKPT="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/plant_
 OUT_DIR="freeze/final_thesis_v1/ablations_shorthead_inference"
 mkdir -p "$OUT_DIR"
 
-***REMOVED*** -----------------
-***REMOVED*** Ablation short-head ckpts
-***REMOVED*** -----------------
+# -----------------
+# Ablation short-head ckpts
+# -----------------
 BASE="/home/dwijenayake/pv_forecast_30d/experiments/tft/runs/germany/ablations"
 TS="20251226_165225"
 
@@ -33,9 +33,9 @@ CKPT_TFT_PVLIB="${BASE}/tft_pvlib/${TS}/checkpoints/best.ckpt"
 CKPT_TFT_LSTM="${BASE}/tft_lstm/${TS}/checkpoints/best.ckpt"
 CKPT_FULL="${BASE}/full/${TS}/checkpoints/best.ckpt"
 
-***REMOVED*** -----------------
-***REMOVED*** Sanity checks
-***REMOVED*** -----------------
+# -----------------
+# Sanity checks
+# -----------------
 for p in "$CKPT_TFT_ONLY" "$CKPT_TFT_PVLIB" "$CKPT_TFT_LSTM" "$CKPT_FULL" "$LONG_CKPT"; do
   if [[ ! -f "$p" ]]; then
     echo "MISSING: $p"
@@ -74,7 +74,7 @@ run_one () {
     --log-level INFO
 }
 
-***REMOVED*** First pair (no LSTM cols required)
+# First pair (no LSTM cols required)
 run_one 0 "$ORIG_PHASE_DIR" "ablate_tft_only"  "$CKPT_TFT_ONLY"  &
 pid0=$!
 run_one 1 "$ORIG_PHASE_DIR" "ablate_tft_pvlib" "$CKPT_TFT_PVLIB" &
@@ -82,7 +82,7 @@ pid1=$!
 wait $pid0
 wait $pid1
 
-***REMOVED*** Second pair (needs lagged PCA cols)
+# Second pair (needs lagged PCA cols)
 run_one 0 "$LAG_PHASE_DIR" "ablate_tft_lstm" "$CKPT_TFT_LSTM" &
 pid0=$!
 run_one 1 "$LAG_PHASE_DIR" "ablate_full"     "$CKPT_FULL"     &

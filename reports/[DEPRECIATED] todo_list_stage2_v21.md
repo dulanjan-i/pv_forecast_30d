@@ -1,6 +1,6 @@
-***REMOVED*** [DEPRECIATED] → MOVED TO VERSION 03 
-***REMOVED******REMOVED*** which is the correct canonical version now
-***REMOVED*** Stage 2 Transfer Learning - Active Todo List
+# [DEPRECIATED] → MOVED TO VERSION 03 
+## which is the correct canonical version now
+# Stage 2 Transfer Learning - Active Todo List
 
 
 **Date**: December 16, 2025  
@@ -10,9 +10,9 @@
 
 ---
 
-***REMOVED******REMOVED*** Priority: HIGH (Blocking Stage 2B)
+## Priority: HIGH (Blocking Stage 2B)
 
-***REMOVED******REMOVED******REMOVED*** ✅ Completed Tasks
+### ✅ Completed Tasks
 
 1. **Document Version 02 overfitting results**
    - Created: `reports/stage2_version02_overfitting_diagnosis.md`
@@ -22,18 +22,18 @@
 
 ---
 
-***REMOVED******REMOVED*** Version 2.1: Hyperparameter Tuning Experiments
+## Version 2.1: Hyperparameter Tuning Experiments
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Experiment 1: Conservative Tuning (RECOMMENDED FIRST)
+### ⏳ Experiment 1: Conservative Tuning (RECOMMENDED FIRST)
 
 **Goal**: Test if gentle regularization increases reduce overfitting
 
 **Configuration**:
 ```yaml
-dropout: 0.3          ***REMOVED*** 0.1 → 0.3 (3x increase)
-lr: 5e-5              ***REMOVED*** 1e-4 → 5e-5 (half learning rate)
-weight_decay: 1e-4    ***REMOVED*** Add L2 regularization
-batch_size: 512       ***REMOVED*** Keep same
+dropout: 0.3          # 0.1 → 0.3 (3x increase)
+lr: 5e-5              # 1e-4 → 5e-5 (half learning rate)
+weight_decay: 1e-4    # Add L2 regularization
+batch_size: 512       # Keep same
 max_epochs: 20
 early_stopping:
   monitor: val_loss
@@ -60,20 +60,20 @@ gradient_clip_val: 1.0
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Experiment 2: Aggressive Tuning (IF EXP1 FAILS)
+### ⏳ Experiment 2: Aggressive Tuning (IF EXP1 FAILS)
 
 **Goal**: Strong regularization to prevent memorization
 
 **Configuration**:
 ```yaml
-dropout: 0.5          ***REMOVED*** 0.1 → 0.5 (5x increase, very strong)
-lr: 1e-5              ***REMOVED*** 1e-4 → 1e-5 (10x slower learning)
-weight_decay: 1e-4    ***REMOVED*** Same as Exp1
-batch_size: 256       ***REMOVED*** 512 → 256 (smaller batches, more updates)
-max_epochs: 30        ***REMOVED*** Increase epochs (slower learning)
+dropout: 0.5          # 0.1 → 0.5 (5x increase, very strong)
+lr: 1e-5              # 1e-4 → 1e-5 (10x slower learning)
+weight_decay: 1e-4    # Same as Exp1
+batch_size: 256       # 512 → 256 (smaller batches, more updates)
+max_epochs: 30        # Increase epochs (slower learning)
 early_stopping:
   monitor: val_loss
-  patience: 3         ***REMOVED*** More aggressive (stop sooner)
+  patience: 3         # More aggressive (stop sooner)
   mode: min
 gradient_clip_val: 1.0
 ```
@@ -87,20 +87,20 @@ gradient_clip_val: 1.0
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Experiment 3: Learning Rate Scheduler (ALTERNATIVE)
+### ⏳ Experiment 3: Learning Rate Scheduler (ALTERNATIVE)
 
 **Goal**: Adaptive learning rate reduction when validation plateaus
 
 **Configuration**:
 ```yaml
-dropout: 0.3          ***REMOVED*** Moderate regularization
-lr: 1e-4              ***REMOVED*** Start same as Version 02
+dropout: 0.3          # Moderate regularization
+lr: 1e-4              # Start same as Version 02
 lr_scheduler:
   type: ReduceLROnPlateau
   monitor: val_loss
-  factor: 0.5         ***REMOVED*** Halve LR when plateau
-  patience: 3         ***REMOVED*** Reduce after 3 epochs no improvement
-  min_lr: 1e-6        ***REMOVED*** Stop reducing at this point
+  factor: 0.5         # Halve LR when plateau
+  patience: 3         # Reduce after 3 epochs no improvement
+  min_lr: 1e-6        # Stop reducing at this point
 weight_decay: 1e-4
 batch_size: 512
 max_epochs: 30
@@ -117,9 +117,9 @@ gradient_clip_val: 1.0
 
 ---
 
-***REMOVED******REMOVED*** Supporting Implementation Tasks
+## Supporting Implementation Tasks
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Implement gradient clipping
+### ⏳ Implement gradient clipping
 **Purpose**: Prevent exploding gradients during transfer learning
 
 **Code**:
@@ -134,7 +134,7 @@ trainer = pl.Trainer(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Add early stopping callback
+### ⏳ Add early stopping callback
 **Purpose**: Stop training when validation stops improving
 
 **Code**:
@@ -143,7 +143,7 @@ from pytorch_lightning.callbacks import EarlyStopping
 
 early_stop = EarlyStopping(
     monitor='val_loss',
-    patience=5,  ***REMOVED*** or 3 for aggressive
+    patience=5,  # or 3 for aggressive
     mode='min',
     verbose=True
 )
@@ -155,7 +155,7 @@ trainer = pl.Trainer(callbacks=[early_stop])
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Compare Version 2.1 results with Version 02 baseline
+### ⏳ Compare Version 2.1 results with Version 02 baseline
 **Purpose**: Quantify improvement from hyperparameter changes
 
 **Metrics to Compare**:
@@ -168,9 +168,9 @@ trainer = pl.Trainer(callbacks=[early_stop])
 
 ---
 
-***REMOVED******REMOVED*** Fallback Strategy
+## Fallback Strategy
 
-***REMOVED******REMOVED******REMOVED*** ⏳ IF Version 2.1 fails: Version 2.2 - Train from Scratch
+### ⏳ IF Version 2.1 fails: Version 2.2 - Train from Scratch
 
 **Context**: If all 3 hyperparameter experiments fail to reduce overfitting below 1.5 ratio
 
@@ -184,11 +184,11 @@ trainer = pl.Trainer(callbacks=[early_stop])
 
 **Implementation**:
 ```python
-***REMOVED*** Remove this line:
-***REMOVED*** model.load_state_dict(torch.load("lstm_encoder_farm2107_CANONICAL.pt"))
+# Remove this line:
+# model.load_state_dict(torch.load("lstm_encoder_farm2107_CANONICAL.pt"))
 
-***REMOVED*** Train from random initialization
-model = LSTMEncoder(config)  ***REMOVED*** Random init
+# Train from random initialization
+model = LSTMEncoder(config)  # Random init
 trainer.fit(model, train_loader, val_loader)
 ```
 
@@ -202,15 +202,15 @@ trainer.fit(model, train_loader, val_loader)
 
 ---
 
-***REMOVED******REMOVED*** Additional Diagnostic Tasks
+## Additional Diagnostic Tasks
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Monitor gradient norms during training
+### ⏳ Monitor gradient norms during training
 **Purpose**: Detect vanishing/exploding gradients
 
 **Implementation**:
 ```python
 trainer = pl.Trainer(
-    track_grad_norm=2,  ***REMOVED*** Track L2 norm
+    track_grad_norm=2,  # Track L2 norm
     log_every_n_steps=50
 )
 ```
@@ -219,13 +219,13 @@ trainer = pl.Trainer(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ⏳ Increase validation frequency
+### ⏳ Increase validation frequency
 **Purpose**: Catch overfitting earlier in training
 
 **Implementation**:
 ```python
 trainer = pl.Trainer(
-    val_check_interval=0.25,  ***REMOVED*** Validate 4x per epoch
+    val_check_interval=0.25,  # Validate 4x per epoch
 )
 ```
 
@@ -233,7 +233,7 @@ trainer = pl.Trainer(
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ⏳ (Optional) Diagnostic: Train farm2107 with stratified split
+### ⏳ (Optional) Diagnostic: Train farm2107 with stratified split
 **Purpose**: Determine if stratified split itself causes overfitting
 
 **Hypothesis**: If farm2107 also shows high ratios with stratified split, the split method may be too aggressive
@@ -248,9 +248,9 @@ trainer = pl.Trainer(
 
 ---
 
-***REMOVED******REMOVED*** Long-term Roadmap
+## Long-term Roadmap
 
-***REMOVED******REMOVED******REMOVED*** Version 2.3: Architecture Changes (IF 2.2 FAILS)
+### Version 2.3: Architecture Changes (IF 2.2 FAILS)
 
 **Options**:
 1. **Reduce model capacity**:
@@ -269,7 +269,7 @@ trainer = pl.Trainer(
 
 ---
 
-***REMOVED******REMOVED*** Stage 2B: TFT Ensemble (ONLY WHEN READY)
+## Stage 2B: TFT Ensemble (ONLY WHEN READY)
 
 **Prerequisites**:
 - ✅ Stratified splits (achieved in Version 02)
@@ -283,9 +283,9 @@ trainer = pl.Trainer(
 
 ---
 
-***REMOVED******REMOVED*** Thesis Integration
+## Thesis Integration
 
-***REMOVED******REMOVED******REMOVED*** Narrative Arc (For Documentation)
+### Narrative Arc (For Documentation)
 
 1. **Chapter: Stage 2 Transfer Learning**
    - Section 2.1: Initial Approach (Version 01)
@@ -317,7 +317,7 @@ trainer = pl.Trainer(
 
 ---
 
-***REMOVED******REMOVED*** Notes for Next Session
+## Notes for Next Session
 
 **Save State**:
 - Version 02 encoders: `experiments/lstm/encoders/lstm_encoder_plant_{01,02,03,05,06}.pt`

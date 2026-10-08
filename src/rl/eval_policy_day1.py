@@ -1,4 +1,4 @@
-***REMOVED*** src/rl/eval_policy_day1.py
+# src/rl/eval_policy_day1.py
 from __future__ import annotations
 
 import argparse
@@ -10,7 +10,7 @@ import pandas as pd
 import torch
 
 from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
-from src.rl.training import DQNTrainer  ***REMOVED*** your existing trainer (saves q_net/target_net/config)
+from src.rl.training import DQNTrainer  # your existing trainer (saves q_net/target_net/config)
 
 
 def rmse(a: np.ndarray, b: np.ndarray) -> float:
@@ -24,23 +24,23 @@ def rmse(a: np.ndarray, b: np.ndarray) -> float:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Evaluate DDQN policy vs baseline for Day1 RMSE")
 
-    ***REMOVED*** policy + normalized states
+    # policy + normalized states
     p.add_argument("--ckpt", required=True, help="DDQN checkpoint .pt saved by DQNTrainer.save()")
     p.add_argument("--sarns_norm", required=True, help="SARNS parquet with normalized state_* columns")
 
-    ***REMOVED*** data sources
+    # data sources
     p.add_argument("--hist_weather_gt", required=True, help="Merged parquet with weather+pvlb+power_norm")
     p.add_argument("--weather_15min", required=True, help="weather_with_pvlib_15min.parquet (15-min, >=30d ahead)")
     p.add_argument("--gt", required=True, help="ground_truth_from_sheet_15min_utc_capnorm.parquet (timestamp_utc,power_norm)")
 
-    ***REMOVED*** model files
+    # model files
     p.add_argument("--plant_meta", required=True, help="Plant config JSON (used by PhysicsAwareForecaster)")
     p.add_argument("--short_ckpt", required=True, help="Short-head TFT checkpoint")
     p.add_argument("--long_ckpt", required=True, help="Long-head TFT checkpoint")
     p.add_argument("--short_train_parquet", required=True, help="Short-head train parquet (normalization)")
     p.add_argument("--long_train_parquet", required=True, help="Long-head train parquet (normalization)")
 
-    ***REMOVED*** eval controls
+    # eval controls
     p.add_argument("--n", type=int, default=20, help="How many forecast_starts to evaluate (default 20)")
     p.add_argument("--seed", type=int, default=0, help="Random seed for sampling forecast_starts")
     p.add_argument("--allowed_actions", default="0,2,3", help="Comma list. Policy is masked to these actions only.")
@@ -64,20 +64,20 @@ def main() -> None:
     if len(allowed_actions) == 0:
         raise ValueError("allowed_actions is empty")
 
-    ***REMOVED*** Explicit action -> blend weights
-    ***REMOVED*** Keys MUST be: short, long, physics and must sum to 1.0
-    ***REMOVED*** Expanded action space (0-7) for full exploration
+    # Explicit action -> blend weights
+    # Keys MUST be: short, long, physics and must sum to 1.0
+    # Expanded action space (0-7) for full exploration
     action_to_weights: Dict[int, Dict[str, float]] = {
-        0: {"short": 0.60, "long": 0.20, "physics": 0.20},  ***REMOVED*** baseline (ML-heavy, balanced)
-        1: {"short": 0.20, "long": 0.60, "physics": 0.20},  ***REMOVED*** long-head dominant
-        2: {"short": 0.45, "long": 0.25, "physics": 0.30},  ***REMOVED*** balanced with physics
-        3: {"short": 0.25, "long": 0.15, "physics": 0.60},  ***REMOVED*** physics-heavy
-        4: {"short": 0.00, "long": 0.00, "physics": 1.00},  ***REMOVED*** pure physics
-        5: {"short": 0.80, "long": 0.10, "physics": 0.10},  ***REMOVED*** short-head dominant
-        6: {"short": 0.10, "long": 0.80, "physics": 0.10},  ***REMOVED*** long-head aggressive
-        7: {"short": 0.33, "long": 0.33, "physics": 0.34},  ***REMOVED*** equal 3-way blend
+        0: {"short": 0.60, "long": 0.20, "physics": 0.20},  # baseline (ML-heavy, balanced)
+        1: {"short": 0.20, "long": 0.60, "physics": 0.20},  # long-head dominant
+        2: {"short": 0.45, "long": 0.25, "physics": 0.30},  # balanced with physics
+        3: {"short": 0.25, "long": 0.15, "physics": 0.60},  # physics-heavy
+        4: {"short": 0.00, "long": 0.00, "physics": 1.00},  # pure physics
+        5: {"short": 0.80, "long": 0.10, "physics": 0.10},  # short-head dominant
+        6: {"short": 0.10, "long": 0.80, "physics": 0.10},  # long-head aggressive
+        7: {"short": 0.33, "long": 0.33, "physics": 0.34},  # equal 3-way blend
     }
-    ***REMOVED*** Validate sums
+    # Validate sums
     for a, w in action_to_weights.items():
         s = float(w["short"] + w["long"] + w["physics"])
         if abs(s - 1.0) > 1e-6:
@@ -86,7 +86,7 @@ def main() -> None:
     if 0 not in action_to_weights:
         raise ValueError("action_to_weights must define baseline action 0")
 
-    ***REMOVED*** Load SARNS normalized
+    # Load SARNS normalized
     sarns = _read_parquet(args.sarns_norm)
     if "forecast_start" not in sarns.columns:
         raise ValueError(f"{args.sarns_norm} missing forecast_start column")
@@ -99,15 +99,15 @@ def main() -> None:
     state_cols = sorted(state_cols, key=lambda x: int(x.split("_")[1]))
     state_dim = len(state_cols)
 
-    ***REMOVED*** Load checkpoint and model
+    # Load checkpoint and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ***REMOVED*** Use trainer.load because your checkpoint format is trainer.save() dict
+    # Use trainer.load because your checkpoint format is trainer.save() dict
     ckpt_obj = torch.load(args.ckpt, map_location=device)
     if "config" not in ckpt_obj:
         raise ValueError(f"Checkpoint missing 'config': {args.ckpt}")
 
     config = ckpt_obj["config"]
-    ***REMOVED*** Sanity: state_dim must match
+    # Sanity: state_dim must match
     if hasattr(config, "state_dim") and int(config.state_dim) != int(state_dim):
         raise ValueError(f"State dim mismatch: sarns has {state_dim}, ckpt config has {config.state_dim}")
 
@@ -115,7 +115,7 @@ def main() -> None:
     trainer.load(args.ckpt)
     qnet = trainer.q_net.to(device).eval()
 
-    ***REMOVED*** Load data sources
+    # Load data sources
     hist = _read_parquet(args.hist_weather_gt)
     if "timestamp_utc" not in hist.columns:
         raise ValueError("hist_weather_gt missing timestamp_utc")
@@ -131,7 +131,7 @@ def main() -> None:
         raise ValueError("gt parquet must have timestamp_utc and power_norm")
     gt = gt[["timestamp_utc", "power_norm"]].drop_duplicates("timestamp_utc").sort_values("timestamp_utc")
 
-    ***REMOVED*** Build forecaster using your repo signature
+    # Build forecaster using your repo signature
     forecaster = PhysicsAwareForecaster(
         short_ckpt=Path(args.short_ckpt),
         long_ckpt=Path(args.long_ckpt),
@@ -140,18 +140,18 @@ def main() -> None:
         long_train_parquet=Path(args.long_train_parquet),
     )
 
-    ***REMOVED*** Candidate starts
+    # Candidate starts
     starts = sarns["forecast_start"].drop_duplicates().sort_values()
     rng = np.random.default_rng(args.seed)
 
-    ***REMOVED*** Precompute for coverage checks
+    # Precompute for coverage checks
     max_weather_ts = weather["timestamp_utc"].max()
     min_hist_ts = hist["timestamp_utc"].min()
 
     ok: List[pd.Timestamp] = []
     for fs in starts:
         fs = pd.Timestamp(fs)
-        ***REMOVED*** need 30d weather ending at fs+30d-15min
+        # need 30d weather ending at fs+30d-15min
         need_weather_end = fs + pd.Timedelta(days=30) - pd.Timedelta(minutes=15)
         need_hist_start = fs - pd.Timedelta(days=7)
 
@@ -160,12 +160,12 @@ def main() -> None:
         if need_hist_start < min_hist_ts:
             continue
 
-        ***REMOVED*** history must have at least 672 observed power points
+        # history must have at least 672 observed power points
         hwin = hist[(hist["timestamp_utc"] < fs) & (hist["timestamp_utc"] >= need_hist_start)]
         if int(hwin["power_norm"].notna().sum()) < 672:
             continue
 
-        ***REMOVED*** day1 GT must exist
+        # day1 GT must exist
         gday = gt[(gt["timestamp_utc"] >= fs) & (gt["timestamp_utc"] < fs + pd.Timedelta(days=1))]
         if len(gday) < 96:
             continue
@@ -182,26 +182,26 @@ def main() -> None:
     for fs in picks:
         fs = pd.Timestamp(fs)
 
-        ***REMOVED*** Build history window: last 7 days, require power_norm, then take last 672 rows
+        # Build history window: last 7 days, require power_norm, then take last 672 rows
         hwin = hist[(hist["timestamp_utc"] < fs) & (hist["timestamp_utc"] >= fs - pd.Timedelta(days=7))].sort_values("timestamp_utc")
         hwin = hwin.dropna(subset=["power_norm"])
         if len(hwin) < 672:
             continue
         hwin = hwin.tail(672).copy()
 
-        ***REMOVED*** Weather window: exactly 30 days at 15-min = 2880 steps
+        # Weather window: exactly 30 days at 15-min = 2880 steps
         wwin = weather[(weather["timestamp_utc"] >= fs) & (weather["timestamp_utc"] < fs + pd.Timedelta(days=30))].sort_values("timestamp_utc")
         if len(wwin) != 2880:
             continue
         wwin = wwin.copy()
 
-        ***REMOVED*** Day1 GT: exactly 96 steps
+        # Day1 GT: exactly 96 steps
         gday = gt[(gt["timestamp_utc"] >= fs) & (gt["timestamp_utc"] < fs + pd.Timedelta(days=1))].sort_values("timestamp_utc")
         if len(gday) != 96:
             continue
         y_true = gday["power_norm"].to_numpy(dtype=np.float32)
 
-        ***REMOVED*** Baseline action 0
+        # Baseline action 0
         w0 = action_to_weights[0]
         comp0 = forecaster.predict_30d(
             forecast_start=str(fs),
@@ -213,7 +213,7 @@ def main() -> None:
         y0 = np.asarray(comp0["final"][:96], dtype=np.float32)
         r0 = rmse(y0, y_true)
 
-        ***REMOVED*** Policy action from normalized state row
+        # Policy action from normalized state row
         srow = sarns[sarns["forecast_start"] == fs]
         if len(srow) == 0:
             continue
@@ -223,7 +223,7 @@ def main() -> None:
         with torch.no_grad():
             q = qnet(st).detach().cpu().numpy().reshape(-1)
 
-        ***REMOVED*** Mask to allowed actions
+        # Mask to allowed actions
         for a in range(len(q)):
             if a not in allowed_set:
                 q[a] = -1e9

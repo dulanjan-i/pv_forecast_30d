@@ -1,4 +1,4 @@
-***REMOVED*** src/evaluation/eval_daylight_metrics.py
+# src/evaluation/eval_daylight_metrics.py
 from __future__ import annotations
 
 import argparse
@@ -14,7 +14,7 @@ def _must_have(df: pd.DataFrame, cols: list[str], name: str) -> None:
 
 
 def _pick_gt_power_col(df: pd.DataFrame) -> str:
-    ***REMOVED*** Prefer user's guess, then common alternatives
+    # Prefer user's guess, then common alternatives
     for c in ["power_norm", "measured_power_norm", "gt_power_norm", "target_power_norm", "power"]:
         if c in df.columns:
             return c
@@ -34,7 +34,7 @@ def _compute_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 
 
 def _bucket(hours_ahead: pd.Series) -> pd.Series:
-    ***REMOVED*** Match what you printed earlier
+    # Match what you printed earlier
     h = hours_ahead.astype(np.float64)
     out = np.full(len(h), "8-30d", dtype=object)
     out[h <= 24.0] = "0-24h"
@@ -76,19 +76,19 @@ def score_one(
     y_true = df[gt_col].to_numpy(dtype=np.float64)
     y_pred = df[pred_col].to_numpy(dtype=np.float64)
 
-    ***REMOVED*** Overall
+    # Overall
     rows = []
     m = _compute_metrics(y_true, y_pred)
     rows.append({"model": name, "scope": "daylight" if daylight_only else "all", "group": "overall", **m, "n": len(df)})
 
-    ***REMOVED*** Buckets
+    # Buckets
     if "hours_ahead" in df.columns:
         for b, g in df.groupby("bucket", sort=False):
             mb = _compute_metrics(g[gt_col].to_numpy(dtype=np.float64), g[pred_col].to_numpy(dtype=np.float64))
             rows.append({"model": name, "scope": "daylight" if daylight_only else "all", "group": f"bucket:{b}", **mb, "n": len(g)})
 
-    ***REMOVED*** Monthly RMSE
-    ***REMOVED*** Keep timezone safe by using .dt.tz_convert(None) for Period conversion
+    # Monthly RMSE
+    # Keep timezone safe by using .dt.tz_convert(None) for Period conversion
     ts = pd.to_datetime(df["timestamp_utc"], utc=True)
     month = ts.dt.tz_convert(None).dt.to_period("M").astype(str)
     df["_month"] = month
@@ -98,20 +98,20 @@ def score_one(
 
     out = pd.DataFrame(rows)
 
-    ***REMOVED*** Convert to kW and annual kWh-style error totals if capacity is known
+    # Convert to kW and annual kWh-style error totals if capacity is known
     if capacity_kw is not None:
         out["MAE_kW"] = out["MAE"] * capacity_kw
         out["RMSE_kW"] = out["RMSE"] * capacity_kw
         out["MBE_kW"] = out["MBE"] * capacity_kw
 
-        ***REMOVED*** For overall only, also compute total absolute energy error across all samples (15-min => 0.25h)
-        ***REMOVED*** This is a useful "scale" number, not a perfect operational KPI.
+        # For overall only, also compute total absolute energy error across all samples (15-min => 0.25h)
+        # This is a useful "scale" number, not a perfect operational KPI.
         abs_err_kwh_total = float(np.sum(np.abs(y_pred - y_true) * capacity_kw * 0.25))
         err_kwh_total = float(np.sum((y_pred - y_true) * capacity_kw * 0.25))
         out.loc[out["group"] == "overall", "abs_err_total_kWh"] = abs_err_kwh_total
         out.loc[out["group"] == "overall", "signed_err_total_kWh"] = err_kwh_total
 
-    ***REMOVED*** Save a per-model scored table for traceability
+    # Save a per-model scored table for traceability
     tag = "daylight" if daylight_only else "all"
     out_path = out_dir / f"metrics_{name.lower()}_{tag}.csv"
     out.to_csv(out_path, index=False)
@@ -143,15 +143,15 @@ def main() -> None:
     print(f"[INFO] Using GT col: {gt_col}")
     print(f"[INFO] Using pred col: {args.pred_col}")
 
-    ***REMOVED*** Score: all samples
+    # Score: all samples
     a_base = score_one("BASELINE", base, gt, args.pred_col, gt_col, False, args.capacity_kw, out_dir)
     a_pol = score_one("POLICY", pol, gt, args.pred_col, gt_col, False, args.capacity_kw, out_dir)
 
-    ***REMOVED*** Score: daylight only
+    # Score: daylight only
     d_base = score_one("BASELINE", base, gt, args.pred_col, gt_col, True, args.capacity_kw, out_dir)
     d_pol = score_one("POLICY", pol, gt, args.pred_col, gt_col, True, args.capacity_kw, out_dir)
 
-    ***REMOVED*** Quick policy-minus-baseline deltas for the OVERALL row
+    # Quick policy-minus-baseline deltas for the OVERALL row
     def overall(df: pd.DataFrame) -> pd.Series:
         return df[df["group"] == "overall"].iloc[0]
 

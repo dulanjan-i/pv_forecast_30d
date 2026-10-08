@@ -38,7 +38,7 @@ from src.data.schema import (
     TIME_COL,
 )
 
-***REMOVED*** Rolling origin folds
+# Rolling origin folds
 FOLDS = [
     {"fold_id": 1, "name": "spring", "val_start": "2023-03-01", "val_end": "2023-06-01"},
     {"fold_id": 2, "name": "summer", "val_start": "2023-06-01", "val_end": "2023-09-01"},
@@ -46,11 +46,11 @@ FOLDS = [
     {"fold_id": 4, "name": "winter", "val_start": "2023-12-01", "val_end": "2024-03-01"},
 ]
 
-***REMOVED*** You used window_size=96 in training. Require at least one window worth of rows per plant.
+# You used window_size=96 in training. Require at least one window worth of rows per plant.
 DEFAULT_WINDOW_SIZE: int = 96
 MIN_ROWS_PER_PLANT: int = DEFAULT_WINDOW_SIZE + 1
 
-***REMOVED*** Toggle: enforce every plant has enough rows in train and val for each fold
+# Toggle: enforce every plant has enough rows in train and val for each fold
 FILTER_PLANTS_WITH_INSUFFICIENT_ROWS: bool = True
 
 
@@ -62,7 +62,7 @@ def load_supermatrix(data_dir: Path) -> pd.DataFrame:
     df = pd.read_parquet(supermatrix_file)
     df[TIME_COL] = pd.to_datetime(df[TIME_COL], utc=True)
 
-    ***REMOVED*** Sort by plant then time for consistent downstream behavior
+    # Sort by plant then time for consistent downstream behavior
     df = df.sort_values([PLANT_ID_COL, TIME_COL]).reset_index(drop=True)
     return df
 
@@ -123,7 +123,7 @@ def process_fold(df: pd.DataFrame, fold_cfg: Dict, output_dir: Path) -> None:
     val_start = pd.to_datetime(fold_cfg["val_start"], utc=True)
     val_end = pd.to_datetime(fold_cfg["val_end"], utc=True)
 
-    ***REMOVED*** Rolling origin split
+    # Rolling origin split
     train_df = df[df[TIME_COL] < val_start].copy()
     val_df = df[(df[TIME_COL] >= val_start) & (df[TIME_COL] < val_end)].copy()
 
@@ -144,15 +144,15 @@ def process_fold(df: pd.DataFrame, fold_cfg: Dict, output_dir: Path) -> None:
         print("Val rows per plant:")
         print(_plant_counts(val_df))
 
-    ***REMOVED*** Normalize only weather features, not POWER_NORM_COL
-    ***REMOVED*** LSTM_INPUT_FEATURES includes POWER_NORM_COL, so exclude it for z-score.
+    # Normalize only weather features, not POWER_NORM_COL
+    # LSTM_INPUT_FEATURES includes POWER_NORM_COL, so exclude it for z-score.
     norm_cols = [c for c in LSTM_INPUT_FEATURES if c != POWER_NORM_COL]
 
     stats = _fit_zscore(train_df, norm_cols)
     train_norm = _apply_zscore(train_df, stats)
     val_norm = _apply_zscore(val_df, stats)
 
-    ***REMOVED*** Drop any remaining NaNs in columns the training script will read
+    # Drop any remaining NaNs in columns the training script will read
     required_cols = list({TIME_COL, PLANT_ID_COL, TARGET_COL} | set(GLOBAL_LSTM_INPUT_FEATURES))
     before_tr, before_va = len(train_norm), len(val_norm)
     train_norm = train_norm.dropna(subset=required_cols)
@@ -160,13 +160,13 @@ def process_fold(df: pd.DataFrame, fold_cfg: Dict, output_dir: Path) -> None:
     if len(train_norm) != before_tr or len(val_norm) != before_va:
         print(f"[WARN] Dropped NaN rows after scaling. Train: {before_tr-len(train_norm)}, Val: {before_va-len(val_norm)}")
 
-    ***REMOVED*** Ensure one-hot unchanged (still binary)
+    # Ensure one-hot unchanged (still binary)
     for c in PLANT_ONEHOT_COLS:
         bad = (~train_norm[c].isin([0.0, 1.0])).sum() + (~val_norm[c].isin([0.0, 1.0])).sum()
         if bad > 0:
             raise ValueError(f"One-hot column {c} contains non-binary values after processing.")
 
-    ***REMOVED*** Save
+    # Save
     output_dir.mkdir(parents=True, exist_ok=True)
     train_file = output_dir / f"fold_{fold_id}_train.parquet"
     val_file = output_dir / f"fold_{fold_id}_val.parquet"

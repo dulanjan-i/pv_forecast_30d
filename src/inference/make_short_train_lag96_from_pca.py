@@ -30,7 +30,7 @@ def main() -> None:
 
     pca_cols = _find_pca_cols(cols)
     if not pca_cols:
-        raise RuntimeError(f"No lstm_enc_pca_***REMOVED******REMOVED******REMOVED*** columns found in {inp}. Found {len(cols)} cols total.")
+        raise RuntimeError(f"No lstm_enc_pca_### columns found in {inp}. Found {len(cols)} cols total.")
 
     ts_col = args.ts_col
     if ts_col in df.columns:
@@ -40,7 +40,7 @@ def main() -> None:
     group_col = args.group_col
     use_group = group_col in df.columns
 
-    ***REMOVED*** Make lagged cols
+    # Make lagged cols
     if use_group:
         g = df.groupby(group_col, sort=False)
         for c in pca_cols:
@@ -51,7 +51,7 @@ def main() -> None:
 
     lag_cols = [f"{c}_lag96" for c in pca_cols]
 
-    ***REMOVED*** Drop rows where lagged cols are NaN, otherwise StandardScaler.fit will choke
+    # Drop rows where lagged cols are NaN, otherwise StandardScaler.fit will choke
     before = len(df)
     df = df.dropna(subset=lag_cols).copy()
     after = len(df)

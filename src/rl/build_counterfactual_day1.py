@@ -1,10 +1,10 @@
-***REMOVED*** src/rl/build_counterfactual_day1.py
+# src/rl/build_counterfactual_day1.py
 """
 Build counterfactual Day-1 evaluations for each forecast_start by replaying
 the same underlying short/long/physics components but swapping blend weights
 (action -> weights).
 
-Output rows = (***REMOVED***forecast_starts successfully evaluated) * (***REMOVED***actions evaluated)
+Output rows = (#forecast_starts successfully evaluated) * (#actions evaluated)
 
 This is meant for fast offline policy evaluation for the DDQN stage.
 """
@@ -25,9 +25,9 @@ from src.inference.physics_glue import upsample_with_pvlib_shape, blend_hierarch
 logger = logging.getLogger("build_counterfactual_day1")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Helpers
+# -----------------------------
 def setup_logging() -> None:
     logging.basicConfig(
         level=logging.INFO,
@@ -75,7 +75,7 @@ def ensure_power_norm(
     g = g[["timestamp_utc", "power_norm"]].drop_duplicates("timestamp_utc")
 
     out = h.merge(g, on="timestamp_utc", how="left")
-    ***REMOVED*** For safety: missing power_norm should not crash TFT
+    # For safety: missing power_norm should not crash TFT
     out["power_norm"] = pd.to_numeric(out["power_norm"], errors="coerce").fillna(0.0)
     return out
 
@@ -97,7 +97,7 @@ def resample_hourly(df15: pd.DataFrame, plant_id: str) -> pd.DataFrame:
     df15["timestamp_utc"] = to_utc(df15["timestamp_utc"])
     df15 = safe_sort_dedup(df15)
 
-    ***REMOVED*** numeric aggregation
+    # numeric aggregation
     num_cols = df15.select_dtypes(include=[np.number]).columns.tolist()
     if "timestamp_utc" in num_cols:
         num_cols.remove("timestamp_utc")
@@ -110,7 +110,7 @@ def resample_hourly(df15: pd.DataFrame, plant_id: str) -> pd.DataFrame:
     )
     dfh["plant_id"] = plant_id
 
-    ***REMOVED*** Fill NaNs defensively (TFT does not allow NaNs in real-valued features)
+    # Fill NaNs defensively (TFT does not allow NaNs in real-valued features)
     for c in num_cols:
         if c == "power_norm":
             dfh[c] = pd.to_numeric(dfh[c], errors="coerce").fillna(0.0)
@@ -129,11 +129,11 @@ def slice_window(
     """
     Slice a fixed-length window starting at `start`.
     """
-    ***REMOVED*** Interpret `freq` as a per-step timedelta (e.g., '15min' or 'h').
+    # Interpret `freq` as a per-step timedelta (e.g., '15min' or 'h').
     try:
         per_step = pd.Timedelta(freq)
     except Exception:
-        ***REMOVED*** Fallback: assume `freq` is a unit string usable by Timedelta
+        # Fallback: assume `freq` is a unit string usable by Timedelta
         per_step = pd.Timedelta(1, unit=freq)
 
     end = start + per_step * int(steps)
@@ -170,7 +170,7 @@ def weights_to_alphas(w: Dict[str, float]) -> Tuple[float, float, float]:
 
     w_ml = w_short + w_long
     if w_ml <= 1e-9:
-        ***REMOVED*** pure physics
+        # pure physics
         return 0.5, 0.5, 0.0
 
     alpha_short = w_short / w_ml
@@ -179,9 +179,9 @@ def weights_to_alphas(w: Dict[str, float]) -> Tuple[float, float, float]:
     return float(alpha_short), float(alpha_long), float(alpha_ml)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main
+# -----------------------------
 def main() -> None:
     setup_logging()
 
@@ -211,14 +211,14 @@ def main() -> None:
 
     logger.info("Plant: %s", plant_id)
 
-    ***REMOVED*** Load transitions
+    # Load transitions
     dfT = pd.read_parquet(args.sarns_norm)
     must_cols(dfT, ["forecast_start"], "sarns_norm")
     dfT["forecast_start"] = to_utc(dfT["forecast_start"])
     forecast_starts = sorted(dfT["forecast_start"].dropna().unique().tolist())
     logger.info("Forecast starts: %d", len(forecast_starts))
 
-    ***REMOVED*** Load historical and gt
+    # Load historical and gt
     dfH15 = pd.read_parquet(args.hist_weather_gt)
     dfH15["timestamp_utc"] = to_utc(dfH15["timestamp_utc"])
     dfH15["plant_id"] = plant_id
@@ -232,10 +232,10 @@ def main() -> None:
     must_cols(dfGT, ["timestamp_utc", "power_norm"], "gt")
     dfGT["power_norm"] = pd.to_numeric(dfGT["power_norm"], errors="coerce").fillna(0.0)
 
-    ***REMOVED*** Ensure power_norm exists in hist
+    # Ensure power_norm exists in hist
     dfH15 = ensure_power_norm(dfH15, dfGT, plant_id)
 
-    ***REMOVED*** Load weather
+    # Load weather
     dfW15 = pd.read_parquet(args.weather_15min)
     dfW15["timestamp_utc"] = to_utc(dfW15["timestamp_utc"])
     dfW15["plant_id"] = plant_id
@@ -248,12 +248,12 @@ def main() -> None:
         dfW_h = safe_sort_dedup(dfW_h)
     else:
         logger.info("Deriving weather_hourly from weather_15min ...")
-        dfW_h = resample_hourly(dfW15.assign(power_norm=0.0), plant_id)  ***REMOVED*** dummy power_norm for fill logic
+        dfW_h = resample_hourly(dfW15.assign(power_norm=0.0), plant_id)  # dummy power_norm for fill logic
 
-    ***REMOVED*** Build hourly historical for long head
+    # Build hourly historical for long head
     dfH_h = resample_hourly(dfH15, plant_id)
 
-    ***REMOVED*** Initialize forecaster (match PhysicsAwareForecaster signature)
+    # Initialize forecaster (match PhysicsAwareForecaster signature)
     forecaster = PhysicsAwareForecaster(
         short_ckpt=args.short_ckpt,
         long_ckpt=args.long_ckpt,
@@ -263,7 +263,7 @@ def main() -> None:
         device="cuda",
     )
 
-    ***REMOVED*** Action map
+    # Action map
     action_to_w = action_weight_map_default()
     actions = sorted(action_to_w.keys())
 
@@ -274,10 +274,10 @@ def main() -> None:
         stats["attempted"] += 1
 
         try:
-            ***REMOVED*** Need at least: encoder windows + decoder windows
-            ***REMOVED*** Short head: encoder 96 steps (1 day), decoder 96 steps (day1)
+            # Need at least: encoder windows + decoder windows
+            # Short head: encoder 96 steps (1 day), decoder 96 steps (day1)
             enc15 = dfH15[dfH15["timestamp_utc"] < fs].tail(96).copy()
-            ***REMOVED*** Ensure encoder has power_norm filled (use forecaster helper after init)
+            # Ensure encoder has power_norm filled (use forecaster helper after init)
             enc15 = forecaster._ensure_encoder_power_norm(enc15)
             dec15_day1 = slice_window(dfW15, fs, steps=96, freq="15min")
 
@@ -285,7 +285,7 @@ def main() -> None:
                 stats["skip_missing"] += 1
                 continue
 
-            ***REMOVED*** Long head: encoder 168 hours (7 days), decoder 720 hours (30 days)
+            # Long head: encoder 168 hours (7 days), decoder 720 hours (30 days)
             encH = dfH_h[dfH_h["timestamp_utc"] < fs].tail(168).copy()
             decH_30d = slice_window(dfW_h, fs, steps=720, freq="h")
 
@@ -293,7 +293,7 @@ def main() -> None:
                 stats["skip_missing"] += 1
                 continue
 
-            ***REMOVED*** Ground truth day1
+            # Ground truth day1
             gt_day1 = dfGT[(dfGT["timestamp_utc"] >= fs) & (dfGT["timestamp_utc"] < fs + pd.Timedelta(days=1))].copy()
             if len(gt_day1) < 96:
                 stats["skip_missing"] += 1
@@ -301,20 +301,20 @@ def main() -> None:
             gt_day1 = gt_day1.sort_values("timestamp_utc").head(96)
             gt_y = gt_day1["power_norm"].to_numpy(dtype=np.float32)
 
-            ***REMOVED*** PVLib baseline day1 norm
+            # PVLib baseline day1 norm
             if "pvlib_ac_kw" not in dec15_day1.columns:
                 raise ValueError("weather_15min missing pvlib_ac_kw")
             cap_kw = float(meta.get("installed_capacity_kw", 1.0))
             pvlib_day1_norm = (pd.to_numeric(dec15_day1["pvlib_ac_kw"], errors="coerce").fillna(0.0).to_numpy() / max(cap_kw, 1e-6)).astype(np.float32)
             pvlib_day1_norm = np.clip(pvlib_day1_norm, 0.0, 2.0)
 
-            ***REMOVED*** Run component predictions once
-            ***REMOVED*** NOTE: PhysicsAwareForecaster._predict_short_head_for_day signature is
-            ***REMOVED*** (day_start, day_idx, historical_df, weather_df)
-            ***REMOVED*** so pass the forecast start timestamp `fs`, day index 0, then
-            ***REMOVED*** the encoder/history and decoder/weather windows.
+            # Run component predictions once
+            # NOTE: PhysicsAwareForecaster._predict_short_head_for_day signature is
+            # (day_start, day_idx, historical_df, weather_df)
+            # so pass the forecast start timestamp `fs`, day index 0, then
+            # the encoder/history and decoder/weather windows.
             short_pred = forecaster._predict_short_head_for_day(fs, 0, enc15, dec15_day1)
-            long_hourly = forecaster._predict_long_head(fs, encH, decH_30d)  ***REMOVED*** 720
+            long_hourly = forecaster._predict_long_head(fs, encH, decH_30d)  # 720
             long_hourly_day1 = np.asarray(long_hourly[:24], dtype=np.float32)
 
             long_day1_upsampled = upsample_with_pvlib_shape(
@@ -323,7 +323,7 @@ def main() -> None:
                 method="proportional",
             ).astype(np.float32)
 
-            ***REMOVED*** Evaluate all actions for this forecast_start
+            # Evaluate all actions for this forecast_start
             for a in actions:
                 w = action_to_w[a]
                 alpha_short, alpha_long, alpha_ml = weights_to_alphas(w)

@@ -71,7 +71,7 @@ class GroupedWindowDataset(Dataset):
         self.window_size = int(window_size)
         self.stride = int(stride)
 
-        ***REMOVED*** Defensive copy and sort
+        # Defensive copy and sort
         d = df.copy()
         d[TIME_COL] = pd.to_datetime(d[TIME_COL], utc=True)
         d = d.sort_values([PLANT_ID_COL, TIME_COL]).reset_index(drop=True)
@@ -81,7 +81,7 @@ class GroupedWindowDataset(Dataset):
         if missing:
             raise ValueError(f"GroupedWindowDataset: missing required columns: {missing}")
 
-        ***REMOVED*** Hard fail on NaNs because model code expects none
+        # Hard fail on NaNs because model code expects none
         X_all = d[GLOBAL_LSTM_INPUT_FEATURES].to_numpy()
         y_all = d[TARGET_COL].to_numpy()
         if np.isnan(X_all).any() or np.isnan(y_all).any():
@@ -90,15 +90,15 @@ class GroupedWindowDataset(Dataset):
             )
 
         self._by_plant: Dict[str, Dict[str, np.ndarray]] = {}
-        self._index: List[Tuple[str, int]] = []  ***REMOVED*** (plant_id, start_idx)
+        self._index: List[Tuple[str, int]] = []  # (plant_id, start_idx)
 
         freq_s = int(TIME_STEP_MINUTES * 60)
 
-        ***REMOVED*** Build per-plant arrays and valid window starts
+        # Build per-plant arrays and valid window starts
         for plant_id, g in d.groupby(PLANT_ID_COL, sort=True):
             g = g.sort_values(TIME_COL).reset_index(drop=True)
 
-            times = g[TIME_COL].astype("int64").to_numpy() // 10**9  ***REMOVED*** seconds
+            times = g[TIME_COL].astype("int64").to_numpy() // 10**9  # seconds
             X = g[GLOBAL_LSTM_INPUT_FEATURES].to_numpy(dtype=np.float32)
             y = g[TARGET_COL].to_numpy(dtype=np.float32)
 
@@ -106,14 +106,14 @@ class GroupedWindowDataset(Dataset):
             if n <= self.window_size:
                 continue
 
-            ***REMOVED*** Check regularity: diff must equal freq_s
+            # Check regularity: diff must equal freq_s
             diffs = np.diff(times)
-            good_step = (diffs == freq_s)  ***REMOVED*** length n-1
+            good_step = (diffs == freq_s)  # length n-1
 
-            ***REMOVED*** A window of length window_size requires window_size diffs to be good:
-            ***REMOVED*** from i->i+1 ... i+window_size-1 -> i+window_size
-            ***REMOVED*** That is good_step[i : i+window_size] all True
-            max_start = n - self.window_size - 1  ***REMOVED*** because y uses i+window_size
+            # A window of length window_size requires window_size diffs to be good:
+            # from i->i+1 ... i+window_size-1 -> i+window_size
+            # That is good_step[i : i+window_size] all True
+            max_start = n - self.window_size - 1  # because y uses i+window_size
             valid_starts = []
             for i in range(0, max_start + 1, self.stride):
                 if good_step[i : i + self.window_size].all():
@@ -129,7 +129,7 @@ class GroupedWindowDataset(Dataset):
                 f"time regularity, and per-plant row counts."
             )
 
-        ***REMOVED*** Diagnostics
+        # Diagnostics
         counts = {}
         for pid, _ in self._index:
             counts[pid] = counts.get(pid, 0) + 1
@@ -251,10 +251,10 @@ def setup_trainer(
 
     accelerator = "gpu" if gpus and torch.cuda.is_available() else "cpu"
     devices = 1 if accelerator == "gpu" else None
-    ***REMOVED*** Normalize precision strings across Lightning versions
+    # Normalize precision strings across Lightning versions
     prec = str(precision)
     if prec.lower() in {"16-mixed", "bf16-mixed"}:
-    ***REMOVED*** Most Lightning versions accept these strings, keep as-is.
+    # Most Lightning versions accept these strings, keep as-is.
         pass
     elif prec in {"16", "32", "bf16"}:
         pass
@@ -287,10 +287,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--max_epochs", type=int, default=30)
     p.add_argument("--patience", type=int, default=5)
     p.add_argument("--gpus", type=int, default=1)
-    ***REMOVED*** Dataloader + mixed precision controls (kept to match run_stage3_global_training.sh)
+    # Dataloader + mixed precision controls (kept to match run_stage3_global_training.sh)
     p.add_argument("--num_workers", type=int, default=4)
     p.add_argument("--precision", type=str, default="32")
-    p.add_argument("--precision_override", type=str, default=None)  ***REMOVED*** backward compatible; ignored
+    p.add_argument("--precision_override", type=str, default=None)  # backward compatible; ignored
     return p.parse_args()
 
 

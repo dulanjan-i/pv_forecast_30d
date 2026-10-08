@@ -13,9 +13,9 @@ import torch
 from src.utils.metrics import rmse, mae, mape
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Fixtures
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def perfect():
@@ -32,9 +32,9 @@ def simple():
     return y_true, y_pred
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** RMSE
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# RMSE
+# ---------------------------------------------------------------------------
 
 class TestRMSE:
     def test_perfect_prediction_is_zero(self, perfect):
@@ -77,9 +77,9 @@ class TestRMSE:
         assert rmse(y, y_hat).item() == pytest.approx(1.0, abs=1e-5)
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** MAE
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# MAE
+# ---------------------------------------------------------------------------
 
 class TestMAE:
     def test_perfect_prediction_is_zero(self, perfect):
@@ -114,9 +114,9 @@ class TestMAE:
         assert mae(y_true, y_pred).item() <= rmse(y_true, y_pred).item() + 1e-5
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** MAPE
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# MAPE
+# ---------------------------------------------------------------------------
 
 class TestMAPE:
     def test_perfect_prediction_is_zero(self, perfect):
@@ -138,7 +138,7 @@ class TestMAPE:
         assert not torch.isinf(result)
 
     def test_non_negative(self):
-        y_true = torch.rand(50) + 0.1   ***REMOVED*** avoid near-zero
+        y_true = torch.rand(50) + 0.1   # avoid near-zero
         y_pred = torch.rand(50) + 0.1
         assert mape(y_true, y_pred).item() >= 0.0
 
@@ -148,5 +148,5 @@ class TestMAPE:
         y_pred = torch.tensor([1.0])
         r1 = mape(y_true, y_pred, eps=1e-6).item()
         r2 = mape(y_true, y_pred, eps=1.0).item()
-        ***REMOVED*** With larger eps denominator is larger → smaller MAPE
+        # With larger eps denominator is larger → smaller MAPE
         assert r2 <= r1

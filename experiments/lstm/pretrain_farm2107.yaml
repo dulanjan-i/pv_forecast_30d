@@ -1,4 +1,4 @@
-***REMOVED*** experiments/lstm/pretrain_pvdaq.yaml
+# experiments/lstm/pretrain_pvdaq.yaml
 
 experiment:
   name: "farm2107_pretrain_base"
@@ -11,9 +11,9 @@ data:
   train_path: "data/processed/pretraining/farm2107_pretrain_train.parquet"
   val_path: "data/processed/pretraining/farm2107_pretrain_val.parquet"
   time_col: "measured_on"
-  id_col: null                ***REMOVED*** Single farm, no grouping needed
+  id_col: null                # Single farm, no grouping needed
   feature_cols:
-    - pv_power_norm           ***REMOVED*** autoregressive input
+    - pv_power_norm           # autoregressive input
     - poa_irradiance
     - temperature_2m
     - relative_humidity_2m
@@ -29,8 +29,8 @@ data:
     - global_tilted_irradiance_instant
     - surface_pressure
   target_col: "pv_power_norm"
-  window_size: 96          ***REMOVED*** encoder length (24h @ 15-min)
-  horizon: 1               ***REMOVED*** next-step prediction for pretraining
+  window_size: 96          # encoder length (24h @ 15-min)
+  horizon: 1               # next-step prediction for pretraining
 
 model:
   hidden_size: 64
@@ -44,5 +44,5 @@ training:
   weight_decay: 1e-4
   gradient_clip_val: 1.0
   gpus: 1
-  num_workers: 2  ***REMOVED*** Reduced from 4 to avoid CPU contention in parallel runs
+  num_workers: 2  # Reduced from 4 to avoid CPU contention in parallel runs
   

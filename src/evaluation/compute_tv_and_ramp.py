@@ -1,5 +1,5 @@
-***REMOVED***!/usr/bin/env python3
-***REMOVED*** scripts/compute_tv_and_ramp.py
+#!/usr/bin/env python3
+# scripts/compute_tv_and_ramp.py
 from pathlib import Path
 import numpy as np
 import pandas as pd

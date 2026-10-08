@@ -1,4 +1,4 @@
-***REMOVED*** src/inference/phase1_inference_pipeline.py
+# src/inference/phase1_inference_pipeline.py
 """
 Phase 1 inference pipeline (rolling 30d forecasts).
 
@@ -39,7 +39,7 @@ def to_utc(series: pd.Series) -> pd.Series:
     """Force a datetime-like series to tz-aware UTC."""
     s = pd.to_datetime(series, errors="coerce")
     if getattr(s.dt, "tz", None) is None:
-        ***REMOVED*** naive -> localize as UTC
+        # naive -> localize as UTC
         return s.dt.tz_localize("UTC")
     return s.dt.tz_convert("UTC")
 
@@ -70,7 +70,7 @@ def synth_power_norm_from_pvlib(df: pd.DataFrame, installed_capacity_kw: float) 
     """
     df = df.copy()
     if "pvlib_ac_kw" not in df.columns:
-        ***REMOVED*** cannot synthesize
+        # cannot synthesize
         return df
 
     pn = None
@@ -133,7 +133,7 @@ def build_encoder_context(
             w = synth_power_norm_from_pvlib(w, installed_capacity_kw)
             return w
 
-    ***REMOVED*** fallback: weather-based encoder
+    # fallback: weather-based encoder
     w = weather_df[(weather_df["timestamp_utc"] >= encoder_start) & (weather_df["timestamp_utc"] < encoder_end)].copy()
     w = w.sort_values("timestamp_utc").tail(lookback_steps).copy()
     w = ensure_plant_onehot(w, plant_id)
@@ -185,7 +185,7 @@ def main() -> None:
     plant_id = str(plant.get("plant_id", "plant_03"))
     installed_capacity_kw = float(plant.get("installed_capacity_kw", 1.0))
 
-    ***REMOVED*** Load weather (historical mode reads your prepared parquet)
+    # Load weather (historical mode reads your prepared parquet)
     if args.weather_source != "historical":
         raise NotImplementedError("api mode is not wired in this drop-in file. Run historical first, then we wire api safely.")
 
@@ -211,7 +211,7 @@ def main() -> None:
         long_train_parquet=paths.long_train,
     )
 
-    ***REMOVED*** Determine last valid start such that we have 2880 steps available
+    # Determine last valid start such that we have 2880 steps available
     max_ts = weather_15min["timestamp_utc"].max()
     latest_start = (max_ts - pd.Timedelta(minutes=15 * 2879)).floor("D")
     latest_start = pd.Timestamp(latest_start).tz_convert("UTC")

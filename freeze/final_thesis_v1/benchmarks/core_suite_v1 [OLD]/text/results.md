@@ -1,11 +1,11 @@
-***REMOVED*** Benchmark summary
+# Benchmark summary
 
 - Truth: freeze/final_thesis_v1/phase1_2024daily_final/processed/ground_truth_15min_utc_capnorm.parquet
 
 - Night filtering: ON (y_true >= 0.01)
 
 
-***REMOVED******REMOVED*** Benchmark table (sorted by stitched RMSE)
+## Benchmark table (sorted by stitched RMSE)
 
 | model           |       MAE |     RMSE |    nRMSE |         MBE |        R2 |     N |   P90_abs |   P95_abs |   P99_abs |   mean_abs |   raw_MAE |   raw_RMSE |   raw_N |
 |:----------------|----------:|---------:|---------:|------------:|----------:|------:|----------:|----------:|----------:|-----------:|----------:|-----------:|--------:|

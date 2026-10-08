@@ -65,7 +65,7 @@ def enforce_15min_grid_for_plant(pid: str) -> None:
         tz=tz,
     )
 
-    ***REMOVED*** Reindex on strict 15 minute grid
+    # Reindex on strict 15 minute grid
     df = df.set_index("timestamp_utc").reindex(full_index)
     df.index.name = "timestamp_utc"
     df = df.reset_index()

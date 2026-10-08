@@ -1,25 +1,25 @@
-***REMOVED*** Smart Multi-API Weather Routing Strategy
+# Smart Multi-API Weather Routing Strategy
 
 **Date:** 2026-01-02  
 **Status:** ✅ IMPLEMENTED & TESTED  
 **Version:** V1.0
 
-***REMOVED******REMOVED*** Overview
+## Overview
 
 Intelligent weather API selection based on forecast horizon, leveraging each API's strengths for optimal accuracy and coverage.
 
-***REMOVED******REMOVED*** Smart Routing Logic
+## Smart Routing Logic
 
 ```python
 if days <= 7:
-    use Forecast API    ***REMOVED*** High accuracy, free, hourly updates
+    use Forecast API    # High accuracy, free, hourly updates
 elif days <= 15:
-    use ECMWF API      ***REMOVED*** Best for Europe medium-range, 0.25° resolution
+    use ECMWF API      # Best for Europe medium-range, 0.25° resolution
 else:
-    use GFS API        ***REMOVED*** Long-range global, only option for 30+ days
+    use GFS API        # Long-range global, only option for 30+ days
 ```
 
-***REMOVED******REMOVED*** API Capabilities
+## API Capabilities
 
 | API | Horizon | Resolution | Quality | Cost | Best For |
 |-----|---------|-----------|---------|------|----------|
@@ -30,29 +30,29 @@ else:
 
 \* ECMWF extended range can do up to 46 days (sub-seasonal forecasts)
 
-***REMOVED******REMOVED*** Dual Resolution Support
+## Dual Resolution Support
 
-***REMOVED******REMOVED******REMOVED*** Short-Head TFT (96 steps @ 15-min)
+### Short-Head TFT (96 steps @ 15-min)
 ```python
 forecast = client.fetch_and_prepare(
     days=7,
-    resolution="15min",  ***REMOVED*** 7 × 96 = 672 steps
+    resolution="15min",  # 7 × 96 = 672 steps
     auto_select=True
 )
-***REMOVED*** Result: (672, 20) with Forecast API
+# Result: (672, 20) with Forecast API
 ```
 
-***REMOVED******REMOVED******REMOVED*** Long-Head TFT (720 steps @ 1-hour)
+### Long-Head TFT (720 steps @ 1-hour)
 ```python
 forecast = client.fetch_and_prepare(
     days=30,
-    resolution="1h",  ***REMOVED*** 30 × 24 = 720 steps
+    resolution="1h",  # 30 × 24 = 720 steps
     auto_select=True
 )
-***REMOVED*** Result: (720, 20) with GFS API (30d) or ECMWF (15d)
+# Result: (720, 20) with GFS API (30d) or ECMWF (15d)
 ```
 
-***REMOVED******REMOVED*** ECMWF Credentials
+## ECMWF Credentials
 
 Stored securely in `.ecmwf_credentials.json` (gitignored):
 ```json
@@ -63,7 +63,7 @@ Stored securely in `.ecmwf_credentials.json` (gitignored):
 }
 ```
 
-***REMOVED******REMOVED*** RL Meta-Controller Strategy
+## RL Meta-Controller Strategy
 
 **Future Enhancement:** RL can dynamically blend forecasts from multiple APIs:
 
@@ -83,24 +83,24 @@ Stored securely in `.ecmwf_credentials.json` (gitignored):
    - Dynamic switching based on weather patterns
    - Region-specific optimization (ECMWF best for Europe)
 
-***REMOVED******REMOVED*** Usage Examples
+## Usage Examples
 
-***REMOVED******REMOVED******REMOVED*** Example 1: Automatic API Selection (Recommended)
+### Example 1: Automatic API Selection (Recommended)
 ```python
 from src.inference.weather_client import WeatherClient
 
 client = WeatherClient()
 
-***REMOVED*** 7-day → Forecast API (auto)
+# 7-day → Forecast API (auto)
 forecast_7d = client.fetch_and_prepare(
     latitude=48.694644,
     longitude=12.597587,
     days=7,
     resolution="15min",
-    auto_select=True  ***REMOVED*** Default
+    auto_select=True  # Default
 )
 
-***REMOVED*** 15-day → ECMWF API (auto)
+# 15-day → ECMWF API (auto)
 forecast_15d = client.fetch_and_prepare(
     latitude=48.694644,
     longitude=12.597587,
@@ -109,7 +109,7 @@ forecast_15d = client.fetch_and_prepare(
     auto_select=True
 )
 
-***REMOVED*** 30-day → GFS API (auto)
+# 30-day → GFS API (auto)
 forecast_30d = client.fetch_and_prepare(
     latitude=48.694644,
     longitude=12.597587,
@@ -119,60 +119,60 @@ forecast_30d = client.fetch_and_prepare(
 )
 ```
 
-***REMOVED******REMOVED******REMOVED*** Example 2: Manual API Override
+### Example 2: Manual API Override
 ```python
-***REMOVED*** Force ECMWF for 10-day forecast
+# Force ECMWF for 10-day forecast
 forecast = client.fetch_and_prepare(
     days=10,
-    use_ecmwf=True,  ***REMOVED*** Manual override
+    use_ecmwf=True,  # Manual override
     auto_select=False
 )
 
-***REMOVED*** Force Forecast API for testing
+# Force Forecast API for testing
 forecast = client.fetch_and_prepare(
     days=15,
     use_ecmwf=False,
     use_ensemble=False,
-    auto_select=False  ***REMOVED*** Uses Forecast API
+    auto_select=False  # Uses Forecast API
 )
 ```
 
-***REMOVED******REMOVED*** Validation Results
+## Validation Results
 
-***REMOVED******REMOVED******REMOVED*** Test 1: 7-Day Forecast @ 15-min
+### Test 1: 7-Day Forecast @ 15-min
 - **API:** Forecast (auto-selected)
 - **Shape:** (672, 20)
 - **GHI Range:** [0.0, 282.6] W/m² ✅
 - **Status:** ✅ PASSING
 
-***REMOVED******REMOVED******REMOVED*** Test 2: 15-Day Forecast @ 1-hour
+### Test 2: 15-Day Forecast @ 1-hour
 - **API:** ECMWF (auto-selected)
 - **Shape:** (360, 20)
 - **GHI Range:** [0.0, 312.3] W/m² ✅
 - **Status:** ✅ PASSING
 
-***REMOVED******REMOVED******REMOVED*** Test 3: 30-Day Forecast @ 1-hour
+### Test 3: 30-Day Forecast @ 1-hour
 - **API:** GFS (auto-selected)
 - **Shape:** (720, 20) expected
 - **Status:** ⏳ Not yet tested (GFS implementation pending)
 
-***REMOVED******REMOVED*** Known Issues
+## Known Issues
 
-***REMOVED******REMOVED******REMOVED*** 1. Ensemble API Returns Anomalies
+### 1. Ensemble API Returns Anomalies
 **Problem:** Ensemble API returns negative GHI values (anomalies, not absolute)
 ```python
-***REMOVED*** BROKEN - Returns anomalies
+# BROKEN - Returns anomalies
 forecast = client.fetch_and_prepare(use_ensemble=True)
-***REMOVED*** GHI: -9.20 to 10.20 (should be 0-1500)
+# GHI: -9.20 to 10.20 (should be 0-1500)
 ```
 
 **Status:** ❌ Documented as BROKEN, not recommended
 
-***REMOVED******REMOVED******REMOVED*** 2. GFS API Not Yet Tested
+### 2. GFS API Not Yet Tested
 **Problem:** 30-day test with GFS API not completed
 **Status:** ⏳ Code implemented, needs validation
 
-***REMOVED******REMOVED*** Next Steps
+## Next Steps
 
 1. ✅ ~~Test 7-day Forecast API~~
 2. ✅ ~~Test 15-day ECMWF API~~
@@ -181,9 +181,9 @@ forecast = client.fetch_and_prepare(use_ensemble=True)
 5. ⏳ RL blending weight optimization
 6. ⏳ Historical accuracy tracking per API
 
-***REMOVED******REMOVED*** Technical Notes
+## Technical Notes
 
-***REMOVED******REMOVED******REMOVED*** API Call Pattern
+### API Call Pattern
 ```
 User Request (30 days)
     ↓
@@ -200,13 +200,13 @@ resample_to_resolution("1h") → Keep as-is
 Return (720, 20) DataFrame
 ```
 
-***REMOVED******REMOVED******REMOVED*** Resolution Logic
+### Resolution Logic
 - **15-min:** API returns hourly → Interpolate to 4× steps
 - **1-hour:** API returns hourly → Keep as-is, no resampling
 - **Short-head:** Always 15-min (24h window = 96 steps)
 - **Long-head:** Always 1-hour (30d window = 720 steps)
 
-***REMOVED******REMOVED******REMOVED*** Why This Is Smart
+### Why This Is Smart
 
 1. **Optimal Accuracy:** Each API used at its sweet spot
 2. **Cost Efficient:** All free APIs, no waste

@@ -1,6 +1,6 @@
-***REMOVED*** Chapter 3 — Methodology: MiRACLE Framework Architecture
+# Chapter 3 — Methodology: MiRACLE Framework Architecture
 
-***REMOVED******REMOVED*** 3.1 System Overview
+## 3.1 System Overview
 
 MiRACLE (Meta-Intelligent Reinforcement-driven Adaptive Control for Learning-based Ensembles) is an end-to-end forecasting framework designed to produce **30-day photovoltaic (PV) power forecasts** at **15-minute resolution** under realistic operational constraints (imperfect weather forecasts, long-horizon uncertainty growth, and distribution shift over time).
 
@@ -10,7 +10,7 @@ At a high level, MiRACLE is organized into three tightly-coupled subsystems:
 2. **Hybrid deep learning ensemble (LSTM encoder + Temporal Fusion Transformer)** — combines a compact temporal representation (learned encoder) with a high-capacity multi-horizon forecaster.
 3. **RL meta-controller (Double DQN)** — supervises operational decisions (e.g., which action to take under drift/uncertainty) and can be evaluated against a baseline policy.
 
-***REMOVED******REMOVED******REMOVED*** 3.1.1 Master architecture diagram and data flow
+### 3.1.1 Master architecture diagram and data flow
 
 **Master high-level diagram:**
 
@@ -34,7 +34,7 @@ This diagram captures the main data flow:
 
 Vector/PDF version: [../figures/architecture/miracle_full_data_pipeline.pdf](../figures/architecture/miracle_full_data_pipeline.pdf)
 
-***REMOVED******REMOVED******REMOVED*** 3.1.2 Implementation mapping (code-level)
+### 3.1.2 Implementation mapping (code-level)
 
 The conceptual blocks map to repository modules as follows:
 
@@ -45,13 +45,13 @@ The conceptual blocks map to repository modules as follows:
 - **Canonical 2024 inference benchmark outputs for thesis headline metrics**: `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/`
 
 
-***REMOVED******REMOVED*** 3.2 Stage 1: LSTM Encoder Design and Pretraining
+## 3.2 Stage 1: LSTM Encoder Design and Pretraining
 
 MiRACLE uses an LSTM encoder as a compact, transferable temporal representation module. Instead of attempting to solve the full 30-day forecasting problem directly with an RNN, the encoder is trained with a simple **next-step prediction** objective on sliding windows. The final hidden state becomes a learned embedding that can be consumed downstream by the forecaster.
 
-***REMOVED******REMOVED******REMOVED*** 3.2.1 LSTM architecture selection
+### 3.2.1 LSTM architecture selection
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Sliding-window formulation
+#### Sliding-window formulation
 Let $\mathbf{x}_{t} \in \mathbb{R}^{F}$ denote the feature vector at time $t$ (including autoregressive power and weather-derived covariates). We build windows of length $T$:
 
 $$
@@ -70,7 +70,7 @@ $$
 \mathbf{h}_t \in \mathbb{R}^{H}.
 $$
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Hyperparameter sweep methodology (Farm2107)
+#### Hyperparameter sweep methodology (Farm2107)
 The initial encoder architecture was selected via a controlled grid sweep (Farm2107 PVDAQ pretraining), varying:
 
 - hidden size: {32, 64, 128}
@@ -86,7 +86,7 @@ while holding constant:
 
 **Sweep summary and canonical choice:** `reports/lstm_results.md`, `experiments/lstm/pretrain_farm2107_CANONICAL.yaml`.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Canonical Farm2107 encoder configuration
+#### Canonical Farm2107 encoder configuration
 The selected configuration (“h64_l2_lr1e-3”) uses:
 
 - hidden size: 64
@@ -98,7 +98,7 @@ and is saved as the canonical initialization point:
 
 - `experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt`
 
-***REMOVED******REMOVED******REMOVED*** 3.2.2 Initial exploration: Farm2107 pretraining (deprecated as a thesis headline path)
+### 3.2.2 Initial exploration: Farm2107 pretraining (deprecated as a thesis headline path)
 
 Farm2107 PVDAQ pretraining was the initial exploratory step because it offered:
 
@@ -115,7 +115,7 @@ Farm2107 PVDAQ pretraining was the initial exploratory step because it offered:
 
 Subsequent experiments (Germany transfer and pooled regional training) revealed that regional domain alignment is critical for downstream performance and stability. The initial Farm2107 results informed the design of the transfer-learning pipeline, but the thesis headline results are based on the **Germany-targeted** evaluation protocol (see Chapter 5 and the canonical outputs under `freeze/`).
 
-***REMOVED******REMOVED******REMOVED*** 3.2.3 Germany regional pretraining
+### 3.2.3 Germany regional pretraining
 
 Following the exploratory Farm2107 stage, MiRACLE pivots to **Germany-only regional adaptation** to improve domain alignment for the target plant. This stage is explicitly designed to avoid leakage:
 
@@ -123,7 +123,7 @@ Following the exploratory Farm2107 stage, MiRACLE pivots to **Germany-only regio
 - scalers/normalization are fit only on training data (fold-safe),
 - strict timestamp regularity checks prevent windows from silently spanning data gaps.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Training protocol and no-leak guarantees
+#### Training protocol and no-leak guarantees
 The training workflow is documented and audited in:
 
 - `docs/archive/AUDIT_LSTM_PRETRAIN.md`
@@ -133,14 +133,14 @@ and implemented in the regional/global training scripts:
 - `src/training/train_global_lstm_v3.py` (rolling-origin CV)
 - `src/training/train_regional_lstm.py` (single canonical regional encoder)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Regional encoder (Stage 3.5) and artifact
+#### Regional encoder (Stage 3.5) and artifact
 To feed TFT downstream with a single stable encoder, MiRACLE trains one canonical **Germany regional** encoder:
 
 - Training data: `data/processed/pretraining/germany/global/regional_train.parquet`
 - Validation data: `data/processed/pretraining/germany/global/regional_val.parquet`
 - Output weights: `experiments/lstm/encoders/lstm_encoder_germany_regional_CANONICAL.pt`
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Learned temporal representations
+#### Learned temporal representations
 The encoder produces embeddings $\mathbf{h}_t$ intended to capture:
 
 - diurnal structure (sunrise/sunset ramps),
@@ -148,7 +148,7 @@ The encoder produces embeddings $\mathbf{h}_t$ intended to capture:
 - seasonal shifts (solar elevation, day length),
 - short-term persistence and lag effects.
 
-***REMOVED******REMOVED******REMOVED*** 3.2.4 Target plant fine-tuning
+### 3.2.4 Target plant fine-tuning
 
 Target plant adaptation is performed by initializing from the canonical encoder and fine-tuning with a conservative learning rate.
 
@@ -163,14 +163,14 @@ Key operational choices:
 - batch size can be increased when GPU memory allows to stabilize gradients.
 
 
-***REMOVED******REMOVED*** 3.3 Stage 2: Physics-Informed Feature Engineering
+## 3.3 Stage 2: Physics-Informed Feature Engineering
 
 Physics-informed feature engineering provides two benefits:
 
 1. **Inductive bias**: solar geometry and irradiance transformations encode structure that is hard to learn purely from data.
 2. **Constraint enforcement**: physics can gate predictions at night and limit implausible peaks.
 
-***REMOVED******REMOVED******REMOVED*** 3.3.1 PVLib integration
+### 3.3.1 PVLib integration
 
 PVLib is used to compute solar position, irradiance components, and a physics baseline.
 
@@ -195,7 +195,7 @@ In the Phase-1 implementation, the physics baseline uses:
 
 (see `THESIS_RESULTS_PHASE1.md` for the applied configuration and derived feature list).
 
-***REMOVED******REMOVED******REMOVED*** 3.3.2 Weather API feature pipeline
+### 3.3.2 Weather API feature pipeline
 
 Operationally, MiRACLE consumes weather forecasts (or historical reanalysis for backtests) via a weather API ingestion step. The processing pipeline:
 
@@ -205,7 +205,7 @@ Operationally, MiRACLE consumes weather forecasts (or historical reanalysis for 
 4. merges with PVLib-derived features and learned temporal embeddings.
 
 
-***REMOVED******REMOVED*** 3.4 Stage 3: TFT Forecaster Configuration
+## 3.4 Stage 3: TFT Forecaster Configuration
 
 MiRACLE uses Temporal Fusion Transformers (TFTs) as the final forecasters due to their:
 
@@ -213,7 +213,7 @@ MiRACLE uses Temporal Fusion Transformers (TFTs) as the final forecasters due to
 - ability to integrate static + time-varying known and unknown covariates,
 - built-in interpretability tools (variable importance, attention-style diagnostics).
 
-***REMOVED******REMOVED******REMOVED*** 3.4.1 Short-head TFT (15-minute resolution)
+### 3.4.1 Short-head TFT (15-minute resolution)
 
 Role: high-resolution near-term refinement.
 
@@ -227,7 +227,7 @@ Key inputs:
 - time-varying known: weather forecasts, solar position, calendar time features
 - time-varying unknown: signals derived from the LSTM encoder (temporal embedding)
 
-***REMOVED******REMOVED******REMOVED*** 3.4.2 Long-head TFT (hourly resolution)
+### 3.4.2 Long-head TFT (hourly resolution)
 
 Role: long-horizon strategic trend.
 
@@ -235,7 +235,7 @@ Role: long-horizon strategic trend.
 - typical encoder context: 7 days (168 steps)
 - forecast horizon: 720 hours (30 days)
 
-***REMOVED******REMOVED******REMOVED*** 3.4.3 TFT interpretability features
+### 3.4.3 TFT interpretability features
 
 TFT-based interpretability outputs (when enabled) include:
 
@@ -244,7 +244,7 @@ TFT-based interpretability outputs (when enabled) include:
 - temporal pattern identification (which inputs dominate at different horizons).
 
 
-***REMOVED******REMOVED*** 3.5 Stage 4: Hierarchical Inference with Physics Glue
+## 3.5 Stage 4: Hierarchical Inference with Physics Glue
 
 MiRACLE’s deployed forecast is hierarchical:
 
@@ -254,7 +254,7 @@ MiRACLE’s deployed forecast is hierarchical:
 
 This combination is implemented in `src/inference/physics_glue.py`.
 
-***REMOVED******REMOVED******REMOVED*** 3.5.1 Dual-head prediction strategy
+### 3.5.1 Dual-head prediction strategy
 
 MiRACLE produces a unified 15-minute forecast by:
 
@@ -263,7 +263,7 @@ MiRACLE produces a unified 15-minute forecast by:
 3. blending short-head + long-head + PVLib with a structured weighting scheme,
 4. enforcing hard physics constraints (night=0, bounded capacity).
 
-***REMOVED******REMOVED******REMOVED*** 3.5.2 Physics-glue hierarchical combination (algorithm)
+### 3.5.2 Physics-glue hierarchical combination (algorithm)
 
 MiRACLE’s physics glue has three layers:
 
@@ -271,18 +271,18 @@ MiRACLE’s physics glue has three layers:
 - **Layer 2 (physics blend)**: combine the ML ensemble with PVLib baseline.
 - **Layer 3 (constraints)**: clamp to physically plausible outputs.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Upsampling long-head using PVLib shape
+#### Upsampling long-head using PVLib shape
 Long-head forecasts are hourly; to obtain 15-minute values while preserving intra-hour shape, MiRACLE distributes each hour’s predicted energy according to the PVLib curve over that hour.
 
 This is implemented as `upsample_with_pvlib_shape(hourly_predictions, pvlib_15min, method="proportional")`.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Pseudocode
+#### Pseudocode
 
 ```text
 Inputs:
-  short_pred[0..N-1]         ***REMOVED*** 15-min, typically Day 1 loop
-  long_hourly[0..H-1]        ***REMOVED*** hourly, H=N/4
-  pvlib_15min[0..N-1]        ***REMOVED*** 15-min physics baseline
+  short_pred[0..N-1]         # 15-min, typically Day 1 loop
+  long_hourly[0..H-1]        # hourly, H=N/4
+  pvlib_15min[0..N-1]        # 15-min physics baseline
 
 1) long_15min = UPSAMPLE_WITH_PVLIB_SHAPE(long_hourly, pvlib_15min)
 
@@ -300,13 +300,13 @@ Output:
 ```
 
 
-***REMOVED******REMOVED*** 3.6 Stage 5: RL Meta-Controller Design
+## 3.6 Stage 5: RL Meta-Controller Design
 
 MiRACLE includes a reinforcement-learning meta-controller designed to supervise operational decisions under uncertainty and drift.
 
 Implementation: `src/rl/rl_meta_controller.py`.
 
-***REMOVED******REMOVED******REMOVED*** 3.6.1 Control problem formulation
+### 3.6.1 Control problem formulation
 
 The controller is formulated as a discrete-action Markov Decision Process (MDP):
 
@@ -322,7 +322,7 @@ $$
 
 (Weights are configured in `RLConfig`.)
 
-***REMOVED******REMOVED******REMOVED*** 3.6.2 RL algorithm selection and training
+### 3.6.2 RL algorithm selection and training
 
 The meta-controller uses **Double DQN (DDQN)** with:
 
@@ -340,7 +340,7 @@ Key hyperparameters (default `RLConfig`):
 
 Training utilities live in `src/rl/training.py` and `src/rl/run_rl_training.py`.
 
-***REMOVED******REMOVED******REMOVED*** 3.6.3 Operational control logic
+### 3.6.3 Operational control logic
 
 MiRACLE’s controller stack is hierarchical:
 
@@ -351,7 +351,7 @@ MiRACLE’s controller stack is hierarchical:
 The controller is evaluated using the canonical RQ4 backtest artifacts (see Chapter 5; `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/`).
 
 
-***REMOVED******REMOVED*** 3.7 Summary
+## 3.7 Summary
 
 This chapter presented MiRACLE as a modular but tightly-coupled system in which:
 

@@ -1,12 +1,12 @@
-***REMOVED*** Chapter 4 — Experimental Design and Ablation Studies (Print-Ready Draft)
+# Chapter 4 — Experimental Design and Ablation Studies (Print-Ready Draft)
 
-***REMOVED******REMOVED*** 4.1 Data sources and structure
+## 4.1 Data sources and structure
 
 This thesis evaluates PV forecasting methods using operational PV generation time series and corresponding meteorological covariates provided by Syneco Trading GmbH. In accordance with data protection obligations, plants are anonymized and referred to exclusively by plant IDs. For each plant, the core signal is measured active power (or an equivalent operational generation signal). The raw plant data are organized as time-stamped series with a nominal 15-minute cadence. Meteorological data are provided in aligned time series at hourly and daily resolution, and are treated as exogenous covariates.
 
 A distinctive feature of the dataset is that data availability is heterogeneous across plants and years. Some plant-year combinations contain a complete timestamp grid with partially missing power values (empty measurements), while other combinations contain a timestamp grid with fully missing values, reflecting differences in operational measurement availability or extraction completeness. Because these patterns can influence apparent model performance and the difficulty of learning, the experimental design explicitly quantifies data coverage and uses strict temporal splits to avoid leakage.
 
-***REMOVED******REMOVED*** 4.2 Data coverage by plant
+## 4.2 Data coverage by plant
 
 The raw PV measurement series are available for six anonymized plants (plant_01 through plant_06). For calendar year 2023, all plants provide an essentially complete 15-minute timestamp grid spanning the full year in local German time. For year 2024, coverage differs across plants: plant_01, plant_02, and plant_04 provide timestamps through approximately early October, while plant_03, plant_05, and plant_06 provide timestamps through approximately early April.
 
@@ -30,13 +30,13 @@ For plant_06, the 2023 series spans the full year with 35,040 records and approx
 
 The heterogeneity of completeness motivates two methodological safeguards. First, training and validation are structured to avoid learning directly from missingness artifacts that could contaminate evaluation. Second, headline evaluation is based on an explicit backtesting protocol using a ground-truth measurement export for the test plant, rather than on timestamp grids with empty measurement fields.
 
-***REMOVED******REMOVED*** 4.3 Evaluation metrics
+## 4.3 Evaluation metrics
 
 Model performance is quantified using standard regression metrics on capacity-normalized PV output. Let y_i denote the true normalized power at time i and ŷ_i denote the predicted normalized power. The mean absolute error is defined as MAE = (1/N)∑|y_i − ŷ_i|, and the root mean squared error is defined as RMSE = √((1/N)∑(y_i − ŷ_i)^2). The coefficient of determination R² is reported to summarize explained variance, and mean bias error is reported to characterize systematic over- or under-prediction.
 
 Because PV output is identically or near-zero during nighttime, evaluation adopts a physically motivated filter that removes near-zero targets. Specifically, points with y below a small threshold are excluded from headline evaluation to prevent metrics from being dominated by trivial nighttime predictions. This choice aligns the evaluation with the operational requirement to forecast daytime production accurately.
 
-***REMOVED******REMOVED*** 4.4 Train–validation–backtest splitting strategy
+## 4.4 Train–validation–backtest splitting strategy
 
 The experimental design is centered on a temporally ordered split that simulates deployment. For the target plant used in headline evaluation (plant_03), the year 2024 is reserved exclusively for out-of-sample backtesting. All model training, encoder training, and hyperparameter selection are performed without access to the 2024 backtesting data. In practical terms, this means that the training phase uses data from earlier periods (principally 2023 for plant_03), and the evaluation phase is conducted on the held-out 2024 ground-truth export.
 
@@ -44,12 +44,12 @@ This design provides an explicit guarantee against data leakage. The training pi
 
 Selecting plant_03 as the target test plant reflects the availability of an explicit ground-truth measurement export for 2024 and the desire to perform a rigorous future-period backtest. The backtesting year was fixed prior to evaluating models, ensuring that reported performance is not the result of tuning to the evaluation period. By isolating the backtesting year, the evaluation becomes a credible estimate of real-world deployment behavior under distribution shift and weather-forecast uncertainty.
 
-***REMOVED******REMOVED*** 4.5 Ablation methodology
+## 4.5 Ablation methodology
 
 Ablation studies are used to attribute performance gains to architectural components rather than to implementation details. The ablation logic follows a system-level view: components are removed or isolated while holding the evaluation protocol fixed. The key ablations compare (i) a purely data-driven forecaster without physics-informed features, (ii) a purely physics-based baseline without learned models, (iii) single-component or single-horizon variants of the forecasting system, and (iv) the fully integrated MiRACLE configuration.
 
 A critical methodological choice is that ablation conclusions are based on the same out-of-sample backtesting protocol used for headline results. Training-loop metrics, such as validation loss during model fitting, are not treated as thesis evidence for operational performance because they can be optimistic under covariate shift or when the validation period is not truly out-of-sample. System-level backtesting provides a consistent and deployment-relevant basis for comparing ablation variants.
 
-***REMOVED******REMOVED*** 4.6 Validity considerations
+## 4.6 Validity considerations
 
 Three threats to validity are addressed explicitly. First, temporal leakage is mitigated through strict year-based isolation for the test plant and by fitting preprocessing transformations only on training data. Second, missingness and data availability heterogeneity are treated as part of the problem setting rather than ignored: the evaluation protocol focuses on ground-truth measurements for the backtesting year, and the interpretation of results considers the effect of incomplete measurement exports. Third, the anonymization of plants limits site-specific interpretation but strengthens privacy compliance; the thesis therefore emphasizes methodological generality and statistical evidence over site narratives.

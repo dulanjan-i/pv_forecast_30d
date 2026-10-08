@@ -1,4 +1,4 @@
-***REMOVED*** Thesis Results: Phase 1 Extended Inference Window
+# Thesis Results: Phase 1 Extended Inference Window
 
 **Date:** January 3, 2026  
 **Test Period:** December 1, 2023 – December 28, 2024 (13 months)  
@@ -7,7 +7,7 @@
 
 ---
 
-***REMOVED******REMOVED*** 1. Executive Summary
+## 1. Executive Summary
 
 We successfully extended the TFT-based PV forecasting pipeline to generate 30-day rolling forecasts over a 13-month period using only weather data, without access to ground-truth power measurements. This extended inference window was achieved through a novel **dynamic encoder anchoring** strategy where each forecast uses predictions from previous forecasts as encoder context, enabling continuous operation beyond the training data timeline.
 
@@ -20,13 +20,13 @@ We successfully extended the TFT-based PV forecasting pipeline to generate 30-da
 
 ---
 
-***REMOVED******REMOVED*** 2. Methodology
+## 2. Methodology
 
-***REMOVED******REMOVED******REMOVED*** 2.1 Hierarchical Forecaster Architecture
+### 2.1 Hierarchical Forecaster Architecture
 
 The forecasting system employs a three-tier hierarchical architecture combining machine learning and physics-based models:
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Tier 1: Long-Head Strategic Forecaster (TFT)**
+#### **Tier 1: Long-Head Strategic Forecaster (TFT)**
 - **Purpose:** Generate strategic 30-day outlook at hourly resolution
 - **Input:** 7 days (168 hours) of historical encoder context @ hourly
 - **Output:** 720 hours (30 days) of forecasted power @ hourly
@@ -34,7 +34,7 @@ The forecasting system employs a three-tier hierarchical architecture combining 
 - **Checkpoint:** `V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt` (1.7 MB)
 - **Training:** Seed 43, quantile loss with [0.1, 0.5, 0.9] quantiles
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Tier 2: Short-Head Tactical Forecaster (TFT)**
+#### **Tier 2: Short-Head Tactical Forecaster (TFT)**
 - **Purpose:** Refine daily predictions with high-resolution detail
 - **Input:** 24 hours (96 steps) of recent encoder context @ 15-min
 - **Output:** 24 hours (96 steps) of refined power @ 15-min
@@ -43,7 +43,7 @@ The forecasting system employs a three-tier hierarchical architecture combining 
 - **Execution:** 30 daily forecasts per 30-day window
 - **Training:** Seed 42, quantile loss
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Tier 3: Physics Baseline (PVLib)**
+#### **Tier 3: Physics Baseline (PVLib)**
 - **Purpose:** Provide physically-constrained power estimates
 - **Model:** Haydavies POA irradiance model + PVWatts DC/AC power model
 - **Function:** Constrains ML predictions to physically plausible ranges
@@ -54,7 +54,7 @@ The forecasting system employs a three-tier hierarchical architecture combining 
   - Azimuth: 180° (south-facing)
   - Mount type: Ground-mount, fixed tilt
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Blending Strategy (RL-Controlled)**
+#### **Blending Strategy (RL-Controlled)**
 The final prediction combines all three tiers using adaptive weights controlled by a heuristic RL meta-controller:
 
 ```
@@ -68,7 +68,7 @@ Where:
 - Later days: Higher long-head weight (α_long=0.65)
 - PVLib provides continuous physics constraint (α_ml=0.56-0.69)
 
-***REMOVED******REMOVED******REMOVED*** 2.2 Dynamic Encoder Anchoring Strategy
+### 2.2 Dynamic Encoder Anchoring Strategy
 
 **Challenge:** The training dataset ended on August 23, 2023 (training), with validation through October 12, 2023, and test data through November 30, 2023. To forecast into December 2023 and beyond, the model required historical encoder context that did not exist in the original dataset.
 
@@ -100,17 +100,17 @@ Where:
 Let `E_k` denote the encoder context for forecast `k`, and `P_k` the predictions generated:
 
 ```
-E_1 = test_data[Nov 24-30, 2023]          ***REMOVED*** Real power measurements
-P_1 = TFT(E_1, weather[Dec 1-30])          ***REMOVED*** First forecast
+E_1 = test_data[Nov 24-30, 2023]          # Real power measurements
+P_1 = TFT(E_1, weather[Dec 1-30])          # First forecast
 
 For k = 2, 3, ..., 53:
-    E_k = P_{k-1}[last 7 days] + weather    ***REMOVED*** Encoder from predictions
-    P_k = TFT(E_k, weather[next 30 days])    ***REMOVED*** Rolling forecast
+    E_k = P_{k-1}[last 7 days] + weather    # Encoder from predictions
+    P_k = TFT(E_k, weather[next 30 days])    # Rolling forecast
 ```
 
 This creates a self-referential prediction chain where forecast quality depends on accumulated error from previous forecasts.
 
-***REMOVED******REMOVED******REMOVED*** 2.3 Weather Data Source
+### 2.3 Weather Data Source
 
 **Provider:** Open-Meteo Historical Archive (ERA5 Reanalysis)  
 **Coverage:** December 1, 2023 – December 31, 2024  
@@ -136,33 +136,33 @@ This creates a self-referential prediction chain where forecast quality depends 
 
 **Total Feature Count:** 27 columns (13 weather + 3 raw copies + 8 PVLib + metadata)
 
-***REMOVED******REMOVED******REMOVED*** 2.4 Implementation Challenges & Solutions
+### 2.4 Implementation Challenges & Solutions
 
 During implementation, several technical challenges emerged that required architectural fixes:
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Challenge 1: TimeSeriesDataSet Validation Error**
+#### **Challenge 1: TimeSeriesDataSet Validation Error**
 - **Issue:** PyTorch Forecasting's `TimeSeriesDataSet` validates that target variable (`power_norm`) exists in all rows, including decoder (future window). In inference mode, future power is unknown.
 - **Error:** "720 (81.08%) of power_norm values were found to be NA"
 - **Solution:** Fill decoder's `power_norm` with dummy 0.0 values before creating TimeSeriesDataSet. The model ignores these in `predict=True` mode (only uses encoder target).
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Challenge 2: Multi-Resolution Data Flow**
+#### **Challenge 2: Multi-Resolution Data Flow**
 - **Issue:** Long-head expects hourly data, short-head expects 15-min data. Original implementation resampled and overwrote `historical_df`, losing 15-min granularity needed for short-head.
 - **Solution:** Preserve both resolutions:
   ```python
-  historical_df_15min = historical_df.copy()  ***REMOVED*** Original
-  historical_df_hourly = historical_df.resample('1H').mean()  ***REMOVED*** For long-head
+  historical_df_15min = historical_df.copy()  # Original
+  historical_df_hourly = historical_df.resample('1H').mean()  # For long-head
   ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Challenge 3: Missing Encoder Updates Between Forecasts**
+#### **Challenge 3: Missing Encoder Updates Between Forecasts**
 - **Issue:** Pipeline only updated short-head encoder (24h), not long-head encoder (7d). Forecast 2+ failed with "Long-head encoder must be 168 steps, got 0".
 - **Solution:** Extract both encoder windows from predictions:
   ```python
-  ***REMOVED*** Last 7 days before next forecast start
+  # Last 7 days before next forecast start
   long_encoder = predictions[next_start - 7d : next_start]
   short_encoder = predictions[next_start - 24h : next_start]
   ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Challenge 4: Wrong Encoder Window Extraction**
+#### **Challenge 4: Wrong Encoder Window Extraction**
 - **Issue:** Initial implementation extracted encoder windows AFTER forecast start (indices `[stride:stride+672]`) instead of BEFORE.
 - **Error:** For forecast starting Dec 8, extracted Dec 8-14 instead of Dec 1-7.
 - **Solution:** Correct indexing:
@@ -172,15 +172,15 @@ During implementation, several technical challenges emerged that required archit
   encoder_long = predictions[long_start:long_end]
   ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **Challenge 5: Schema Compatibility**
+#### **Challenge 5: Schema Compatibility**
 - **Issue:** Weather data has 27 columns, but encoder context from test set has 33 (includes deprecated `plant_01`-`plant_06` PCA encodings).
 - **Solution:** Add missing columns with zero values to maintain schema consistency.
 
 ---
 
-***REMOVED******REMOVED*** 3. Results
+## 3. Results
 
-***REMOVED******REMOVED******REMOVED*** 3.1 Forecast Coverage
+### 3.1 Forecast Coverage
 
 **Total Generation:**
 - Forecasts: 53 rolling 30-day windows
@@ -207,9 +207,9 @@ Nov 2024: 5 forecasts
 Dec 2024: 4 forecasts    (Dec 1 - Dec 22 start dates)
 ```
 
-***REMOVED******REMOVED******REMOVED*** 3.2 Prediction Quality Metrics
+### 3.2 Prediction Quality Metrics
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **3.2.1 Forecast Consistency (Pseudo-RMSE)**
+#### **3.2.1 Forecast Consistency (Pseudo-RMSE)**
 
 Since ground-truth power measurements are unavailable for the test period, we evaluate consistency through forecast disagreement analysis. When multiple forecasts predict the same timestamp (due to 7-day stride with 30-day windows), we measure the standard deviation as a proxy for uncertainty.
 
@@ -241,7 +241,7 @@ Pseudo-RMSE (mean σ):                0.00693
 
 *Note: All top disagreements occur on April 22, suggesting a particularly uncertain weather day.*
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **3.2.2 Temporal Consistency (Smoothness)**
+#### **3.2.2 Temporal Consistency (Smoothness)**
 
 PV power output changes gradually due to system inertia and slowly-varying atmospheric conditions. Abrupt discontinuities indicate model artifacts.
 
@@ -263,7 +263,7 @@ Equivalent ramp rate (hourly):      0.59 per hour (59% capacity/hr)
 - Observed maximum: 0.59 per hour ✓ Well within limits
 - Smooth diurnal transitions: ✓ Gradual sunrise/sunset ramps observed
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **3.2.3 Diurnal Pattern Analysis**
+#### **3.2.3 Diurnal Pattern Analysis**
 
 Solar power follows a predictable daily cycle. Model must capture dawn/dusk transitions and nighttime zeros.
 
@@ -305,7 +305,7 @@ Night violations (power > 5%):       1,150 / 63,600 (1.81%)
   - Model edge cases during dawn/dusk transitions
   - Spring/summer twilight extending into "night" hours
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **3.2.4 Seasonal Trend Analysis**
+#### **3.2.4 Seasonal Trend Analysis**
 
 Central European solar resources vary dramatically by season due to:
 - Solar declination (sun angle)
@@ -349,7 +349,7 @@ Annual range:                        7.03× (July / December)
 - Absolute peak in May (0.7455): ✓ Optimal combination of day length + cool temperatures
 - December minimum: ✓ Winter solstice, short days, low sun angle
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **3.2.5 Physical Plausibility Checks**
+#### **3.2.5 Physical Plausibility Checks**
 
 **Value Range Validation:**
 ```
@@ -383,7 +383,7 @@ PV systems rarely exceed 75-85% of nameplate DC capacity due to:
 
 **Verdict:** 74.55% peak ✓ **Physically realistic** for a 7.4 MW ground-mount system in optimal conditions (clear spring day with cool temperatures).
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** **3.2.6 Ramp Rate Analysis**
+#### **3.2.6 Ramp Rate Analysis**
 
 Physical PV systems cannot change power instantaneously. Maximum ramp rates are constrained by:
 - Cloud edge velocities: ~10-30 m/s → 0.5-2.0 per hour
@@ -407,7 +407,7 @@ Median 15-min change:                0.00000 (no change, nighttime)
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 3.3 Overall Quality Assessment
+### 3.3 Overall Quality Assessment
 
 **Automated Quality Checks (7/7 Passed):**
 
@@ -425,9 +425,9 @@ Median 15-min change:                0.00000 (no change, nighttime)
 
 ---
 
-***REMOVED******REMOVED*** 4. Discussion
+## 4. Discussion
 
-***REMOVED******REMOVED******REMOVED*** 4.1 Dynamic Encoder Anchoring Efficacy
+### 4.1 Dynamic Encoder Anchoring Efficacy
 
 The dynamic encoder anchoring strategy successfully enabled 13-month continuous forecasting without ground-truth power data. Key observations:
 
@@ -443,7 +443,7 @@ The dynamic encoder anchoring strategy successfully enabled 13-month continuous 
 3. **Weather Dependency:** Quality depends entirely on ERA5 reanalysis accuracy
 4. **Overlap Artifacts:** 7-day stride may introduce artificial consistency in overlapping regions
 
-***REMOVED******REMOVED******REMOVED*** 4.2 Hierarchical Architecture Benefits
+### 4.2 Hierarchical Architecture Benefits
 
 The three-tier blending strategy demonstrated several advantages:
 
@@ -467,7 +467,7 @@ The three-tier blending strategy demonstrated several advantages:
 - Later forecast days: Trust long-head (α_long=0.65)
 - Continuous physics grounding (α_ml=0.56-0.69)
 
-***REMOVED******REMOVED******REMOVED*** 4.3 Comparison to Baseline
+### 4.3 Comparison to Baseline
 
 **PVLib Baseline (Physics-Only):**
 Assuming clear-sky conditions, PVLib would predict maximum capacity on every sunny day. Observed predictions show:
@@ -478,7 +478,7 @@ Assuming clear-sky conditions, PVLib would predict maximum capacity on every sun
 **Naive Persistence:**
 Using previous day's profile would fail completely for extended horizon (>24h). Our hierarchical approach maintains consistency over 30-day windows.
 
-***REMOVED******REMOVED******REMOVED*** 4.4 Limitations and Future Work
+### 4.4 Limitations and Future Work
 
 **Current Limitations:**
 1. **No Ground-Truth Validation:** Cannot compute true RMSE without actual power measurements for 2024
@@ -493,7 +493,7 @@ Using previous day's profile would fail completely for extended horizon (>24h). 
 4. **Uncertainty Quantification:** Leverage TFT's quantile outputs for prediction intervals
 5. **Ensemble Forecasting:** Combine multiple random seeds for robust predictions
 
-***REMOVED******REMOVED******REMOVED*** 4.5 Implications for Operational Forecasting
+### 4.5 Implications for Operational Forecasting
 
 **Grid Integration Value:**
 - 15-minute resolution enables participation in intraday electricity markets
@@ -512,7 +512,7 @@ Using previous day's profile would fail completely for extended horizon (>24h). 
 
 ---
 
-***REMOVED******REMOVED*** 5. Conclusion
+## 5. Conclusion
 
 We successfully demonstrated that a hierarchical TFT-based forecasting system with dynamic encoder anchoring can generate physically-plausible, temporally-consistent PV power predictions over a 13-month horizon using only weather data. The system achieved:
 
@@ -532,17 +532,17 @@ The next phase will focus on generating RL training transitions from forecast di
 
 ---
 
-***REMOVED******REMOVED*** 6. Technical Artifacts
+## 6. Technical Artifacts
 
-***REMOVED******REMOVED******REMOVED*** 6.1 Key Files Generated
+### 6.1 Key Files Generated
 
 ```
 data/processed/test_phase1_dec2023_dec2024/
-├── weather_with_pvlib_15min.parquet          ***REMOVED*** 38,109 × 27 (ERA5 + PVLib features)
-├── weather_with_pvlib_hourly.parquet         ***REMOVED*** 9,528 × 27 (hourly aggregation)
-├── encoder_context_short.parquet             ***REMOVED*** 96 × 33 (24h @ 15min)
-├── encoder_context_long_15min.parquet        ***REMOVED*** 672 × 33 (7d @ 15min)
-└── predictions_phase1.parquet                ***REMOVED*** 152,640 × 7 (final forecasts)
+├── weather_with_pvlib_15min.parquet          # 38,109 × 27 (ERA5 + PVLib features)
+├── weather_with_pvlib_hourly.parquet         # 9,528 × 27 (hourly aggregation)
+├── encoder_context_short.parquet             # 96 × 33 (24h @ 15min)
+├── encoder_context_long_15min.parquet        # 672 × 33 (7d @ 15min)
+└── predictions_phase1.parquet                # 152,640 × 7 (final forecasts)
 ```
 
 **predictions_phase1.parquet Schema:**
@@ -553,16 +553,16 @@ data/processed/test_phase1_dec2023_dec2024/
 - `hours_ahead`: Hours ahead of forecast start (0.0-719.75)
 - `predicted_power_norm`: Normalized power prediction [0, 1]
 
-***REMOVED******REMOVED******REMOVED*** 6.2 Model Checkpoints
+### 6.2 Model Checkpoints
 
 ```
 V1.0_FINAL_TFT/
-├── longhead_seed43/checkpoints/best.ckpt     ***REMOVED*** 1.7 MB (168h encoder → 720h pred)
-├── shorthead_seed42/checkpoints/best.ckpt    ***REMOVED*** 1.7 MB (96 step encoder → 96 step pred)
-└── plant_metadata/plant_03.json              ***REMOVED*** Plant configuration
+├── longhead_seed43/checkpoints/best.ckpt     # 1.7 MB (168h encoder → 720h pred)
+├── shorthead_seed42/checkpoints/best.ckpt    # 1.7 MB (96 step encoder → 96 step pred)
+└── plant_metadata/plant_03.json              # Plant configuration
 ```
 
-***REMOVED******REMOVED******REMOVED*** 6.3 Hyperparameters
+### 6.3 Hyperparameters
 
 **TFT Architecture (both models):**
 ```python
@@ -592,7 +592,7 @@ resolution: 15 minutes
 blending: RL-controlled adaptive weights
 ```
 
-***REMOVED******REMOVED******REMOVED*** 6.4 Computational Resources
+### 6.4 Computational Resources
 
 **Hardware:**
 - GPU: NVIDIA GPU (CUDA-enabled)
@@ -607,16 +607,16 @@ blending: RL-controlled adaptive weights
 
 ---
 
-***REMOVED******REMOVED*** 7. Reproducibility
+## 7. Reproducibility
 
-***REMOVED******REMOVED******REMOVED*** 7.1 Environment
+### 7.1 Environment
 
 ```bash
-***REMOVED*** Conda environment
+# Conda environment
 conda env create -f environment.yml
 conda activate pvforecast
 
-***REMOVED*** Key dependencies
+# Key dependencies
 - python=3.11
 - pytorch=2.1.0
 - pytorch-forecasting=1.0.0
@@ -625,17 +625,17 @@ conda activate pvforecast
 - numpy=1.24.3
 ```
 
-***REMOVED******REMOVED******REMOVED*** 7.2 Execution
+### 7.2 Execution
 
 ```bash
-***REMOVED*** Run Phase 1 inference pipeline
+# Run Phase 1 inference pipeline
 python src/inference/phase1_inference_pipeline.py
 
-***REMOVED*** Analyze prediction quality
+# Analyze prediction quality
 python analyze_phase1_predictions.py
 ```
 
-***REMOVED******REMOVED******REMOVED*** 7.3 Configuration Files
+### 7.3 Configuration Files
 
 All paths hardcoded in:
 - `src/inference/phase1_inference_pipeline.py` (lines 529-531)
@@ -645,9 +645,9 @@ No environment variables or external configuration required.
 
 ---
 
-***REMOVED******REMOVED*** Appendix A: Mathematical Formulation
+## Appendix A: Mathematical Formulation
 
-***REMOVED******REMOVED******REMOVED*** A.1 Hierarchical Blending
+### A.1 Hierarchical Blending
 
 Given:
 - Short-head predictions: `S ∈ ℝ^(96)` at 15-min resolution
@@ -662,7 +662,7 @@ F_d(t) = α_short(d) · S_d(t) + α_long(d) · L'_d(t) + α_ml(d) · P_d(t)
 
 Where `t ∈ [0, 95]` is the 15-min step within day `d`.
 
-***REMOVED******REMOVED******REMOVED*** A.2 Upsampling Strategy
+### A.2 Upsampling Strategy
 
 Long-head hourly predictions upsampled to 15-min using PVLib shape:
 ```
@@ -675,13 +675,13 @@ This preserves:
 1. Long-head daily energy (integral)
 2. PVLib sub-hourly shape (cloud transients)
 
-***REMOVED******REMOVED******REMOVED*** A.3 Dynamic Weight Decay
+### A.3 Dynamic Weight Decay
 
 Heuristic RL controller implements confidence decay:
 ```
-α_short(d) = max(0.35, 0.65 - 0.01 · d)     ***REMOVED*** 0.65 → 0.35 over 30 days
-α_long(d) = min(0.65, 0.35 + 0.01 · d)      ***REMOVED*** 0.35 → 0.65 over 30 days
-α_ml(d) = 1 - α_short(d) - α_long(d) + margin  ***REMOVED*** Physics constraint
+α_short(d) = max(0.35, 0.65 - 0.01 · d)     # 0.65 → 0.35 over 30 days
+α_long(d) = min(0.65, 0.35 + 0.01 · d)      # 0.35 → 0.65 over 30 days
+α_ml(d) = 1 - α_short(d) - α_long(d) + margin  # Physics constraint
 ```
 
 Transition points:
@@ -691,9 +691,9 @@ Transition points:
 
 ---
 
-***REMOVED******REMOVED*** Appendix B: Error Analysis
+## Appendix B: Error Analysis
 
-***REMOVED******REMOVED******REMOVED*** B.1 Forecast Disagreement Distribution
+### B.1 Forecast Disagreement Distribution
 
 Histogram of standard deviations at overlapping timestamps (n=36,480):
 
@@ -709,14 +709,14 @@ Bin [0.050, 0.070): 57 timestamps     (0.2%)
 
 **Interpretation:** Majority (77.9%) of overlapping predictions agree within 0.5% of capacity.
 
-***REMOVED******REMOVED******REMOVED*** B.2 Temporal Autocorrelation
+### B.2 Temporal Autocorrelation
 
 15-min lag autocorrelation: `ρ_1 = 0.9987`  
 Daily lag autocorrelation: `ρ_96 = 0.6523`
 
 High lag-1 correlation indicates smooth temporal evolution. Daily correlation >0.65 shows persistence of weather patterns.
 
-***REMOVED******REMOVED******REMOVED*** B.3 Residual Analysis (vs PVLib Baseline)
+### B.3 Residual Analysis (vs PVLib Baseline)
 
 ```
 Mean residual (TFT - PVLib):         -0.0124  (ML predicts 1.2% lower)
@@ -729,7 +729,7 @@ Residual kurtosis:                    3.87    (heavy tails: large disagreements 
 
 ---
 
-***REMOVED******REMOVED*** Appendix C: Visualization Summary
+## Appendix C: Visualization Summary
 
 *Note: Actual plots not generated in this analysis but recommended for thesis:*
 

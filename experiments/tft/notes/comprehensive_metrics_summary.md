@@ -1,4 +1,4 @@
-***REMOVED*** MiRACLE v1.0: Comprehensive TFT Ablation and Hparam tuning Metrics Summary
+# MiRACLE v1.0: Comprehensive TFT Ablation and Hparam tuning Metrics Summary
 
 **Purpose**: Defensible documentation combining:
 - **Val Loss (QuantileLoss)**: Training selection criterion (early stopping)
@@ -6,7 +6,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Phase A: Feature Ablation Study (Short-head, 15-min, 24h)
+## Phase A: Feature Ablation Study (Short-head, 15-min, 24h)
 
 **Purpose**: Quantify PVLib physics contribution vs. TFT-only baseline
 
@@ -19,7 +19,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Phase B: Global Pretraining (Multi-site, no-leak)
+## Phase B: Global Pretraining (Multi-site, no-leak)
 
 **Purpose**: Learn cross-site patterns for transfer learning initialization
 
@@ -30,7 +30,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Phase C: Plant_03 Fine-tuning (Short-head, 15-min, 24h)
+## Phase C: Plant_03 Fine-tuning (Short-head, 15-min, 24h)
 
 **Purpose**: Validate transfer learning (warm) vs. cold-start
 
@@ -48,7 +48,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Phase D: Plant_03 Fine-tuning (Long-head, 1-hour, 30 days)
+## Phase D: Plant_03 Fine-tuning (Long-head, 1-hour, 30 days)
 
 **Purpose**: Validate transfer learning at extended forecast horizon
 
@@ -69,7 +69,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Key Findings
+## Key Findings
 
 1. **Val Loss (QuantileLoss)**: Selection criterion used throughout training (early stopping)
 2. **RMSE/MAE**: Post-hoc interpretable metrics computed on validation set using median quantile

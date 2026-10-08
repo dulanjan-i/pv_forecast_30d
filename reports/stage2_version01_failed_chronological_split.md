@@ -1,4 +1,4 @@
-***REMOVED*** Stage 2 Transfer Learning - Version 01 (Failed Experiment)
+# Stage 2 Transfer Learning - Version 01 (Failed Experiment)
 
 **Date**: December 16, 2025  
 **Status**: ❌ FAILED - Invalid Validation Methodology  
@@ -7,7 +7,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Executive Summary
+## Executive Summary
 
 Version 01 of Stage 2 transfer learning attempted to fine-tune the farm2107 LSTM encoder on 6 German PV plants using a simple chronological 70/15/15 train/validation/test split. While initial metrics appeared promising (mean validation RMSE = 0.0347, -14% vs baseline), deeper analysis revealed **critical flaws in the validation methodology**:
 
@@ -22,12 +22,12 @@ This failure demonstrates rigorous experimental methodology and led to improved 
 
 ---
 
-***REMOVED******REMOVED*** 1. Experimental Design
+## 1. Experimental Design
 
-***REMOVED******REMOVED******REMOVED*** 1.1 Objective
+### 1.1 Objective
 Transfer the farm2107 pre-trained LSTM encoder (Nov 2024, RMSE = 0.040388) to 6 German PV plants using fine-tuning with frozen encoder weights.
 
-***REMOVED******REMOVED******REMOVED*** 1.2 Dataset
+### 1.2 Dataset
 - **Source**: 6 German PV plants from open-source dataset
 - **Features**: 15 LSTM input features (weather + autoregressive power_norm)
 - **Resolution**: 15-minute intervals
@@ -35,22 +35,22 @@ Transfer the farm2107 pre-trained LSTM encoder (Nov 2024, RMSE = 0.040388) to 6 
   - Plant 01, 02, 04: 639 days (Dec 2022 → Oct 2024)
   - Plant 03, 05, 06: 456 days (Dec 2022 → Apr 2024)
 
-***REMOVED******REMOVED******REMOVED*** 1.3 Split Strategy (Version 01)
+### 1.3 Split Strategy (Version 01)
 **Method**: Simple chronological slice
 ```python
 def split_indices(n: int, train_frac=0.70, val_frac=0.15):
     n_train = int(n * train_frac)
     n_val = int(n * val_frac)
-    train_sl = slice(0, n_train)              ***REMOVED*** First 70%
-    val_sl = slice(n_train, n_train + n_val)  ***REMOVED*** Next 15%
-    test_sl = slice(n_train + n_val, n)       ***REMOVED*** Last 15%
+    train_sl = slice(0, n_train)              # First 70%
+    val_sl = slice(n_train, n_train + n_val)  # Next 15%
+    test_sl = slice(n_train + n_val, n)       # Last 15%
     return train_sl, val_sl, test_sl
 ```
 
 **Assumption**: Temporal ordering would be sufficient for valid train/val splits  
 **Reality**: This assumption failed due to uneven seasonal coverage
 
-***REMOVED******REMOVED******REMOVED*** 1.4 Training Configuration
+### 1.4 Training Configuration
 ```yaml
 model: LSTM Encoder (hidden_size=64, num_layers=2)
 pretrained_weights: experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt
@@ -64,9 +64,9 @@ hardware: 2x NVIDIA L4 (24GB each)
 
 ---
 
-***REMOVED******REMOVED*** 2. Initial Results (Misleading)
+## 2. Initial Results (Misleading)
 
-***REMOVED******REMOVED******REMOVED*** 2.1 Validation Metrics (Final Epoch)
+### 2.1 Validation Metrics (Final Epoch)
 
 | Plant ID | Val RMSE | vs Baseline | Train RMSE | Train/Val Ratio | Status |
 |----------|----------|-------------|------------|-----------------|--------|
@@ -87,9 +87,9 @@ hardware: 2x NVIDIA L4 (24GB each)
 
 ---
 
-***REMOVED******REMOVED*** 3. Root Cause Investigation
+## 3. Root Cause Investigation
 
-***REMOVED******REMOVED******REMOVED*** 3.1 Diagnostic Methodology
+### 3.1 Diagnostic Methodology
 Systematic analysis using [`notebooks/lstm/stage2_validation_metrics.ipynb`](../notebooks/lstm/stage2_validation_metrics.ipynb):
 
 1. **Power Distribution Analysis** (Section 9)
@@ -104,9 +104,9 @@ Systematic analysis using [`notebooks/lstm/stage2_validation_metrics.ipynb`](../
    - Showed exact date ranges for train/val/test splits
    - Revealed which seasons validation sets captured
 
-***REMOVED******REMOVED******REMOVED*** 3.2 Key Findings
+### 3.2 Key Findings
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Finding 1: Power Distribution Imbalance
+#### Finding 1: Power Distribution Imbalance
 
 | Plant ID | Train Std | Val Std | Std Ratio | Val Zeros % | Interpretation |
 |----------|-----------|---------|-----------|-------------|----------------|
@@ -119,7 +119,7 @@ Systematic analysis using [`notebooks/lstm/stage2_validation_metrics.ipynb`](../
 
 **Diagnosis**: Plants 03, 04, 06 have dramatically lower validation variability → validation sets are fundamentally easier.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Finding 2: Temporal Coverage (Base Data)
+#### Finding 2: Temporal Coverage (Base Data)
 
 **Seasonal Distribution of Base Data:**
 
@@ -134,7 +134,7 @@ Systematic analysis using [`notebooks/lstm/stage2_validation_metrics.ipynb`](../
 
 **Observation**: Plants with shorter coverage (03, 05, 06) ended in April 2024 → more winter representation.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Finding 3: Split Boundaries (SMOKING GUN) 🚨
+#### Finding 3: Split Boundaries (SMOKING GUN) 🚨
 
 **What Season Did Each Validation Set Capture?**
 
@@ -152,7 +152,7 @@ Systematic analysis using [`notebooks/lstm/stage2_validation_metrics.ipynb`](../
 - Plants 01, 02 (ending Oct 2024): Last 15% fell into **spring/early summer** (Mar-Jun)
 - **Same split strategy → different seasons → incomparable validation sets**
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Finding 4: Plant 04 Data Quality Issue
+#### Finding 4: Plant 04 Data Quality Issue
 
 Plant 04's validation set (Mar-Jun 2024) should have been productive (spring/summer), but shows **100% zeros**:
 - **Not a seasonal bias issue** - this is a **data quality problem**
@@ -161,14 +161,14 @@ Plant 04's validation set (Mar-Jun 2024) should have been productive (spring/sum
 
 ---
 
-***REMOVED******REMOVED*** 4. Why Version 01 Failed
+## 4. Why Version 01 Failed
 
-***REMOVED******REMOVED******REMOVED*** 4.1 Flawed Assumption
+### 4.1 Flawed Assumption
 **Assumption**: "Chronological split preserves temporal ordering → valid for time-series"
 
 **Reality**: Chronological split requires **uniform temporal coverage** or **balanced seasonal representation**. When different plants have different time ranges, a simple percentage slice captures different seasons per plant.
 
-***REMOVED******REMOVED******REMOVED*** 4.2 Comparison to Farm2107 (Why It Worked There)
+### 4.2 Comparison to Farm2107 (Why It Worked There)
 
 | Aspect | Farm2107 | Germany Plants | Result |
 |--------|----------|----------------|--------|
@@ -179,7 +179,7 @@ Plant 04's validation set (Mar-Jun 2024) should have been productive (spring/sum
 
 **Lesson**: A strategy that works for balanced data can fail catastrophically with uneven coverage.
 
-***REMOVED******REMOVED******REMOVED*** 4.3 Validation Set Invalidity
+### 4.3 Validation Set Invalidity
 
 **What Validation Sets SHOULD Test**: Generalization to unseen time periods with similar statistical properties
 
@@ -192,22 +192,22 @@ Plant 04's validation set (Mar-Jun 2024) should have been productive (spring/sum
 
 ---
 
-***REMOVED******REMOVED*** 5. Evidence & Reproducibility
+## 5. Evidence & Reproducibility
 
-***REMOVED******REMOVED******REMOVED*** 5.1 Analysis Notebooks
+### 5.1 Analysis Notebooks
 1. **[`notebooks/lstm/stage2_validation_metrics.ipynb`](../notebooks/lstm/stage2_validation_metrics.ipynb)**
    - Comprehensive validation analysis (15 cells)
    - Sections 8-13 contain diagnostic analysis
    - **Cell 13**: Split boundary analysis (smoking gun evidence)
 
-***REMOVED******REMOVED******REMOVED*** 5.2 Training Artifacts (Preserved for Reference)
+### 5.2 Training Artifacts (Preserved for Reference)
 ```
 experiments/lstm/runs/germany/pretrain_plant_01/ → pretrain_plant_06/
 ├── germany_plant_XX_pretrain/version_0/
-│   ├── metrics.csv          ***REMOVED*** Training logs
-│   ├── checkpoints/         ***REMOVED*** Model checkpoints
-│   └── hparams.yaml         ***REMOVED*** Hyperparameters
-└── logs/plant_XX.log        ***REMOVED*** Console output
+│   ├── metrics.csv          # Training logs
+│   ├── checkpoints/         # Model checkpoints
+│   └── hparams.yaml         # Hyperparameters
+└── logs/plant_XX.log        # Console output
 
 experiments/lstm/encoders/
 ├── lstm_encoder_plant_01.pt (232 KB) ✓ trained
@@ -220,19 +220,19 @@ experiments/lstm/encoders/
 
 **Note**: Encoders marked "invalid" are trained on biased validation sets and should not be used for downstream tasks.
 
-***REMOVED******REMOVED******REMOVED*** 5.3 Data Splits (To Be Replaced)
+### 5.3 Data Splits (To Be Replaced)
 ```
 data/processed/pretraining/germany/plant_XX/
-├── train.parquet      ***REMOVED*** 70% chronological
-├── val.parquet        ***REMOVED*** 15% chronological (BIASED)
-└── test.parquet       ***REMOVED*** 15% chronological
+├── train.parquet      # 70% chronological
+├── val.parquet        # 15% chronological (BIASED)
+└── test.parquet       # 15% chronological
 ```
 
 ---
 
-***REMOVED******REMOVED*** 6. Lessons Learned
+## 6. Lessons Learned
 
-***REMOVED******REMOVED******REMOVED*** 6.1 Technical Lessons
+### 6.1 Technical Lessons
 
 1. **Chronological ≠ Valid for Time-Series**
    - Temporal ordering alone is insufficient
@@ -253,7 +253,7 @@ data/processed/pretraining/germany/plant_XX/
    - Germany plants required adapted strategy
    - One-size-fits-all approaches are risky
 
-***REMOVED******REMOVED******REMOVED*** 6.2 Research Methodology Lessons
+### 6.2 Research Methodology Lessons
 
 1. **Systematic Diagnostics Catch Problems**
    - Distribution analysis revealed std_ratio anomalies
@@ -272,14 +272,14 @@ data/processed/pretraining/germany/plant_XX/
 
 ---
 
-***REMOVED******REMOVED*** 7. Path Forward (Version 02 Design)
+## 7. Path Forward (Version 02 Design)
 
-***REMOVED******REMOVED******REMOVED*** 7.1 Plant Selection
+### 7.1 Plant Selection
 **Drop Plant 04**: 100% zeros during Mar-Jun 2024 indicates data quality issue. Exclude until verified/fixed.
 
 **Remaining Plants**: 5 plants (plant_01, plant_02, plant_03, plant_05, plant_06)
 
-***REMOVED******REMOVED******REMOVED*** 7.2 Improved Split Strategy: Stratified Temporal Split
+### 7.2 Improved Split Strategy: Stratified Temporal Split
 
 **Goal**: Ensure each split (train/val/test) has **balanced seasonal representation**.
 
@@ -295,11 +295,11 @@ data/processed/pretraining/germany/plant_XX/
 - Similar mean power_norm across splits
 - Train/val ratio in 1.0-1.3 range (normal overfitting)
 
-***REMOVED******REMOVED******REMOVED*** 7.3 Enhanced Data Cleaning
+### 7.3 Enhanced Data Cleaning
 
 **Add NaN Handling**: Drop rows with NaN in `power_norm` during preprocessing (in `germany_build_pretrain_base.py`) to ensure clean training data.
 
-***REMOVED******REMOVED******REMOVED*** 7.4 Validation Checklist for Version 02
+### 7.4 Validation Checklist for Version 02
 
 Before accepting results:
 - ✅ std_ratio in [0.8, 1.2] range for all plants
@@ -310,7 +310,7 @@ Before accepting results:
 
 ---
 
-***REMOVED******REMOVED*** 8. Conclusion
+## 8. Conclusion
 
 Version 01 of Stage 2 transfer learning failed due to a **methodological flaw in the validation split strategy**, not due to model architecture or hyperparameters. The chronological split introduced **seasonal bias**, causing validation sets to test different difficulty levels across plants.
 
@@ -331,23 +331,23 @@ This failure demonstrates:
 
 ---
 
-***REMOVED******REMOVED*** Appendix A: Diagnostic Outputs
+## Appendix A: Diagnostic Outputs
 
-***REMOVED******REMOVED******REMOVED*** A.1 Power Distribution Statistics
+### A.1 Power Distribution Statistics
 ```
 plant_03: std_ratio=0.169 (val 83% less variable than train)
 plant_04: val_std=0.000000 (100% zeros)
 plant_06: std_ratio=0.200 (val 80% less variable than train)
 ```
 
-***REMOVED******REMOVED******REMOVED*** A.2 Split Date Ranges
+### A.2 Split Date Ranges
 ```
 plant_03: Val = 2023-11-16 to 2024-01-24 (WINTER)
 plant_05: Val = 2023-11-16 to 2024-01-24 (WINTER)
 plant_06: Val = 2023-11-16 to 2024-01-24 (WINTER)
 ```
 
-***REMOVED******REMOVED******REMOVED*** A.3 Train/Val Convergence (Abnormal Patterns)
+### A.3 Train/Val Convergence (Abnormal Patterns)
 ```
 plant_03: Final train=0.0403, val=0.0113 (val 3.6x better)
 plant_04: Final train=0.0236, val=0.0091 (val 2.6x better)

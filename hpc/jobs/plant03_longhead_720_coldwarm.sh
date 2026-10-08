@@ -1,13 +1,13 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH -J plant03_long720
-***REMOVED***SBATCH -p gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH -c 16
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=08:00:00
-***REMOVED***SBATCH --array=0-5
-***REMOVED***SBATCH -o /shared/%u/miracle/logs/%x_%A_%a.out
-***REMOVED***SBATCH -e /shared/%u/miracle/logs/%x_%A_%a.err
+#!/bin/bash
+#SBATCH -J plant03_long720
+#SBATCH -p gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH -c 16
+#SBATCH --mem=64G
+#SBATCH --time=08:00:00
+#SBATCH --array=0-5
+#SBATCH -o /shared/%u/miracle/logs/%x_%A_%a.out
+#SBATCH -e /shared/%u/miracle/logs/%x_%A_%a.err
 
 set -euo pipefail
 export OMP_NUM_THREADS=1
@@ -17,38 +17,38 @@ REPO="/shared/$USER/miracle/pv_forecast_30d"
 IMG="/shared/$USER/miracle/containers/tft_env_v1.sif"
 export SINGULARITY_BINDPATH="/shared:/shared,/home/$USER:/home/$USER,/tmp:/tmp,/dev/shm:/dev/shm"
 
-***REMOVED*** ---- data ----
+# ---- data ----
 PLANT_HOUR_DIR="$REPO/data/processed/plant_level/plant_03/hourly_longhead"
 TRAIN="$PLANT_HOUR_DIR/train.parquet"
 VAL="$PLANT_HOUR_DIR/val.parquet"
 
-***REMOVED*** ---- global longhead winner (warm start source) ----
+# ---- global longhead winner (warm start source) ----
 GLOBAL_RUN="$REPO/experiments/tft/runs/germany/longhead/global_noleak_target03/hourly720/lr2e-3_do0.15_bs64_acc8_seed42/20251230_135616"
 GLOBAL_SD="$GLOBAL_RUN/checkpoints/best_state_dict.pt"
 
-***REMOVED*** ---- long head lengths ----
+# ---- long head lengths ----
 ENC_LEN=168
 PRED_LEN=720
 
-***REMOVED*** ---- training knobs ----
+# ---- training knobs ----
 BS=64
 ACCUM=8
 MAX_EPOCHS=50
 PATIENCE=5
 DROP=0.15
 
-***REMOVED*** seeds mapping
+# seeds mapping
 SEEDS=(42 43 44 42 43 44)
 SEED="${SEEDS[$SLURM_ARRAY_TASK_ID]}"
 
-***REMOVED*** regime mapping
+# regime mapping
 if [[ "$SLURM_ARRAY_TASK_ID" -lt 3 ]]; then
   REGIME="cold"
   LR="2e-3"
   INIT=""
 else
   REGIME="warm"
-  ***REMOVED*** lower LR for finetune, same logic you used in short-head
+  # lower LR for finetune, same logic you used in short-head
   LR="8e-4"
   INIT="--init_state_dict $GLOBAL_SD"
 fi

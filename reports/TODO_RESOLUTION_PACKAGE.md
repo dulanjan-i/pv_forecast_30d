@@ -1,15 +1,15 @@
-***REMOVED*** MiRACLE v1.0: TODO Resolution Package
+# MiRACLE v1.0: TODO Resolution Package
 
 **Date**: January 1, 2026  
 **Status**: ✅ ALL TODOs RESOLVED
 
 ---
 
-***REMOVED******REMOVED*** VERIFICATION APPENDIX
+## VERIFICATION APPENDIX
 
-***REMOVED******REMOVED******REMOVED*** Evidence Sources and Computation Methods
+### Evidence Sources and Computation Methods
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 1. Dataset Statistics (Row Counts and Date Ranges)
+#### 1. Dataset Statistics (Row Counts and Date Ranges)
 
 **Files Analyzed:**
 - `data/processed/pretraining/germany/global/tft_inputs_pca32_ablations/train_tft_pvlib.parquet`
@@ -51,21 +51,21 @@ val_tft_pvlib.parquet
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2. Weather Processing Details
+#### 2. Weather Processing Details
 
 **File Examined:**
 - `src/features/germany_build_tft_weather.py` (lines 1-140)
 
 **Key Code Sections:**
 ```python
-***REMOVED*** Line 115-125: Weather loading and alignment
+# Line 115-125: Weather loading and alignment
 def _build_weather_for_split(base: pd.DataFrame, weather_dir: Path) -> pd.DataFrame:
-    ***REMOVED*** ...
+    # ...
     for pid in plants:
         w_path = weather_dir / f"{pid}_weather_15min.parquet"
         w = _load_weather_one(w_path)
         
-        ***REMOVED*** Filter to only keys present in base for that plant (fast and correct)
+        # Filter to only keys present in base for that plant (fast and correct)
         k = base_keys[base_keys[PLANT_ID_COL] == pid]
         merged = k.merge(w, on=[PLANT_ID_COL, TIME_COL], how="inner", validate="one_to_one")
 ```
@@ -75,20 +75,20 @@ def _build_weather_for_split(base: pd.DataFrame, weather_dir: Path) -> pd.DataFr
 **Search Commands:**
 ```bash
 grep -n "resample\|interpolate\|ffill\|bfill\|method=" src/features/germany_build_tft_weather.py
-***REMOVED*** Result: No matches (no interpolation code present)
+# Result: No matches (no interpolation code present)
 ```
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 3. PVLib PVWatts Parameters
+#### 3. PVLib PVWatts Parameters
 
 **File Examined:**
 - `src/features/germany_build_pvlib_for_tft.py` (lines 289-293)
 
 **Code:**
 ```python
-***REMOVED*** Line 291-293
-gamma_pdc = -0.003  ***REMOVED*** typical
+# Line 291-293
+gamma_pdc = -0.003  # typical
 pdc_w = pvlib.pvsystem.pvwatts_dc(poa_global, temp_cell, pdc0=pdc0_w, gamma_pdc=gamma_pdc)
 pac_w = pvlib.inverter.pvwatts(pdc_w, pdc0=pdc0_w)
 ```
@@ -103,31 +103,31 @@ pac_w = pvlib.inverter.pvwatts(pdc_w, pdc0=pdc0_w)
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 4. Hardware Verification (GPU Type)
+#### 4. Hardware Verification (GPU Type)
 
 **Evidence Sources:**
 1. **SBATCH Scripts** (`hpc/jobs/*.sbatch`):
 ```bash
 grep -n "partition=\|gres=" hpc/jobs/train_*.sbatch
-***REMOVED*** Results:
-***REMOVED*** train_plant03_pvlib_cold_array.sbatch:3:***REMOVED***SBATCH -p gpuh100
-***REMOVED*** train_plant03_pvlib_cold_array.sbatch:4:***REMOVED***SBATCH --gres=gpu:1
-***REMOVED*** (14 matches total, all showing partition gpuh100)
+# Results:
+# train_plant03_pvlib_cold_array.sbatch:3:#SBATCH -p gpuh100
+# train_plant03_pvlib_cold_array.sbatch:4:#SBATCH --gres=gpu:1
+# (14 matches total, all showing partition gpuh100)
 ```
 
 2. **Ablation Summary CSV** (`experiments/tft/runs/germany/ablations/ablation_summary_extended.csv`):
 ```bash
 head -2 experiments/tft/runs/germany/ablations/ablation_summary_extended.csv | cut -d',' -f1-4
-***REMOVED*** Output:
-***REMOVED*** mode,jobid_task,node,gpu_name
-***REMOVED*** tft_only,24449_1,,NVIDIA H100 PCIe
+# Output:
+# mode,jobid_task,node,gpu_name
+# tft_only,24449_1,,NVIDIA H100 PCIe
 ```
 
 **Conclusion:** NVIDIA H100 PCIe GPUs verified from both SBATCH partition name (`gpuh100`) and runtime logs (`gpu_name` column).
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 5. NaN Handling and Clipping
+#### 5. NaN Handling and Clipping
 
 **Files Examined:**
 - `src/preprocessing/germany_build_global_supermatrix.py` (line 148)
@@ -136,10 +136,10 @@ head -2 experiments/tft/runs/germany/ablations/ablation_summary_extended.csv | c
 
 **NaN Handling:**
 ```python
-***REMOVED*** germany_build_global_supermatrix.py:148
+# germany_build_global_supermatrix.py:148
 df = df.dropna(subset=list(required_for_model))
 
-***REMOVED*** germany_build_tft_weather.py:135-137
+# germany_build_tft_weather.py:135-137
 if out.isna().any().any():
     n = int(out.isna().sum().sum())
     raise ValueError(f"Weather output contains NaNs (count={n}). Fix preprocessing before TFT.")
@@ -147,12 +147,12 @@ if out.isna().any().any():
 
 **Clipping:**
 ```python
-***REMOVED*** germany_build_pvlib_for_tft.py:251-253
+# germany_build_pvlib_for_tft.py:251-253
 dni = wp["direct_normal_irradiance_instant"].astype(float).clip(lower=0.0).to_numpy()
 ghi = wp["shortwave_radiation_instant"].astype(float).clip(lower=0.0).to_numpy()
 dhi = wp["diffuse_radiation_instant"].astype(float).clip(lower=0.0).to_numpy()
 
-***REMOVED*** Lines 281-284
+# Lines 281-284
 poa_global = np.asarray(poa["poa_global"]).clip(min=0.0)
 poa_direct = np.asarray(poa.get("poa_direct", np.full_like(poa_global, np.nan))).clip(min=0.0)
 poa_diffuse = np.asarray(poa.get("poa_diffuse", np.full_like(poa_global, np.nan))).clip(min=0.0)
@@ -163,17 +163,17 @@ poa_ground_diffuse = np.asarray(poa.get("poa_ground_diffuse", np.full_like(poa_g
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 6. Gradient Monitoring
+#### 6. Gradient Monitoring
 
 **File Examined:**
 - `src/training/train_tft_v1.py` (lines 87, 559, 564)
 
 **Code:**
 ```python
-***REMOVED*** Line 87: Default gradient clip value
+# Line 87: Default gradient clip value
 p.add_argument("--grad_clip", type=float, default=0.1)
 
-***REMOVED*** Lines 559, 564: Gradient clipping implementation
+# Lines 559, 564: Gradient clipping implementation
 torch.nn.utils.clip_grad_norm_(model.parameters(), float(args.grad_clip))
 ```
 
@@ -182,12 +182,12 @@ torch.nn.utils.clip_grad_norm_(model.parameters(), float(args.grad_clip))
 **Search Command:**
 ```bash
 grep -n "log_grad\|gradient_norm\|grad.*log" src/training/train_tft_v1.py
-***REMOVED*** Result: No matches (no gradient norm logging)
+# Result: No matches (no gradient norm logging)
 ```
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 7. Early Stopping Epochs and Best Validation Losses
+#### 7. Early Stopping Epochs and Best Validation Losses
 
 **Files Analyzed:**
 - Global: `experiments/tft/runs/germany/global_noleak/target03_excluded/20251229_134852/logs/metrics.csv`
@@ -233,7 +233,7 @@ Finetune:
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 8. GPU-Hours for Ablation Study
+#### 8. GPU-Hours for Ablation Study
 
 **Files Analyzed:**
 - `experiments/tft/runs/germany/ablations/tft_only/20251226_165225/logs/metrics.csv`
@@ -270,9 +270,9 @@ Total: 2.47 GPU-hours
 
 ---
 
-***REMOVED******REMOVED*** CHANGE LOG
+## CHANGE LOG
 
-***REMOVED******REMOVED******REMOVED*** Methodology Document (`miracle_v1_methodology_CORRECTED.md`)
+### Methodology Document (`miracle_v1_methodology_CORRECTED.md`)
 
 | Line | Original TODO | Resolution | Evidence |
 |---|---|---|---|
@@ -287,7 +287,7 @@ Total: 2.47 GPU-hours
 | 386 | "TODO: verify if implemented" | Replaced with gradient clipping at 0.1 threshold, no logging | train_tft_v1.py:87, 559, 564 |
 | 146 | *New clarification added* | Distinguished internal TFT LSTM from external embeddings pipeline | Architecture documentation |
 
-***REMOVED******REMOVED******REMOVED*** Results Document (`miracle_v1_results_CORRECTED.md`)
+### Results Document (`miracle_v1_results_CORRECTED.md`)
 
 | Line | Original TODO | Resolution | Evidence |
 |---|---|---|---|
@@ -300,7 +300,7 @@ Total: 2.47 GPU-hours
 
 ---
 
-***REMOVED******REMOVED*** Summary Statistics
+## Summary Statistics
 
 **TODOs Resolved:** 10 (8 methodology + 2 results)
 **Clarifications Added:** 2 (LSTM distinction + checkpoint format)
@@ -316,7 +316,7 @@ Total: 2.47 GPU-hours
 
 ---
 
-***REMOVED******REMOVED*** Key Corrections Applied
+## Key Corrections Applied
 
 1. **Training start time**: Corrected from "00:00 UTC" to "23:00 UTC" (verified from parquet min timestamp)
 2. **Weather processing**: Removed unverified "interpolation" claim; confirmed inner join alignment only

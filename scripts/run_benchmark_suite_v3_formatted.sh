@@ -1,7 +1,7 @@
-***REMOVED***!/bin/bash
-***REMOVED*** Benchmark Suite v3 - FORMATTED for thesis
-***REMOVED*** Same plots as v1, just FORMATTING FIXES (labels, DPI, legend clarity)
-***REMOVED*** Output to NEW directory: thesis_formatted_v3
+#!/bin/bash
+# Benchmark Suite v3 - FORMATTED for thesis
+# Same plots as v1, just FORMATTING FIXES (labels, DPI, legend clarity)
+# Output to NEW directory: thesis_formatted_v3
 
 set -e
 

@@ -1,10 +1,10 @@
-***REMOVED*** Chapter 3: Updated Section 3.6 (RL Meta-Controller)
+# Chapter 3: Updated Section 3.6 (RL Meta-Controller)
 
-***REMOVED******REMOVED*** Replace sections 3.6.2–3.6.5 with the following:
+## Replace sections 3.6.2–3.6.5 with the following:
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 3.6.2 Two-Stage Evaluation Protocol
+### 3.6.2 Two-Stage Evaluation Protocol
 
 We evaluate the RL meta-controller via a two-stage protocol that systematically probes operational safety and adaptive performance:
 
@@ -16,7 +16,7 @@ Both stages use the 2024 test set (n=288 forecast starts) and compare learned po
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 3.6.3 Action Space Design
+### 3.6.3 Action Space Design
 
 The meta-controller discretizes the blend-weight continuum into eight interpretable actions:
 
@@ -35,7 +35,7 @@ During Phase 1 pre-training (Q2–Q3 2023), the DDQN naturally converged to {a�
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 3.6.4 Results
+### 3.6.4 Results
 
 **Stage 1 (Restricted):** Under the safety-constrained action space, the learned policy produced RMSE = 0.116210 (±0.000119 vs baseline), barely distinguishable from the fixed heuristic. Win rate: 0.69%.
 
@@ -57,7 +57,7 @@ No forecasts selected actions {a₂, a₄, a₅, a₆, a₇}, indicating these c
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 3.6.5 Interpretation: Action Space Collapse as Strategic Specialization
+### 3.6.5 Interpretation: Action Space Collapse as Strategic Specialization
 
 The stark performance gap between Stage 1 and Stage 2 validates **two key hypotheses**:
 
@@ -71,23 +71,23 @@ The observed action collapse to {a₀, a₁, a₃} in Stage 2 reflects **strateg
 
 ---
 
-***REMOVED******REMOVED*** New Figures for Chapter 3:
+## New Figures for Chapter 3:
 
-***REMOVED******REMOVED******REMOVED*** Figure 3.X: Two-Stage RL Evaluation Results
+### Figure 3.X: Two-Stage RL Evaluation Results
 **Caption:** *Left panels: Stage 1 (restricted action space {a₀, a₂, a₃}) shows policy performance indistinguishable from fixed baseline (Δ RMSE = +0.000119). Right panels: Stage 2 (full action space {a₀–a₇}) reveals substantial improvement (Δ RMSE = −0.004367, −3.76%), driven by strategic specialization to long-head dominant (a₁, 60%) and baseline fallback (a₀, 36%) actions. Action distribution (middle row) demonstrates convergence to three core strategies. Per-forecast scatter (bottom row) shows win-rate increase from 0.69% → 31.94%.*
 
 **File:** `experiments/rl/counterfactuals/plant_03/summary/rl_two_stage_evaluation.png`
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Figure 3.Y: Action Space Design and Selection Frequency
+### Figure 3.Y: Action Space Design and Selection Frequency
 **Caption:** *Full action space configuration showing blend-weight mappings and Stage 2 selection frequency. Green-highlighted rows indicate actions actively selected by the learned policy. The policy converges to a strategic triad: long-head dominant (a₁, 60.1%), baseline balanced (a₀, 36.5%), and physics safe-harbor (a₃, 3.5%), while ignoring redundant configurations.*
 
 **File:** `experiments/rl/counterfactuals/plant_03/summary/rl_action_space_table.png`
 
 ---
 
-***REMOVED******REMOVED*** Key Changes Summary:
+## Key Changes Summary:
 
 1. **Reframed "action collapse"** → "strategic specialization" (positive framing)
 2. **Introduced two-stage protocol** explicitly in methodology (3.6.2)

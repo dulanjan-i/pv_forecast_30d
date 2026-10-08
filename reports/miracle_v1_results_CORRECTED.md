@@ -1,10 +1,10 @@
-***REMOVED*** MiRACLE v1.0: Results
+# MiRACLE v1.0: Results
 
-***REMOVED******REMOVED*** Experimental Validation of Physics-Informed Temporal Fusion Transformers for Multi-Horizon PV Forecasting
+## Experimental Validation of Physics-Informed Temporal Fusion Transformers for Multi-Horizon PV Forecasting
 
 ---
 
-***REMOVED******REMOVED*** 1. Executive Summary
+## 1. Executive Summary
 
 This section presents empirical results from the MiRACLE v1.0 (Meta Intelligent Reinforcement Driven Adaptive Control for Learning Based Ensembles) forecasting framework across three experimental phases: (1) feature ablation study quantifying physics-informed feature contributions, (2) global pretraining validation demonstrating cross-site knowledge transfer, and (3) cold-start versus warm-start comparison establishing transfer learning efficacy.
 
@@ -14,9 +14,9 @@ This section presents empirical results from the MiRACLE v1.0 (Meta Intelligent 
 
 ---
 
-***REMOVED******REMOVED*** 2. Phase 1: Feature Ablation Study
+## 2. Phase 1: Feature Ablation Study
 
-***REMOVED******REMOVED******REMOVED*** 2.1 Experimental Setup
+### 2.1 Experimental Setup
 
 Four model configurations trained on identical Germany multi-site corpus (plants 01, 02, 03, 05, 06) to isolate feature group contributions.
 
@@ -26,9 +26,9 @@ Four model configurations trained on identical Germany multi-site corpus (plants
 - Training: Effective batch 4096 (BS=512, grad_accum=8), early stopping patience 5
 - Evaluation: Validation RMSE/MAE computed on median quantile forecast over all 96 horizons
 
-***REMOVED******REMOVED******REMOVED*** 2.2 Quantitative Results
+### 2.2 Quantitative Results
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Table 1: Ablation Study Performance (Validation Set)
+#### Table 1: Ablation Study Performance (Validation Set)
 
 | Mode | RMSE | MAE | Best Epoch | Relative RMSE Improvement |
 |---|---:|---:|---:|---:|
@@ -52,9 +52,9 @@ Four model configurations trained on identical Germany multi-site corpus (plants
 
 ---
 
-***REMOVED******REMOVED*** 3. Phase 2: Global Pretraining and No-Leak Validation
+## 3. Phase 2: Global Pretraining and No-Leak Validation
 
-***REMOVED******REMOVED******REMOVED*** 3.1 Pretraining Strategy
+### 3.1 Pretraining Strategy
 
 To enable safe transfer learning to target plant `plant_03`, we constructed a **data-leakage-free global model** via:
 
@@ -72,7 +72,7 @@ To enable safe transfer learning to target plant `plant_03`, we constructed a **
 **Step 3: Checkpoint Verification**
 - Confirmed: No plant_03 timestamps present in training data via explicit exclusion
 
-***REMOVED******REMOVED******REMOVED*** 3.2 Global Model Performance
+### 3.2 Global Model Performance
 
 **Training Dynamics:**
 - Converged with early stopping after 11 epochs (patience=3, final epoch stopped at 10)
@@ -81,18 +81,18 @@ To enable safe transfer learning to target plant `plant_03`, we constructed a **
 
 ---
 
-***REMOVED******REMOVED*** 4. Phase 3: Transfer Learning to Target Plant (plant_03)
+## 4. Phase 3: Transfer Learning to Target Plant (plant_03)
 
-***REMOVED******REMOVED******REMOVED*** 4.1 Experimental Design: Cold vs. Warm Start
+### 4.1 Experimental Design: Cold vs. Warm Start
 
 Two fine-tuning regimes compared to quantify transfer learning efficacy:
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Cold Start (Random Initialization Baseline)
+#### Cold Start (Random Initialization Baseline)
 - **Initialization**: Glorot uniform (PyTorch defaults)
 - **Training data**: plant_03 15-min splits only
 - **Hyperparameters**: lr=2e-3, dropout=0.15, BS=64×8
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Warm Start (Transfer Learning)
+#### Warm Start (Transfer Learning)
 - **Initialization**: Load pretrained weights from global no-leak model
 - **Training data**: plant_03 15-min splits only
 - **Hyperparameters**: lr=8e-4, dropout=0.15, BS=64×8
@@ -100,9 +100,9 @@ Two fine-tuning regimes compared to quantify transfer learning efficacy:
 **Multi-Seed Robustness:**
 - Each regime executed with seeds {42, 43, 44} (3 replicates)
 
-***REMOVED******REMOVED******REMOVED*** 4.2 Short-Term Head Results (15-min, 24h Horizon)
+### 4.2 Short-Term Head Results (15-min, 24h Horizon)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Table 2: Plant_03 Fine-Tuning Performance (Validation Loss)
+#### Table 2: Plant_03 Fine-Tuning Performance (Validation Loss)
 
 | Regime | Seed | Best Val Loss | Best Epoch | Final Val Loss (Last Epoch) |
 |---|---:|---:|---:|---:|
@@ -133,13 +133,13 @@ $$
 **Winner Selected:** Warm-start seed 42 (best val loss **0.02666**)  
 **Checkpoint:** `experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best.ckpt`
 
-***REMOVED******REMOVED******REMOVED*** 4.3 Long-Term Head Results (1-hour, 30-day Horizon)
+### 4.3 Long-Term Head Results (1-hour, 30-day Horizon)
 
 **Experimental Modifications:**
 - **Temporal resolution**: Hourly aggregation via mean pooling from 15-min source
 - **Sequence lengths**: Encoder 720, prediction 720 (30 days)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Table 3: Plant_03 Longhead Fine-Tuning (Validation Loss)
+#### Table 3: Plant_03 Longhead Fine-Tuning (Validation Loss)
 
 | Regime | Seed | Best Val Loss | Best Epoch |
 |---|---:|---:|---:|
@@ -169,9 +169,9 @@ $$
 **Winner Selected:** Warm-start seed 43 (best val loss **0.02414**)  
 **Checkpoint:** `experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best.ckpt`
 
-***REMOVED******REMOVED******REMOVED*** 4.4 Convergence Speed Analysis
+### 4.4 Convergence Speed Analysis
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Table 4: Epochs to Optimal Loss
+#### Table 4: Epochs to Optimal Loss
 
 | Regime | Short-Term (24h) | Long-Term (30d) |
 |---|---:|---:|
@@ -187,17 +187,17 @@ $$
 
 ---
 
-***REMOVED******REMOVED*** 5. Production Model Selection and Deployment
+## 5. Production Model Selection and Deployment
 
 Based on validation results, the following configurations locked for MiRACLE v1.0 release:
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Short-Term Operational Head (15-min, 24h)
+#### Short-Term Operational Head (15-min, 24h)
 - **Model**: TFT+PVLib, warm-start seed 42
 - **Validation Loss**: 0.02666
 - **Checkpoint**: `experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best.ckpt`
 - **Format**: PyTorch state_dict (1.7 MB `.ckpt` file). Despite the `.ckpt` extension, the file stores only a `torch.save(model.state_dict())` output, not a PyTorch Lightning checkpoint.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Long-Term Strategic Head (1-hour, 30-day)
+#### Long-Term Strategic Head (1-hour, 30-day)
 - **Model**: TFT+PVLib, warm-start seed 43
 - **Validation Loss**: 0.02414
 - **Checkpoint**: `experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best.ckpt`
@@ -207,7 +207,7 @@ Based on validation results, the following configurations locked for MiRACLE v1.
 from pytorch_forecasting.models import TemporalFusionTransformer
 import torch
 
-***REMOVED*** Rebuild model architecture from dataset
+# Rebuild model architecture from dataset
 model = TemporalFusionTransformer.from_dataset(
     train_ds,
     hidden_size=64,
@@ -217,7 +217,7 @@ model = TemporalFusionTransformer.from_dataset(
     learning_rate=8e-4,
 )
 
-***REMOVED*** Load weights
+# Load weights
 sd = torch.load("best.ckpt", map_location="cpu")
 model.load_state_dict(sd, strict=True)
 ```
@@ -226,9 +226,9 @@ model.load_state_dict(sd, strict=True)
 
 ---
 
-***REMOVED******REMOVED*** 6. Error Analysis and Failure Modes
+## 6. Error Analysis and Failure Modes
 
-***REMOVED******REMOVED******REMOVED*** 6.1 Observed Patterns
+### 6.1 Observed Patterns
 
 **Seed Variability:**
 - Cold-start seed 43 exhibited significantly worse performance (val loss 0.0560 vs. ~0.032 for other seeds)
@@ -236,7 +236,7 @@ model.load_state_dict(sd, strict=True)
 
 **Interpretation:** Cold-start optimization is sensitive to initial parameter configuration; warm-start provides more stable initialization.
 
-***REMOVED******REMOVED******REMOVED*** 6.2 Limitations
+### 6.2 Limitations
 
 **Statistical Power:**
 - Sample size n=3 insufficient for frequentist significance tests at α=0.05
@@ -248,9 +248,9 @@ model.load_state_dict(sd, strict=True)
 
 ---
 
-***REMOVED******REMOVED*** 7. Computational Resource Summary
+## 7. Computational Resource Summary
 
-***REMOVED******REMOVED******REMOVED*** 7.1 Training Costs (Single Model)
+### 7.1 Training Costs (Single Model)
 
 **Per-Epoch Statistics (from metrics.csv):**
 - Time per epoch: ~70 seconds (short-term), ~70 seconds (long-term)
@@ -261,7 +261,7 @@ model.load_state_dict(sd, strict=True)
 - Short-term warm-start: ~13 epochs × 70 sec ≈ **15 minutes**
 - Long-term warm-start: ~18 epochs × 70 sec ≈ **21 minutes**
 
-***REMOVED******REMOVED******REMOVED*** 7.2 Experimental Campaign Totals
+### 7.2 Experimental Campaign Totals
 
 **Ablation study:** 2 modes evaluated for production (tft_only: 1.34 GPU-hours, tft_pvlib: 1.13 GPU-hours) = **2.47 GPU-hours total**. Note: `tft_lstm` and `full` modes excluded due to suspected leakage.
 **Global pretraining:** Single run = **1.19 GPU-hours** (11 epochs, best at epoch 7)
@@ -269,7 +269,7 @@ model.load_state_dict(sd, strict=True)
 
 ---
 
-***REMOVED******REMOVED*** 8. Key Findings Summary
+## 8. Key Findings Summary
 
 1. **Physics-informed features deliver measurable benefit**: TFT+PVLib reduced validation RMSE by 5.36% vs. TFT-only baseline, with 2.75× faster convergence
 
@@ -285,21 +285,21 @@ model.load_state_dict(sd, strict=True)
 
 ---
 
-***REMOVED******REMOVED*** 9. Future Work
+## 9. Future Work
 
-***REMOVED******REMOVED******REMOVED*** 9.1 Immediate Extensions
+### 9.1 Immediate Extensions
 
 1. **Full cross-site validation**: Repeat transfer learning experiment with plants {01, 02, 05, 06} as held-out targets
 2. **Seasonal stratification**: Validate on full annual cycle (summer 2024 data pending)
 3. **Probabilistic calibration**: Evaluate quantile coverage (P10, P90 reliability)
 
-***REMOVED******REMOVED******REMOVED*** 9.2 Architectural Innovations
+### 9.2 Architectural Innovations
 
 1. **LSTM encoder integration (v1.1)**: Implement safe rollout strategy for upstream embeddings
 2. **Multi-horizon joint training**: Enforce consistency between short and long heads
 3. **Attention interpretability**: Visualize temporal attention patterns
 
-***REMOVED******REMOVED******REMOVED*** 9.3 Operational Deployment
+### 9.3 Operational Deployment
 
 1. **Real-time inference latency**: Benchmark prediction throughput
 2. **NWP forecast error propagation**: Replace historical reanalysis with operational forecasts
@@ -307,7 +307,7 @@ model.load_state_dict(sd, strict=True)
 
 ---
 
-***REMOVED******REMOVED*** References
+## References
 
 1. Lim, B., et al. (2021). Temporal Fusion Transformers for interpretable multi-horizon time series forecasting. *International Journal of Forecasting*, 37(4), 1748-1764.
 

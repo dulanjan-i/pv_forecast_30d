@@ -20,9 +20,9 @@ import torch
 import torch.nn as nn
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Data loading
-***REMOVED*** -----------------------------
+# -----------------------------
+# Data loading
+# -----------------------------
 def _ordered_state_cols(df: pd.DataFrame, prefix: str) -> list[str]:
     cols = [c for c in df.columns if c.startswith(prefix)]
     if not cols:
@@ -33,7 +33,7 @@ def _ordered_state_cols(df: pd.DataFrame, prefix: str) -> list[str]:
 
     cols = sorted(cols, key=key)
 
-    ***REMOVED*** sanity: contiguous 0..D-1
+    # sanity: contiguous 0..D-1
     idxs = [key(c) for c in cols]
     if idxs != list(range(0, len(idxs))):
         raise ValueError(f"Non-contiguous {prefix} cols (expected {prefix}0..{prefix}{len(idxs)-1}).")
@@ -87,9 +87,9 @@ def load_transitions(
     return states, actions, rewards, next_states, dones
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Network (used across scripts)
-***REMOVED*** -----------------------------
+# -----------------------------
+# Network (used across scripts)
+# -----------------------------
 class DQNNetwork(nn.Module):
     def __init__(self, state_dim: int, action_dim: int, hidden_sizes: List[int]):
         super().__init__()

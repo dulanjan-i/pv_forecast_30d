@@ -1,12 +1,12 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --job-name=tft_h100_fix
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --cpus-per-task=24
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
-***REMOVED***SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
+#!/bin/bash
+#SBATCH --job-name=tft_h100_fix
+#SBATCH --partition=gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=24
+#SBATCH --mem=64G
+#SBATCH --time=04:00:00
+#SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
+#SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
 
 set -euo pipefail
 
@@ -38,7 +38,7 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-***REMOVED*** Use env-based binding to avoid forbidden singularity flags
+# Use env-based binding to avoid forbidden singularity flags
 export SINGULARITY_BINDPATH="/shared/$USER:/shared/$USER,/home/$USER:/home/$USER,/tmp:/tmp,/dev/shm:/dev/shm"
 
 echo "=== CONTAINER SMOKE TEST ==="

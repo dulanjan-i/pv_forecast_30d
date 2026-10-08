@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 USER_NAME="${USER}"
@@ -27,7 +27,7 @@ mkdir -p "${LOG_DIR}"
 [[ -f "${TRAIN_SRC}" ]] || { echo "[ERROR] Train parquet not found: ${TRAIN_SRC}"; exit 1; }
 [[ -f "${VAL_SRC}"   ]] || { echo "[ERROR] Val parquet not found:   ${VAL_SRC}"; exit 1; }
 
-***REMOVED*** Decide AMP argument once, in wrapper, as a literal
+# Decide AMP argument once, in wrapper, as a literal
 AMP_ARG=""
 if [[ "${ENABLE_AMP}" = "1" ]]; then
   AMP_ARG="--enable_amp"
@@ -60,7 +60,7 @@ for node in "${NODES[@]}"; do
     --output="${LOG_DIR}/test_%N_%j.out" \
     --error="${LOG_DIR}/test_%N_%j.err" \
 <<EOF
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 echo "=== NODE TEST START ==="
@@ -95,7 +95,7 @@ echo "Local train: \${LOCAL_DIR}/train.parquet"
 echo "Local val:   \${LOCAL_DIR}/val.parquet"
 echo
 
-***REMOVED*** NOTE: keep singularity call in the cluster-accepted pattern
+# NOTE: keep singularity call in the cluster-accepted pattern
 singularity exec --nv "${IMG}" bash -lc "
   set -euo pipefail
   cd '${REPO}'

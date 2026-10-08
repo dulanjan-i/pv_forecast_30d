@@ -93,7 +93,7 @@ def main() -> None:
             f"train={after_train}, val={after_val}. Check plant_id strings."
         )
 
-    (out_dir / "train.parquet").write_bytes(b"")  ***REMOVED*** fail-fast on perms
+    (out_dir / "train.parquet").write_bytes(b"")  # fail-fast on perms
     (out_dir / "val.parquet").write_bytes(b"")
     (out_dir / "train.parquet").unlink()
     (out_dir / "val.parquet").unlink()

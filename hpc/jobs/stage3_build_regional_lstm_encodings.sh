@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 : '
@@ -60,15 +60,15 @@ fi
 
 mkdir -p "$ENC_DIR"
 
-***REMOVED*** Activate venv if not already active
+# Activate venv if not already active
 if [[ -z "${VIRTUAL_ENV:-}" ]]; then
   if [[ -f "$HOME/.venvs/pvforecast/bin/activate" ]]; then
     echo "[INFO] Activating venv: $HOME/.venvs/pvforecast"
-    ***REMOVED*** shellcheck disable=SC1090
+    # shellcheck disable=SC1090
     source "$HOME/.venvs/pvforecast/bin/activate"
   elif [[ -f "$REPO_ROOT/.venvs/pvforecast/bin/activate" ]]; then
     echo "[INFO] Activating venv: $REPO_ROOT/.venvs/pvforecast"
-    ***REMOVED*** shellcheck disable=SC1090
+    # shellcheck disable=SC1090
     source "$REPO_ROOT/.venvs/pvforecast/bin/activate"
   else
     echo "[ERROR] No venv found. Activate pvforecast manually, then rerun."

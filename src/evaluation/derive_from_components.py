@@ -34,7 +34,7 @@ def main() -> None:
     write("short_only", "pred_short_norm")
     write("long_only", "pred_long_norm")
 
-    ***REMOVED*** TFT-only: short+long equal weights, or use your evaluator-side weighting later
+    # TFT-only: short+long equal weights, or use your evaluator-side weighting later
     out = df.copy()
     out["predicted_power_norm"] = (0.5 * out["pred_short_norm"] + 0.5 * out["pred_long_norm"]).astype("float32")
     keep_cols = [c for c in out.columns if not c.startswith("pred_") or c == "predicted_power_norm"]

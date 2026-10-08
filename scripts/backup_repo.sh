@@ -1,7 +1,7 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -e
 
-***REMOVED*** Use current directory as repo root. You must run this script from the repo root.
+# Use current directory as repo root. You must run this script from the repo root.
 REPO_ROOT="$(pwd)"
 REPO_NAME="$(basename "$REPO_ROOT")"
 TIMESTAMP="$(date +"%Y%m%d_%H%M%S")"

@@ -1,16 +1,16 @@
-***REMOVED*** Installation Guide for calc02 VM
+# Installation Guide for calc02 VM
 
-***REMOVED******REMOVED*** ✅ Installation Complete!
+## ✅ Installation Complete!
 
 All packages have been successfully installed in `~/.venvs/pvforecast`.
 
-***REMOVED******REMOVED*** System Specs
+## System Specs
 - **GPUs**: 4x NVIDIA L4 (23GB VRAM each)
 - **CUDA**: 12.6/12.8 (driver 570.169)
 - **Python**: 3.12.3
 - **Environment**: Virtual environment at `~/.venvs/pvforecast`
 
-***REMOVED******REMOVED*** Installed Packages (194 total)
+## Installed Packages (194 total)
 Key packages:
 - **PyTorch**: 2.5.1+cu124 (CUDA 12.4 build, compatible with system CUDA 12.6/12.8)
 - **PyTorch Lightning**: 2.4.0
@@ -31,14 +31,14 @@ Key packages:
 
 See `requirements_calc02_frozen.txt` for complete list with exact versions.
 
-***REMOVED******REMOVED*** Quick Start
+## Quick Start
 
-***REMOVED******REMOVED******REMOVED*** 1. Activate environment
+### 1. Activate environment
 ```bash
 source ~/.venvs/pvforecast/bin/activate
 ```
 
-***REMOVED******REMOVED******REMOVED*** 2. Verify installation
+### 2. Verify installation
 ```bash
 python -c "import torch, pytorch_lightning as pl; print(f'PyTorch: {torch.__version__}'); print(f'Lightning: {pl.__version__}'); print(f'CUDA: {torch.cuda.is_available()}'); print(f'GPUs: {torch.cuda.device_count()}')"
 ```
@@ -51,69 +51,69 @@ CUDA: True
 GPUs: 4
 ```
 
-***REMOVED******REMOVED******REMOVED*** 3. Test training script
+### 3. Test training script
 ```bash
 python src/training/pretrain_lstm.py --help
 ```
 
 You should see the help message without errors.
 
-***REMOVED******REMOVED*** Running Training
+## Running Training
 
-***REMOVED******REMOVED******REMOVED*** Single GPU training
+### Single GPU training
 ```bash
 python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107.yaml
 ```
 
-***REMOVED******REMOVED******REMOVED*** Using specific GPU
+### Using specific GPU
 ```bash
 CUDA_VISIBLE_DEVICES=0 python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107.yaml
 ```
 
-***REMOVED******REMOVED******REMOVED*** Multi-GPU training (if script supports it)
+### Multi-GPU training (if script supports it)
 ```bash
-***REMOVED*** Use all 4 GPUs
+# Use all 4 GPUs
 CUDA_VISIBLE_DEVICES=0,1,2,3 python src/training/pretrain_lstm.py --config experiments/lstm/pretrain_farm2107.yaml
 ```
 
-***REMOVED******REMOVED*** SLURM Jobs
+## SLURM Jobs
 If using SLURM on calc02:
 ```bash
 sbatch scripts/pretrain_farm2107.slurm
 ```
 
-***REMOVED******REMOVED*** Important Notes
+## Important Notes
 
-***REMOVED******REMOVED******REMOVED*** ✅ Installation successful!
+### ✅ Installation successful!
 All 194 packages installed without errors.
 
-***REMOVED******REMOVED******REMOVED*** pytorch-lightning version
+### pytorch-lightning version
 - **Installed**: 2.4.0 (not 2.5.6)
 - **Reason**: Version 2.5.6 was quarantined by institutional proxy
 - **Status**: 2.4.0 works perfectly with PyTorch 2.5.1
 
-***REMOVED******REMOVED******REMOVED*** CUDA compatibility
+### CUDA compatibility
 - **System CUDA**: 12.6/12.8
 - **PyTorch CUDA**: 12.4
 - **Status**: ✅ OK - CUDA is backward compatible
 
-***REMOVED******REMOVED******REMOVED*** NumPy version
+### NumPy version
 - Upgraded from 2.3.3 to 2.2.6 for compatibility with scipy/scikit-learn
 
-***REMOVED******REMOVED*** Troubleshooting
+## Troubleshooting
 
-***REMOVED******REMOVED******REMOVED*** If running out of GPU memory
+### If running out of GPU memory
 - Check GPU usage: `nvidia-smi`
 - Monitor specific GPU: `watch -n 1 nvidia-smi`
 - Kill processes if needed
 
-***REMOVED******REMOVED******REMOVED*** If you need to reinstall
+### If you need to reinstall
 ```bash
 source ~/.venvs/pvforecast/bin/activate
 pip install -r requirements_calc02.txt
 ```
 
-***REMOVED******REMOVED******REMOVED*** To recreate exact environment elsewhere
+### To recreate exact environment elsewhere
 ```bash
 pip install -r requirements_calc02_frozen.txt
 ```

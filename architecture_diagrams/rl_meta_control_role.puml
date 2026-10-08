@@ -7,17 +7,17 @@ skinparam ArrowThickness 3
 
 title RL Meta Controller in MiRACLE
 
-rectangle "MiRACLE pipeline\nLSTM + PVLib + TFT" as PIPE ***REMOVED***D9EDF7
+rectangle "MiRACLE pipeline\nLSTM + PVLib + TFT" as PIPE #D9EDF7
 
-rectangle "State signals\nerror metrics\nAPI health\ndata quality\nresource load" as STATE ***REMOVED***F5F5F5
+rectangle "State signals\nerror metrics\nAPI health\ndata quality\nresource load" as STATE #F5F5F5
 
-rectangle "Role 1\naccuracy and drift" as R1 ***REMOVED***E6E6FA
-rectangle "Role 2\ncadence planner" as R2 ***REMOVED***E6E6FA
-rectangle "Role 3\ndata gatekeeper" as R3 ***REMOVED***E6E6FA
+rectangle "Role 1\naccuracy and drift" as R1 #E6E6FA
+rectangle "Role 2\ncadence planner" as R2 #E6E6FA
+rectangle "Role 3\ndata gatekeeper" as R3 #E6E6FA
 
-rectangle "Role 4\nglobal executive\nDouble DQN" as R4 ***REMOVED***E6E6FA
+rectangle "Role 4\nglobal executive\nDouble DQN" as R4 #E6E6FA
 
-rectangle "Actions on pipeline\ndo nothing\nswitch API\nfine tune models\nadjust PVLib\nreforecast / retrain" as ACT ***REMOVED***DFF0D8
+rectangle "Actions on pipeline\ndo nothing\nswitch API\nfine tune models\nadjust PVLib\nreforecast / retrain" as ACT #DFF0D8
 
 PIPE --> STATE
 

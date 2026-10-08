@@ -1,6 +1,6 @@
-***REMOVED*** Chapter 3 Updates: RL Meta-Controller Section
+# Chapter 3 Updates: RL Meta-Controller Section
 
-***REMOVED******REMOVED*** 3.6.2 Training Protocol: Offline DDQN with Prioritized Replay
+## 3.6.2 Training Protocol: Offline DDQN with Prioritized Replay
 
 The RL agent is trained offline using a Double Deep Q-Network (DDQN) architecture (Van Hasselt et al., 2016), an extension of DQN (Mnih et al., 2015) that mitigates overestimation bias in Q-value learning. The implementation follows architectural patterns described by Xiao (2019).
 
@@ -14,7 +14,7 @@ The RL agent is trained offline using a Double Deep Q-Network (DDQN) architectur
 
 - **Training Artifact**: The trained policy is saved as `ddqn_phase1_daily_norm.pt` containing both the online Q-network and the target network state dictionaries.
 
-***REMOVED******REMOVED*** 3.6.3 Deployment Mode: Heuristic Baseline vs. Policy-Driven
+## 3.6.3 Deployment Mode: Heuristic Baseline vs. Policy-Driven
 
 The MiRACLE v1.0 system operates in two modes:
 
@@ -28,7 +28,7 @@ The MiRACLE v1.0 system operates in two modes:
 - The agent observes the current state s_t, selects action a_t = argmax_a Q(s_t, a), and dynamically adjusts blend weights.
 - This mode is evaluated separately to quantify the potential of adaptive control under concept drift.
 
-***REMOVED******REMOVED*** 3.6.4 Action Space Design and Empirical Validation
+## 3.6.4 Action Space Design and Empirical Validation
 
 The RL meta-controller was designed with an 8-action discrete space covering the blend weight spectrum:
 
@@ -44,7 +44,7 @@ The RL meta-controller was designed with an 8-action discrete space covering the
 | a₆ | 0.10 | 0.80 | 0.10 | Long-head aggressive |
 | a₇ | 0.33 | 0.33 | 0.34 | Equal 3-way blend |
 
-***REMOVED******REMOVED******REMOVED*** Two-Stage Evaluation Strategy
+### Two-Stage Evaluation Strategy
 
 To validate both operational safety and performance potential, the policy was evaluated under two action space configurations on the 2024 test set (n=288 forecast starts):
 
@@ -68,7 +68,7 @@ To validate both operational safety and performance potential, the policy was ev
 | a₃ (Physics-heavy) | 3.5% | Safety fallback during high uncertainty |
 | Others | 0% | Not selected in 2024 test conditions |
 
-***REMOVED******REMOVED******REMOVED*** Key Findings
+### Key Findings
 
 1. **Action Space Richness Matters**: The restricted 3-action space artificially constrained performance. The full 8-action space enabled the policy to discover superior blend configurations not present in the restricted set.
 
@@ -76,7 +76,7 @@ To validate both operational safety and performance potential, the policy was ev
 
 3. **Operational Safety Validated**: The policy never selected extreme actions (a₄, a₅, a₆, a₇) under 2024 conditions, demonstrating learned conservatism where appropriate.
 
-***REMOVED******REMOVED*** 3.6.5 Position in the MiRACLE Roadmap
+## 3.6.5 Position in the MiRACLE Roadmap
 
 The RL meta-controller represents the first step toward fully autonomous PV forecasting infrastructure. The two-stage validation establishes both **operational safety** (Stage 1) and **performance improvement** (Stage 2).
 
@@ -93,7 +93,7 @@ The RL meta-controller represents the first step toward fully autonomous PV fore
 
 **Current Status**: The v1.0 RL layer is operationally validated and provides measurable performance gains over the heuristic baseline. The restricted action space evaluation confirms safety, while the full action space evaluation demonstrates the system's potential for adaptive optimization.
 
-***REMOVED******REMOVED*** Summary
+## Summary
 
 The RL meta-controller provides MiRACLE with both long-term adaptability and immediate performance improvement. The two-stage evaluation strategy validates:
 

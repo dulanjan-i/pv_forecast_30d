@@ -1,12 +1,12 @@
-***REMOVED***!/bin/bash
-***REMOVED*** Regenerate all RQ evaluations with thesis-consistent colors
-***REMOVED*** Ground truth = light grey, Model A (baseline/warm) = bold green, Model B (comparison) = light blue
+#!/bin/bash
+# Regenerate all RQ evaluations with thesis-consistent colors
+# Ground truth = light grey, Model A (baseline/warm) = bold green, Model B (comparison) = light blue
 
 set -e
 
 cd /home/dwijenayake/pv_forecast_30d
 
-***REMOVED*** Define paths
+# Define paths
 TRUTH="freeze/final_thesis_v1/phase1_2024daily_final/processed/ground_truth_15min_utc_capnorm.parquet"
 WARM="freeze/final_thesis_v1/inference_v3_runs/warm_hybrid_components.parquet"
 COLD="freeze/final_thesis_v1/inference_v3_runs/cold_hybrid_glued.parquet"
@@ -72,9 +72,9 @@ PYTHONPATH=. python -m src.evaluation.run_full_eval \
 echo ""
 echo "=== SUCCESS ==="
 echo "All RQ evaluations regenerated with thesis-consistent colors:"
-echo "  - Ground Truth: Light grey (***REMOVED***888888), linewidth 1.5, alpha 0.7"
-echo "  - Model A/Baseline (MiRACLE v1.0 (Core)): Bold green (***REMOVED***00AA00), linewidth 2.5, alpha 1.0"
-echo "  - Model B/Comparison: Light blue (***REMOVED***6BA3D8), linewidth 1.5, alpha 0.9"
+echo "  - Ground Truth: Light grey (#888888), linewidth 1.5, alpha 0.7"
+echo "  - Model A/Baseline (MiRACLE v1.0 (Core)): Bold green (#00AA00), linewidth 2.5, alpha 1.0"
+echo "  - Model B/Comparison: Light blue (#6BA3D8), linewidth 1.5, alpha 0.9"
 echo "  - Resolution: 300 DPI"
 echo ""
 echo "Updated directories:"

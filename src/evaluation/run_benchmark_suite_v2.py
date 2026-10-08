@@ -1,4 +1,4 @@
-***REMOVED*** src/evaluation/run_benchmark_suite_v2.py
+# src/evaluation/run_benchmark_suite_v2.py
 from __future__ import annotations
 
 import argparse
@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** IO
-***REMOVED*** -----------------------------
+# -----------------------------
+# IO
+# -----------------------------
 def read_parquet(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Missing parquet: {path}")
@@ -31,7 +31,7 @@ def to_utc_datetime(s: pd.Series) -> pd.Series:
 
 
 def parse_name_path(x: str) -> Tuple[str, str]:
-    ***REMOVED*** NAME:/abs/or/rel/path.parquet
+    # NAME:/abs/or/rel/path.parquet
     if ":" not in x:
         raise ValueError(f"Bad --model spec '{x}'. Expected NAME:/path/to.parquet")
     name, path = x.split(":", 1)
@@ -44,9 +44,9 @@ def parse_name_path(x: str) -> Tuple[str, str]:
     return name, path
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Core joins
-***REMOVED*** -----------------------------
+# -----------------------------
+# Core joins
+# -----------------------------
 def load_truth(truth_path: Path) -> pd.DataFrame:
     truth = read_parquet(truth_path)
     if "timestamp_utc" not in truth.columns:
@@ -70,11 +70,11 @@ def load_pred(pred_path: Path) -> pd.DataFrame:
     df["timestamp_utc"] = to_utc_datetime(df["timestamp_utc"])
     df["forecast_start"] = to_utc_datetime(df["forecast_start"])
 
-    ***REMOVED*** normalize dtypes (avoid float32/float64 chaos)
+    # normalize dtypes (avoid float32/float64 chaos)
     df["hours_ahead"] = pd.to_numeric(df["hours_ahead"], errors="coerce")
     df["predicted_power_norm"] = pd.to_numeric(df["predicted_power_norm"], errors="coerce")
 
-    ***REMOVED*** step_ahead may exist, but is optional for plotting
+    # step_ahead may exist, but is optional for plotting
     return df
 
 
@@ -100,11 +100,11 @@ def filter_window(df: pd.DataFrame, start: str, end: str) -> pd.DataFrame:
     return df[(df["timestamp_utc"] >= s) & (df["timestamp_utc"] <= e)].copy()
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Plotting helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Plotting helpers
+# -----------------------------
 def _apply_time_axis(ax: plt.Axes) -> None:
-    ***REMOVED*** This fixes the “jumbled year labels”
+    # This fixes the “jumbled year labels”
     locator = mdates.AutoDateLocator(minticks=4, maxticks=8)
     ax.xaxis.set_major_locator(locator)
     ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
@@ -144,7 +144,7 @@ def plot_case_facet_grid(
     Each subplot: truth vs baseline vs model_i.
     Uses shared x/y scales, readable dates.
     """
-    ***REMOVED*** window
+    # window
     t0 = filter_window(truth_stitched, start, end)
     b0 = filter_window(baseline_stitched, start, end)
 
@@ -152,7 +152,7 @@ def plot_case_facet_grid(
         print(f"[WARN] empty window for {title}: {start} -> {end}")
         return
 
-    ***REMOVED*** prep models (window + align on timestamp)
+    # prep models (window + align on timestamp)
     models_in_window: Dict[str, pd.DataFrame] = {}
     for name, dfm in model_stitched_map.items():
         w = filter_window(dfm, start, end)
@@ -168,7 +168,7 @@ def plot_case_facet_grid(
     n = len(names)
     nrows = int(np.ceil(n / ncols))
 
-    ***REMOVED*** shared y-limits across all panels
+    # shared y-limits across all panels
     y_series = [t0["y_true"], b0["y_baseline"]]
     for nm in names:
         y_series.append(models_in_window[nm]["y_model"])
@@ -197,11 +197,11 @@ def plot_case_facet_grid(
         ax.set_ylim(ylo, yhi)
         _apply_time_axis(ax)
 
-        ***REMOVED*** legend only once to avoid clutter
+        # legend only once to avoid clutter
         if i == 0:
             ax.legend(loc="upper right")
 
-    ***REMOVED*** hide empty panels
+    # hide empty panels
     for j in range(n, nrows * ncols):
         r = j // ncols
         c = j % ncols
@@ -214,9 +214,9 @@ def plot_case_facet_grid(
     print(f"[OK] wrote {out_path}")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Build stitched series for plotting
-***REMOVED*** -----------------------------
+# -----------------------------
+# Build stitched series for plotting
+# -----------------------------
 def build_stitched_series(truth: pd.DataFrame, pred: pd.DataFrame, y_col_name: str) -> pd.DataFrame:
     joined = join_truth_pred(truth, pred, y_col_name)
     stitched = stitch_most_recent(joined, y_col_name)
@@ -230,9 +230,9 @@ def build_stitched_series_hours_max(truth: pd.DataFrame, pred: pd.DataFrame, y_c
     return stitched
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** CLI main
-***REMOVED*** -----------------------------
+# -----------------------------
+# CLI main
+# -----------------------------
 def main() -> None:
     ap = argparse.ArgumentParser()
 
@@ -250,7 +250,7 @@ def main() -> None:
     ap.add_argument("--case-winter-start", type=str, default="2024-01-10T00:00:00Z")
     ap.add_argument("--case-winter-end", type=str, default="2024-01-17T00:00:00Z")
 
-    ***REMOVED*** Optional second facet group for short-head ablation plots
+    # Optional second facet group for short-head ablation plots
     ap.add_argument("--ablation-baseline-name", type=str, default="")
     ap.add_argument("--ablation-baseline", type=str, default="")
     ap.add_argument("--ablation-model", action="append", default=[], help="NAME:/path/to.parquet (repeatable)")
@@ -264,12 +264,12 @@ def main() -> None:
 
     truth = load_truth(Path(args.truth))
 
-    ***REMOVED*** -------- main group --------
+    # -------- main group --------
     baseline_name = args.baseline_name
     baseline_pred = load_pred(Path(args.baseline))
     baseline_stitched_raw = build_stitched_series(truth, baseline_pred, "y_baseline")
 
-    ***REMOVED*** rename to canonical columns for plotting
+    # rename to canonical columns for plotting
     truth_stitched = baseline_stitched_raw[["timestamp_utc", "y_true"]].copy()
     baseline_stitched = baseline_stitched_raw[["timestamp_utc", "y_true", "y_baseline"]].copy()
 
@@ -304,7 +304,7 @@ def main() -> None:
         ncols=3,
     )
 
-    ***REMOVED*** -------- optional ablation group (0-24h by default) --------
+    # -------- optional ablation group (0-24h by default) --------
     if args.ablation_baseline and args.ablation_model:
         abl_base_name = args.ablation_baseline_name or "ablation_baseline"
         abl_base_pred = load_pred(Path(args.ablation_baseline))
@@ -329,7 +329,7 @@ def main() -> None:
             start=args.case_summer_start,
             end=args.case_summer_end,
             out_path=figs_dir / "facets_short_ablation_summer_week.png",
-            ncols=2,  ***REMOVED*** usually 4 models, 2x2 looks clean
+            ncols=2,  # usually 4 models, 2x2 looks clean
         )
 
         title_abl_winter = f"Short-head ablation (<= {args.ablation_hours_max:.0f}h), truth vs {abl_base_name} vs each model"

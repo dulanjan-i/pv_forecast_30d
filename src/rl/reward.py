@@ -1,4 +1,4 @@
-***REMOVED*** src/rl/reward.py
+# src/rl/reward.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,18 +7,18 @@ from typing import Dict, Optional
 import numpy as np
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Action costs (8-action design)
-***REMOVED*** -----------------------------
+# -----------------------------
+# Action costs (8-action design)
+# -----------------------------
 ACTION_COSTS: Dict[int, float] = {
-    0: 0.0,   ***REMOVED*** MAINTAIN
-    1: 0.1,   ***REMOVED*** FINE_TUNE_SHORT
-    2: 0.15,  ***REMOVED*** FINE_TUNE_LONG
-    3: 0.05,  ***REMOVED*** RECALIBRATE_PVLIB
-    4: 0.0,   ***REMOVED*** BLEND_HIGH_SHORT
-    5: 0.0,   ***REMOVED*** BLEND_HIGH_LONG
-    6: 0.0,   ***REMOVED*** BLEND_HIGH_PHYSICS
-    7: 1.0,   ***REMOVED*** SUGGEST_RETRAIN
+    0: 0.0,   # MAINTAIN
+    1: 0.1,   # FINE_TUNE_SHORT
+    2: 0.15,  # FINE_TUNE_LONG
+    3: 0.05,  # RECALIBRATE_PVLIB
+    4: 0.0,   # BLEND_HIGH_SHORT
+    5: 0.0,   # BLEND_HIGH_LONG
+    6: 0.0,   # BLEND_HIGH_PHYSICS
+    7: 1.0,   # SUGGEST_RETRAIN
 }
 
 SCALE_DENOM_DEFAULT = 0.01
@@ -35,14 +35,14 @@ class RewardWeightsV1:
 
 @dataclass(frozen=True)
 class RewardWeightsV2:
-    ***REMOVED*** keep the same core spirit as v1, but add ramp/peak/anti-smooth shaping
+    # keep the same core spirit as v1, but add ramp/peak/anti-smooth shaping
     w_acc: float = 1.0
     w_phys: float = 0.2
     w_smooth: float = 0.4
     w_ramp: float = 0.4
     w_peak: float = 0.2
 
-    ***REMOVED*** stronger cost penalty than v1
+    # stronger cost penalty than v1
     w_cost2: float = 0.6
 
     scale_denom: float = SCALE_DENOM_DEFAULT
@@ -131,22 +131,22 @@ def compute_reward_v2(
     y_dl = y[mask]
     yhat_dl = y_hat[mask]
 
-    ***REMOVED*** accuracy improvement proxy (day1 rmse reduction)
-    ***REMOVED*** If your state[0]/next_state[0] are already short_rmse and represent day1 quality, this is consistent.
+    # accuracy improvement proxy (day1 rmse reduction)
+    # If your state[0]/next_state[0] are already short_rmse and represent day1 quality, this is consistent.
     delta_rmse = float(state[0]) - float(next_state[0])
 
-    ***REMOVED*** physics residual term from next_state (same as v1)
+    # physics residual term from next_state (same as v1)
     phys_res_next = float(next_state[2]) if len(next_state) > 2 else 0.0
 
-    ***REMOVED*** anti-smoothing: punish predictions that are smoother than reality
+    # anti-smoothing: punish predictions that are smoother than reality
     tv_y = _tv(y_dl)
     tv_yhat = _tv(yhat_dl)
     smooth_deficit = max(0.0, tv_y - tv_yhat)
 
-    ***REMOVED*** ramps: first differences (daylight-only)
+    # ramps: first differences (daylight-only)
     ramp_rmse = _rmse(np.diff(yhat_dl), np.diff(y_dl)) if y_dl.size >= 2 else 0.0
 
-    ***REMOVED*** peaks: daylight max mismatch
+    # peaks: daylight max mismatch
     peak_err = abs(float(np.max(yhat_dl)) - float(np.max(y_dl))) if y_dl.size > 0 else 0.0
 
     cost = ACTION_COSTS.get(int(action), 0.0)

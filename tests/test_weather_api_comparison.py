@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Test ECMWF Direct API vs All Other Weather Sources
 
@@ -23,7 +23,7 @@ from typing import Dict, Optional
 import requests
 import time
 
-***REMOVED*** ECMWF API (requires ecmwf-api-client)
+# ECMWF API (requires ecmwf-api-client)
 try:
     from ecmwfapi import ECMWFDataServer
     ECMWF_AVAILABLE = True
@@ -31,7 +31,7 @@ except ImportError:
     print("⚠️  ecmwf-api-client not installed. Install with: pip install ecmwf-api-client")
     ECMWF_AVAILABLE = False
 
-***REMOVED*** Open-Meteo clients
+# Open-Meteo clients
 import openmeteo_requests
 import requests_cache
 from retry_requests import retry
@@ -42,11 +42,11 @@ class APIBenchmark:
     
     def __init__(self):
         """Initialize all API clients."""
-        ***REMOVED*** Load plant metadata
+        # Load plant metadata
         self.plant_id = "plant_03"
         self.metadata = self._load_plant_metadata()
         
-        ***REMOVED*** ECMWF Direct API
+        # ECMWF Direct API
         self.ecmwf_creds = self._load_ecmwf_credentials()
         if ECMWF_AVAILABLE and self.ecmwf_creds:
             self.ecmwf_server = ECMWFDataServer(
@@ -57,18 +57,18 @@ class APIBenchmark:
         else:
             self.ecmwf_server = None
         
-        ***REMOVED*** Open-Meteo clients (with caching)
+        # Open-Meteo clients (with caching)
         cache_session = requests_cache.CachedSession(".cache", expire_after=3600)
         retry_session = retry(cache_session, retries=5, backoff_factor=0.2)
         retry_session.verify = False
         self.om_client = openmeteo_requests.Client(session=retry_session)
         
-        ***REMOVED*** Open-Meteo API endpoints
+        # Open-Meteo API endpoints
         self.om_forecast_url = "https://api.open-meteo.com/v1/forecast"
         self.om_ecmwf_url = "https://api.open-meteo.com/v1/ecmwf"
         self.om_gfs_url = "https://api.open-meteo.com/v1/gfs"
         
-        ***REMOVED*** Results storage
+        # Results storage
         self.results = {}
     
     def _load_plant_metadata(self) -> Dict:
@@ -85,9 +85,9 @@ class APIBenchmark:
                 return json.load(f)
         return None
     
-    ***REMOVED*** ========================================================================
-    ***REMOVED*** ECMWF Direct API Tests
-    ***REMOVED*** ========================================================================
+    # ========================================================================
+    # ECMWF Direct API Tests
+    # ========================================================================
     
     def test_ecmwf_ifs_hres(self, days: int = 10) -> pd.DataFrame:
         """
@@ -109,22 +109,22 @@ class APIBenchmark:
         start_time = time.time()
         
         try:
-            ***REMOVED*** ECMWF API request for IFS HRES
-            ***REMOVED*** Note: ECMWF uses MARS (Meteorological Archival and Retrieval System)
+            # ECMWF API request for IFS HRES
+            # Note: ECMWF uses MARS (Meteorological Archival and Retrieval System)
             request = {
-                "class": "od",  ***REMOVED*** Operational data
-                "stream": "oper",  ***REMOVED*** Operational forecast
-                "expver": "1",  ***REMOVED*** Experiment version
-                "type": "fc",  ***REMOVED*** Forecast
-                "levtype": "sfc",  ***REMOVED*** Surface level
-                "param": "2t/2d/sp/tp/tcc/10u/10v/ssrd/strd/fdir/ssr",  ***REMOVED*** Parameters
-                ***REMOVED*** 2t=temp, 2d=dewpoint, sp=pressure, tp=precip, tcc=cloud_cover
-                ***REMOVED*** 10u/10v=wind, ssrd=solar_rad_down, strd=thermal_rad, fdir=direct, ssr=surface_solar
+                "class": "od",  # Operational data
+                "stream": "oper",  # Operational forecast
+                "expver": "1",  # Experiment version
+                "type": "fc",  # Forecast
+                "levtype": "sfc",  # Surface level
+                "param": "2t/2d/sp/tp/tcc/10u/10v/ssrd/strd/fdir/ssr",  # Parameters
+                # 2t=temp, 2d=dewpoint, sp=pressure, tp=precip, tcc=cloud_cover
+                # 10u/10v=wind, ssrd=solar_rad_down, strd=thermal_rad, fdir=direct, ssr=surface_solar
                 "area": f"{self.metadata['latitude']+1}/{self.metadata['longitude']-1}/"
-                        f"{self.metadata['latitude']-1}/{self.metadata['longitude']+1}",  ***REMOVED*** N/W/S/E
-                "grid": "0.1/0.1",  ***REMOVED*** 0.1° resolution
-                "time": "00:00:00",  ***REMOVED*** Base time
-                "step": "/".join([str(h) for h in range(0, days*24+1, 1)]),  ***REMOVED*** Hourly steps
+                        f"{self.metadata['latitude']-1}/{self.metadata['longitude']+1}",  # N/W/S/E
+                "grid": "0.1/0.1",  # 0.1° resolution
+                "time": "00:00:00",  # Base time
+                "step": "/".join([str(h) for h in range(0, days*24+1, 1)]),  # Hourly steps
                 "date": datetime.utcnow().strftime("%Y-%m-%d"),
                 "format": "netcdf",
                 "target": "/tmp/ecmwf_ifs_hres.nc"
@@ -134,18 +134,18 @@ class APIBenchmark:
             print(f"  Location: {self.metadata['latitude']:.4f}°N, {self.metadata['longitude']:.4f}°E")
             print(f"  Horizon: {days} days ({days*24} hours)")
             
-            ***REMOVED*** NOTE: ECMWF MARS requests are asynchronous and can take minutes
+            # NOTE: ECMWF MARS requests are asynchronous and can take minutes
             self.ecmwf_server.retrieve(request)
             
             elapsed = time.time() - start_time
             print(f"  ✅ IFS HRES retrieved in {elapsed:.1f}s")
             
-            ***REMOVED*** Parse NetCDF (simplified - you'd use xarray in production)
+            # Parse NetCDF (simplified - you'd use xarray in production)
             df = pd.DataFrame({
                 'timestamp_utc': pd.date_range(datetime.utcnow(), periods=days*24, freq='1H'),
                 'source': 'ECMWF_IFS_HRES',
                 'resolution': '0.1°',
-                'quality_score': 10  ***REMOVED*** Highest quality
+                'quality_score': 10  # Highest quality
             })
             
             return df
@@ -176,17 +176,17 @@ class APIBenchmark:
         try:
             request = {
                 "class": "od",
-                "stream": "enfo",  ***REMOVED*** Ensemble forecast
+                "stream": "enfo",  # Ensemble forecast
                 "expver": "1",
-                "type": "pf",  ***REMOVED*** Perturbed forecast (ensemble members)
+                "type": "pf",  # Perturbed forecast (ensemble members)
                 "levtype": "sfc",
                 "param": "2t/sp/tp/tcc/10u/10v/ssrd",
                 "area": f"{self.metadata['latitude']+1}/{self.metadata['longitude']-1}/"
                         f"{self.metadata['latitude']-1}/{self.metadata['longitude']+1}",
                 "grid": "0.2/0.2",
                 "time": "00:00:00",
-                "step": "/".join([str(h*3) for h in range(0, days*8+1)]),  ***REMOVED*** 3-hourly steps
-                "number": "1/to/50",  ***REMOVED*** All 50 ensemble members
+                "step": "/".join([str(h*3) for h in range(0, days*8+1)]),  # 3-hourly steps
+                "number": "1/to/50",  # All 50 ensemble members
                 "date": datetime.utcnow().strftime("%Y-%m-%d"),
                 "format": "netcdf",
                 "target": "/tmp/ecmwf_ifs_ens.nc"
@@ -234,17 +234,17 @@ class APIBenchmark:
         try:
             request = {
                 "class": "od",
-                "stream": "enfh",  ***REMOVED*** Extended forecast (sub-seasonal)
+                "stream": "enfh",  # Extended forecast (sub-seasonal)
                 "expver": "1",
                 "type": "pf",
                 "levtype": "sfc",
-                "param": "2t/sp/tp/tcc/ssrd",  ***REMOVED*** Fewer vars available
+                "param": "2t/sp/tp/tcc/ssrd",  # Fewer vars available
                 "area": f"{self.metadata['latitude']+1}/{self.metadata['longitude']-1}/"
                         f"{self.metadata['latitude']-1}/{self.metadata['longitude']+1}",
                 "grid": "0.4/0.4",
                 "time": "00:00:00",
-                "step": "/".join([str(h*6) for h in range(0, days*4+1)]),  ***REMOVED*** 6-hourly steps
-                "number": "1/to/50",  ***REMOVED*** Ensemble members
+                "step": "/".join([str(h*6) for h in range(0, days*4+1)]),  # 6-hourly steps
+                "number": "1/to/50",  # Ensemble members
                 "date": datetime.utcnow().strftime("%Y-%m-%d"),
                 "format": "netcdf",
                 "target": "/tmp/ecmwf_extended.nc"
@@ -261,7 +261,7 @@ class APIBenchmark:
                 'source': 'ECMWF_Extended_Range',
                 'resolution': '0.4°',
                 'members': 51,
-                'quality_score': 7  ***REMOVED*** Lower quality at 30+ days but best available
+                'quality_score': 7  # Lower quality at 30+ days but best available
             })
             
             return df
@@ -270,9 +270,9 @@ class APIBenchmark:
             print(f"  ❌ Extended Range failed: {e}")
             return pd.DataFrame()
     
-    ***REMOVED*** ========================================================================
-    ***REMOVED*** Open-Meteo API Tests (Existing)
-    ***REMOVED*** ========================================================================
+    # ========================================================================
+    # Open-Meteo API Tests (Existing)
+    # ========================================================================
     
     def test_om_forecast(self, days: int = 15) -> pd.DataFrame:
         """Test Open-Meteo Forecast API (current baseline)."""
@@ -298,7 +298,7 @@ class APIBenchmark:
             response = responses[0]
             hourly = response.Hourly()
             
-            ***REMOVED*** Parse timestamps (correct API usage)
+            # Parse timestamps (correct API usage)
             timestamps = pd.date_range(
                 start=pd.to_datetime(hourly.Time(), unit="s", utc=True),
                 end=pd.to_datetime(hourly.TimeEnd(), unit="s", utc=True),
@@ -414,22 +414,22 @@ class APIBenchmark:
             print(f"  ❌ OM GFS failed: {e}")
             return pd.DataFrame()
     
-    ***REMOVED*** ========================================================================
-    ***REMOVED*** Comparison & Recommendation
-    ***REMOVED*** ========================================================================
+    # ========================================================================
+    # Comparison & Recommendation
+    # ========================================================================
     
     def run_full_comparison(self):
         """Run all API tests and compare."""
-        print(f"\n{'***REMOVED***'*70}")
-        print(f"***REMOVED*** WEATHER API COMPARISON FOR PLANT_03 (GERMANY)")
-        print(f"***REMOVED*** Location: {self.metadata['latitude']:.4f}°N, {self.metadata['longitude']:.4f}°E")
-        print(f"***REMOVED*** Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
-        print(f"{'***REMOVED***'*70}\n")
+        print(f"\n{'#'*70}")
+        print(f"# WEATHER API COMPARISON FOR PLANT_03 (GERMANY)")
+        print(f"# Location: {self.metadata['latitude']:.4f}°N, {self.metadata['longitude']:.4f}°E")
+        print(f"# Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+        print(f"{'#'*70}\n")
         
-        ***REMOVED*** Test all APIs
+        # Test all APIs
         results = {}
         
-        ***REMOVED*** ECMWF Direct (if available)
+        # ECMWF Direct (if available)
         if self.ecmwf_server:
             results['ECMWF_IFS_HRES_10d'] = self.test_ecmwf_ifs_hres(days=10)
             results['ECMWF_IFS_ENS_15d'] = self.test_ecmwf_ifs_ens(days=15)
@@ -437,15 +437,15 @@ class APIBenchmark:
         else:
             print("\n⚠️  ECMWF Direct API not available - install ecmwf-api-client")
         
-        ***REMOVED*** Open-Meteo APIs
+        # Open-Meteo APIs
         results['OM_Forecast_15d'] = self.test_om_forecast(days=15)
         results['OM_ECMWF_15d'] = self.test_om_ecmwf(days=15)
-        results['OM_GFS_15d'] = self.test_om_gfs(days=15)  ***REMOVED*** Reduced to 15 days max
+        results['OM_GFS_15d'] = self.test_om_gfs(days=15)  # Reduced to 15 days max
         
-        ***REMOVED*** Print summary
+        # Print summary
         self._print_summary(results)
         
-        ***REMOVED*** Generate recommendation
+        # Generate recommendation
         self._print_recommendation(results)
         
         return results

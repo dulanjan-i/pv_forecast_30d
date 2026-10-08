@@ -17,7 +17,7 @@ on:
       - 'requirements/requirements_test.txt'
       - 'pytest.ini'
       - '.github/workflows/ci.yml'
-  workflow_dispatch:  ***REMOVED*** enables manual trigger from GitHub Actions UI
+  workflow_dispatch:  # enables manual trigger from GitHub Actions UI
 
 jobs:
   test:
@@ -28,14 +28,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      ***REMOVED*** Python 3.11 matches the pvforecast conda env and Docker image
+      # Python 3.11 matches the pvforecast conda env and Docker image
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      ***REMOVED*** Cache pip packages keyed on requirements_test.txt hash.
-      ***REMOVED*** First run: ~8 min (downloads torch+forecasting). Subsequent runs: ~30s.
+      # Cache pip packages keyed on requirements_test.txt hash.
+      # First run: ~8 min (downloads torch+forecasting). Subsequent runs: ~30s.
       - name: Cache pip packages
         uses: actions/cache@v4
         with:
@@ -44,7 +44,7 @@ jobs:
           restore-keys: |
             pip-test-${{ runner.os }}-
 
-      ***REMOVED*** Install CPU-only torch explicitly first to avoid the default CUDA wheel
+      # Install CPU-only torch explicitly first to avoid the default CUDA wheel
       - name: Install PyTorch (CPU-only)
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
@@ -55,9 +55,9 @@ jobs:
             --index-url https://download.pytorch.org/whl/cpu \
             --extra-index-url https://pypi.org/simple
 
-      ***REMOVED*** Run unit tests — exclude files that require external APIs, real data,
-      ***REMOVED*** or HPC paths (ECMWF key, parquet datasets, real TFT model files).
-      ***REMOVED*** These are integration tests by nature; they run in the pvforecast env locally.
+      # Run unit tests — exclude files that require external APIs, real data,
+      # or HPC paths (ECMWF key, parquet datasets, real TFT model files).
+      # These are integration tests by nature; they run in the pvforecast env locally.
       - name: Run pytest
         run: |
           python -m pytest tests/ \
@@ -74,7 +74,7 @@ jobs:
             --junitxml=test-results.xml \
             -v
 
-      ***REMOVED*** Publish test results so they appear in the GitHub Actions summary tab
+      # Publish test results so they appear in the GitHub Actions summary tab
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

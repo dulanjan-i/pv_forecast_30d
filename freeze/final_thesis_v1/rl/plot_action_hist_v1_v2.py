@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,21 +17,21 @@ if not a1.exists() or not a2.exists():
 df1 = pd.read_csv(a1)
 df2 = pd.read_csv(a2)
 
-***REMOVED*** Ensure action column exists
+# Ensure action column exists
 if "action" not in df1.columns or "action" not in df2.columns:
     raise SystemExit("Missing 'action' column in input CSVs")
 
-***REMOVED*** Count actions 0..7
+# Count actions 0..7
 actions = list(range(8))
 counts1 = df1["action"].value_counts().reindex(actions, fill_value=0).sort_index().to_numpy()
 counts2 = df2["action"].value_counts().reindex(actions, fill_value=0).sort_index().to_numpy()
 
-***REMOVED*** Plot
-x = np.arange(1, 9)  ***REMOVED*** display as 1..8
+# Plot
+x = np.arange(1, 9)  # display as 1..8
 width = 0.35
 fig, ax = plt.subplots(figsize=(8, 5))
-ax.bar(x - width/2, counts1, width, label="v1", color="***REMOVED***add8e6")
-ax.bar(x + width/2, counts2, width, label="v2", color="***REMOVED***ff7f0e")
+ax.bar(x - width/2, counts1, width, label="v1", color="#add8e6")
+ax.bar(x + width/2, counts2, width, label="v2", color="#ff7f0e")
 
 ax.set_xlabel("Action (1..8)")
 ax.set_ylabel("Count (forecasts)")

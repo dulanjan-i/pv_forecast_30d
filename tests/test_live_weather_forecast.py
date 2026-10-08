@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 End-to-End Test: Live Weather → TFT → 15-Day Forecast
 
@@ -14,7 +14,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-***REMOVED*** Add src to path
+# Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
@@ -40,14 +40,14 @@ def test_live_weather_15day():
     print("TEST: 15-Day Live Weather Forecast (Plant 03)")
     print("="*70)
     
-    ***REMOVED*** Paths (V1.0 FINAL - Verified Seeds: Short=42, Long=43)
+    # Paths (V1.0 FINAL - Verified Seeds: Short=42, Long=43)
     short_ckpt = Path("V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.pt")
     long_ckpt = Path("V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.pt")
     plant_metadata = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
     short_train = Path("data/processed/plant_level/plant_03/15min_pca32/train.parquet")
     long_train = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
     
-    ***REMOVED*** Check files exist
+    # Check files exist
     missing = []
     for p in [short_ckpt, long_ckpt, plant_metadata, short_train, long_train]:
         if not p.exists():
@@ -60,7 +60,7 @@ def test_live_weather_15day():
         print("\n[SKIP] Run TFT training first to generate checkpoints")
         return False
     
-    ***REMOVED*** Initialize forecaster
+    # Initialize forecaster
     print("\n[1/4] Initializing forecaster...")
     forecaster = PhysicsAwareForecaster(
         short_ckpt=short_ckpt,
@@ -68,14 +68,14 @@ def test_live_weather_15day():
         plant_metadata=plant_metadata,
         short_train_parquet=short_train,
         long_train_parquet=long_train,
-        device='cpu'  ***REMOVED*** Force CPU for testing
+        device='cpu'  # Force CPU for testing
     )
     
-    ***REMOVED*** Forecast start (today)
+    # Forecast start (today)
     forecast_start = pd.Timestamp.now(tz='UTC').floor('D')
     print(f"\n[2/4] Forecast start: {forecast_start}")
     
-    ***REMOVED*** Run forecast with live weather
+    # Run forecast with live weather
     print("\n[3/4] Running forecast with LIVE WEATHER from OpenMeteo API...")
     print("      This will fetch real-time 15-day weather forecast")
     
@@ -91,17 +91,17 @@ def test_live_weather_15day():
         traceback.print_exc()
         return False
     
-    ***REMOVED*** Validate output
+    # Validate output
     print("\n[4/4] Validating forecast output...")
     
-    expected_steps = 1440  ***REMOVED*** 15 days @ 15-min (adjusted from 30d)
+    expected_steps = 1440  # 15 days @ 15-min (adjusted from 30d)
     checks = {
         'shape': forecast_15d.shape == (expected_steps,),
         'no_nans': not np.isnan(forecast_15d).any(),
         'no_negatives': (forecast_15d >= 0).all(),
-        'range_valid': (forecast_15d.max() <= 1.5),  ***REMOVED*** Allow some overshoot
+        'range_valid': (forecast_15d.max() <= 1.5),  # Allow some overshoot
         'has_variation': forecast_15d.std() > 0.01,
-        'has_zeros': (forecast_15d == 0).sum() > 100  ***REMOVED*** Nighttime zeros
+        'has_zeros': (forecast_15d == 0).sum() > 100  # Nighttime zeros
     }
     
     print("\n" + "-"*70)
@@ -117,7 +117,7 @@ def test_live_weather_15day():
     print(f"  Std: {forecast_15d.std():.4f}")
     print(f"  Zeros: {(forecast_15d == 0).sum()} / {len(forecast_15d)}")
     
-    ***REMOVED*** Sample output
+    # Sample output
     print("\nSample forecast (first 10 steps):")
     for i in range(10):
         ts = forecast_start + pd.Timedelta(minutes=15*i)

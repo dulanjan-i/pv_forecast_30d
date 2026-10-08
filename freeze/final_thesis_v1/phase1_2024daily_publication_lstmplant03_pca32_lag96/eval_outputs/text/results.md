@@ -1,8 +1,8 @@
-***REMOVED*** Evaluation summary
+# Evaluation summary
 
 - Night filtering: ON (threshold y_true >= 0.01)
 
-***REMOVED******REMOVED*** Overall
+## Overall
 
 | model    |       MAE |     RMSE |    nRMSE |         MBE |       R2 |      N |
 |:---------|----------:|---------:|---------:|------------:|---------:|-------:|
@@ -10,7 +10,7 @@
 | policy   | 0.0841362 | 0.117161 | 0.117161 | -0.00750784 | 0.641409 | 394008 |
 
 
-***REMOVED******REMOVED*** Lead buckets
+## Lead buckets
 
 | lead_bucket   |   MAE_baseline |   MAE_policy |   RMSE_baseline |   RMSE_policy |   delta_RMSE |    delta_MAE |      N |
 |:--------------|---------------:|-------------:|----------------:|--------------:|-------------:|-------------:|-------:|
@@ -19,7 +19,7 @@
 | 8-30d         |      0.0841024 |    0.0841024 |        0.116504 |      0.116504 | -4.30842e-08 |  9.36274e-09 | 301590 |
 
 
-***REMOVED******REMOVED*** Monthly
+## Monthly
 
 | month   |   MAE_baseline |   MAE_policy |   RMSE_baseline |   RMSE_policy |   delta_RMSE |    delta_MAE |     N |
 |:--------|---------------:|-------------:|----------------:|--------------:|-------------:|-------------:|------:|
@@ -37,7 +37,7 @@
 | 2024-12 |      0.0568446 |    0.0568198 |       0.0912351 |     0.0911781 | -5.70153e-05 | -2.48769e-05 | 10320 |
 
 
-***REMOVED******REMOVED*** Paired daily comparison
+## Paired daily comparison
 
 - Mean daily delta MAE (policy - baseline): 0.000041
 
@@ -47,7 +47,7 @@
 
 
 
-***REMOVED******REMOVED*** RL actions
+## RL actions
 
 |   policy_action |   count |
 |----------------:|--------:|
@@ -56,7 +56,7 @@
 |               3 |   10035 |
 
 
-***REMOVED******REMOVED*** Tail absolute error
+## Tail absolute error
 
 | model    |       P50 |      P90 |      P95 |      P99 |      mean |
 |:---------|----------:|---------:|---------:|---------:|----------:|

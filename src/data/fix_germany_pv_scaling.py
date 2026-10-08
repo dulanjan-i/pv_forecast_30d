@@ -42,13 +42,13 @@ META_DIR = REPO_ROOT / "data" / "metadata" / "germany"
 
 PLANT_IDS = ["plant_01", "plant_02", "plant_03", "plant_04", "plant_05", "plant_06"]
 
-***REMOVED*** If capacity_kW / max_power_kw is below or equal to this threshold,
-***REMOVED*** we assume the plant magnitude is physically plausible and do NOT rescale.
-***REMOVED*** Example:
-***REMOVED***   capacity = 746 kW, max = 560 kW  -> ratio ~1.33  -> OK
-***REMOVED***   capacity = 7358 kW, max = 6.9e-06 kW -> ratio ~1e9 -> clearly broken
+# If capacity_kW / max_power_kw is below or equal to this threshold,
+# we assume the plant magnitude is physically plausible and do NOT rescale.
+# Example:
+#   capacity = 746 kW, max = 560 kW  -> ratio ~1.33  -> OK
+#   capacity = 7358 kW, max = 6.9e-06 kW -> ratio ~1e9 -> clearly broken
 
-RATIO_THRESHOLD = 5.0       ***REMOVED*** 20% threshold
+RATIO_THRESHOLD = 5.0       # 20% threshold
 
 
 def load_meta(pid: str) -> dict:
@@ -82,31 +82,31 @@ def fix_plant_if_needed(pid: str) -> None:
     ratio = cap_kw / max_kw
     print(f"[INFO] {pid}: cap={cap_kw:.3f}  max_kw={max_kw:.6g}  cap/max={ratio:.3g}")
 
-    ***REMOVED*** If ratio is within a reasonable range, plant is assumed to be fine.
-    ***REMOVED*** We do NOT try to "normalize" plants to exactly reach capacity.
-    ***REMOVED*** This respects physical factors like losses, temperature, snow, shading.
+    # If ratio is within a reasonable range, plant is assumed to be fine.
+    # We do NOT try to "normalize" plants to exactly reach capacity.
+    # This respects physical factors like losses, temperature, snow, shading.
     if ratio <= RATIO_THRESHOLD:
         print(f"[INFO] {pid}: ratio <= {RATIO_THRESHOLD}, assumed OK, no scaling applied")
         return
 
-    ***REMOVED*** At this point the plant is clearly broken in magnitude.
-    ***REMOVED*** We interpret this as a unit or scale mismatch, not as a physical phenomenon.
-    ***REMOVED*** We compute a scale factor that maps the current max power close to capacity.
+    # At this point the plant is clearly broken in magnitude.
+    # We interpret this as a unit or scale mismatch, not as a physical phenomenon.
+    # We compute a scale factor that maps the current max power close to capacity.
     scale = ratio
     print(f"[INFO] {pid}: applying scale factor {scale:.6g}")
 
     df = df.copy()
 
-    ***REMOVED*** This is the core scaling logic:
-    ***REMOVED*** - We rescale power_kw and power_w by the same factor.
-    ***REMOVED*** - We do NOT touch timestamp_utc or the temporal shape.
-    ***REMOVED*** - We recompute power_norm from capacity, so it stays consistent.
+    # This is the core scaling logic:
+    # - We rescale power_kw and power_w by the same factor.
+    # - We do NOT touch timestamp_utc or the temporal shape.
+    # - We recompute power_norm from capacity, so it stays consistent.
     df["power_kw"] = df["power_kw"] * scale
 
     if "power_w" in df.columns:
         df["power_w"] = df["power_w"] * scale
     else:
-        ***REMOVED*** If power_w does not exist (edge case), we derive it from power_kw.
+        # If power_w does not exist (edge case), we derive it from power_kw.
         df["power_w"] = df["power_kw"] * 1000.0
 
     if cap_kw > 0:

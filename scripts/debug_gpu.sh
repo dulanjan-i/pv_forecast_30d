@@ -1,10 +1,10 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --time=00:05:00
-***REMOVED***SBATCH --output=debug_gpu.out
+#!/bin/bash
+#SBATCH --partition=gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH --time=00:05:00
+#SBATCH --output=debug_gpu.out
 
-***REMOVED*** DBFZ-Strict Flags
+# DBFZ-Strict Flags
 SING_FLAGS="-C --nv --bind /shared/$USER:/shared/$USER,/home/$USER:/home/$USER"
 IMG="/shared/$USER/miracle/containers/tft_env_v1.sif"
 

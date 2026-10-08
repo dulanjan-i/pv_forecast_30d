@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Quick status check for running sweep without interfering with training processes.
 """
@@ -8,15 +8,15 @@ import pandas as pd
 SWEEPS_DIR = Path("experiments/lstm/sweeps")
 RUNS_DIR = Path("experiments/lstm/runs")
 
-***REMOVED*** Count expected configs
+# Count expected configs
 expected_configs = list(SWEEPS_DIR.glob("*.yaml")) if SWEEPS_DIR.exists() else []
 print(f"📋 Total configs: {len(expected_configs)}")
 
-***REMOVED*** Count started runs
+# Count started runs
 started_runs = list(RUNS_DIR.glob("farm2107_*")) if RUNS_DIR.exists() else []
 print(f"🚀 Started runs: {len(started_runs)}")
 
-***REMOVED*** Check completion status for each run
+# Check completion status for each run
 completed = []
 in_progress = []
 
@@ -27,8 +27,8 @@ for run_dir in started_runs:
             df = pd.read_csv(metrics_file)
             if "epoch" in df.columns:
                 max_epoch = df["epoch"].max()
-                ***REMOVED*** Assuming 20 epochs total
-                if max_epoch >= 19:  ***REMOVED*** 0-indexed, so 19 = epoch 20
+                # Assuming 20 epochs total
+                if max_epoch >= 19:  # 0-indexed, so 19 = epoch 20
                     completed.append(run_dir.name)
                 else:
                     in_progress.append((run_dir.name, int(max_epoch) + 1))

@@ -1,4 +1,4 @@
-***REMOVED******REMOVED*** Ablation runs: `column_roles.json` summary
+## Ablation runs: `column_roles.json` summary
 
 Table showing the four ablation runs under `experiments/tft/runs/germany/ablations`.
 

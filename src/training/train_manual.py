@@ -7,7 +7,7 @@ import numpy as np
 from pathlib import Path
 from pytorch_forecasting import TimeSeriesDataSet
 
-***REMOVED*** Import your existing model logic
+# Import your existing model logic
 from src.models.tft_model import TFTConfig, build_tft_model
 
 def move_to_device(batch, device):
@@ -16,14 +16,14 @@ def move_to_device(batch, device):
     The batch is a tuple: (x, y) where x is a dict of tensors.
     """
     x, y = batch
-    ***REMOVED*** Move inputs (x is a dictionary)
+    # Move inputs (x is a dictionary)
     x_cuda = {k: v.to(device) for k, v in x.items() if isinstance(v, torch.Tensor)}
-    ***REMOVED*** Some parts of x might be lists (leave them alone)
+    # Some parts of x might be lists (leave them alone)
     for k, v in x.items():
         if k not in x_cuda:
             x_cuda[k] = v
             
-    ***REMOVED*** Move targets (y is a tuple or tensor)
+    # Move targets (y is a tuple or tensor)
     if isinstance(y, (list, tuple)):
         y_cuda = [yi.to(device) for yi in y]
     else:
@@ -32,7 +32,7 @@ def move_to_device(batch, device):
     return x_cuda, y_cuda
 
 def main():
-    ***REMOVED*** --- 1. SETUP ---
+    # --- 1. SETUP ---
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_parquet", type=str, required=True)
     parser.add_argument("--val_parquet", type=str, required=True)
@@ -43,24 +43,24 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[INFO] Training on: {device}")
 
-    ***REMOVED*** --- 2. LOAD DATA (RAM TRICK) ---
+    # --- 2. LOAD DATA (RAM TRICK) ---
     print("\n[INFO] LOADING DATA TO RAM...")
     
-    ***REMOVED*** Load Parquet
+    # Load Parquet
     train_df = pd.read_parquet(args.train_parquet)
-    ***REMOVED*** (We skip Val loading for speed in this test, but you can add it back)
+    # (We skip Val loading for speed in this test, but you can add it back)
     
-    ***REMOVED*** Convert timestamps (Reuse your existing logic logic roughly)
+    # Convert timestamps (Reuse your existing logic logic roughly)
     if "timestamp_utc" in train_df.columns:
         train_df["timestamp_utc"] = pd.to_datetime(train_df["timestamp_utc"], utc=True)
         train_df["time_idx"] = (train_df["timestamp_utc"].astype(np.int64) // 10**9 // 900).astype(int)
     
-    ***REMOVED*** Minimal cleaning
+    # Minimal cleaning
     if "poa_irradiance" in train_df.columns: train_df.drop(columns=["poa_irradiance"], inplace=True)
 
-    ***REMOVED*** Setup Dataset (Using your existing parameters)
-    ***REMOVED*** NOTE: I am hardcoding parameters based on your previous logs to ensure it runs.
-    ***REMOVED*** You can make this dynamic later.
+    # Setup Dataset (Using your existing parameters)
+    # NOTE: I am hardcoding parameters based on your previous logs to ensure it runs.
+    # You can make this dynamic later.
     train_ds = TimeSeriesDataSet(
         train_df,
         time_idx="time_idx",
@@ -69,7 +69,7 @@ def main():
         max_encoder_length=96,
         max_prediction_length=96,
         static_categoricals=["plant_id"],
-        time_varying_known_reals=["shortwave_radiation_instant_raw", "temperature_2m", "hour_sin", "hour_cos"], ***REMOVED*** Simplified list
+        time_varying_known_reals=["shortwave_radiation_instant_raw", "temperature_2m", "hour_sin", "hour_cos"], # Simplified list
         time_varying_unknown_reals=["power_norm"],
         add_relative_time_idx=True,
         add_target_scales=False,
@@ -77,15 +77,15 @@ def main():
         allow_missing_timesteps=True
     )
     
-    ***REMOVED*** Create Loader (Num workers 0 to avoid Numpy Crash)
+    # Create Loader (Num workers 0 to avoid Numpy Crash)
     dataloader = train_ds.to_dataloader(train=True, batch_size=args.batch_size, num_workers=0)
     
-    ***REMOVED*** PRE-LOAD TO LIST (The "RAM Trick")
+    # PRE-LOAD TO LIST (The "RAM Trick")
     print("[INFO] Converting to RAM Tensors...")
     ram_loader = list(dataloader)
     print(f"[INFO] Loaded {len(ram_loader)} batches.")
 
-    ***REMOVED*** --- 3. BUILD MODEL ---
+    # --- 3. BUILD MODEL ---
     print("[INFO] Building TFT Model...")
     cfg = TFTConfig(
         target="power_norm",
@@ -98,10 +98,10 @@ def main():
     model = build_tft_model(cfg, train_ds)
     model.to(device)
     
-    ***REMOVED*** Optimizer
+    # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-    ***REMOVED*** --- 4. THE MANUAL TRAINING LOOP (NO LIGHTNING) ---
+    # --- 4. THE MANUAL TRAINING LOOP (NO LIGHTNING) ---
     print("\n[INFO] 🏎️  STARTING HIGH-SPEED TRAINING")
     model.train()
     
@@ -113,18 +113,18 @@ def main():
         for batch in ram_loader:
             optimizer.zero_grad()
             
-            ***REMOVED*** Move to GPU
+            # Move to GPU
             x, y = move_to_device(batch, device)
             
-            ***REMOVED*** Forward Pass
-            ***REMOVED*** TFT returns a dictionary output
+            # Forward Pass
+            # TFT returns a dictionary output
             output = model(x)
             
-            ***REMOVED*** Calculate Loss (TFT internal loss function)
-            ***REMOVED*** PyTorch Forecasting models have a .loss() method
+            # Calculate Loss (TFT internal loss function)
+            # PyTorch Forecasting models have a .loss() method
             loss = model.loss(output, y)
             
-            ***REMOVED*** Backward
+            # Backward
             loss.backward()
             optimizer.step()
             

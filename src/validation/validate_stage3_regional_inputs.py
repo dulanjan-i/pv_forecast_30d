@@ -66,7 +66,7 @@ def _key_overlap(a: pd.DataFrame, b: pd.DataFrame, label: str) -> None:
 
 
 def _pvlib_power_like_col(df: pd.DataFrame) -> str:
-    ***REMOVED*** prefer dc power if present
+    # prefer dc power if present
     for c in ["pvlib_dc_kw", "pvlib_ac_kw", "pvlib_pdc_kw", "pvlib_pac_kw"]:
         if c in df.columns:
             return c
@@ -78,7 +78,7 @@ def _corr_rmse_per_plant(merged: pd.DataFrame, pvcol: str) -> pd.DataFrame:
     for pid, g in merged.groupby("plant_id"):
         y = g[TARGET_COL].astype(float).to_numpy()
         x = g[pvcol].astype(float).to_numpy()
-        ***REMOVED*** normalize pvlib to 0..1 per plant for a fair shape check
+        # normalize pvlib to 0..1 per plant for a fair shape check
         denom = (np.nanmax(x) - np.nanmin(x))
         x01 = (x - np.nanmin(x)) / denom if denom > 0 else x * 0.0
         corr = float(np.corrcoef(x01, y)[0, 1]) if len(g) > 2 else np.nan

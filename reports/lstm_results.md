@@ -1,10 +1,10 @@
-***REMOVED*** LSTM Experiment Results
+# LSTM Experiment Results
 
 This document tracks results from LSTM pretraining experiments on PVDAQ Data [Farm2107] for PV power forecasting.
 
 ---
 
-***REMOVED******REMOVED*** Farm 2107 Hyperparameter Sweep (2024-11-24)
+## Farm 2107 Hyperparameter Sweep (2024-11-24)
 
 **Objective:** Establish baseline LSTM encoder configuration for thesis comparison.
 
@@ -47,6 +47,6 @@ This document tracks results from LSTM pretraining experiments on PVDAQ Data [Fa
 
 ---
 
-***REMOVED******REMOVED*** Previous Experiments
+## Previous Experiments
 
 - **exp01**: Initial baseline LSTM (config in experiments/lstm/exp01.yaml)

@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Fetch ERA5 Reanalysis for 2023-2025 Extended Evaluation
 
@@ -20,7 +20,7 @@ import json
 import sys
 import logging
 
-***REMOVED*** Add project root to path
+# Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.inference.weather_client import WeatherClient
@@ -38,7 +38,7 @@ class ERA5Fetcher:
     def __init__(self):
         self.client = WeatherClient()
         
-        ***REMOVED*** Load plant metadata
+        # Load plant metadata
         meta_path = Path("/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json")
         with open(meta_path) as f:
             self.metadata = json.load(f)
@@ -65,7 +65,7 @@ class ERA5Fetcher:
         """
         logger.info(f"Fetching ERA5: {start_date} (+{days}d)")
         
-        ***REMOVED*** Fetch historical data (OpenMeteo uses ERA5 for historical)
+        # Fetch historical data (OpenMeteo uses ERA5 for historical)
         data = self.client.fetch_and_prepare(
             latitude=self.lat,
             longitude=self.lon,
@@ -74,7 +74,7 @@ class ERA5Fetcher:
             tilt=self.tilt,
             azimuth=self.azimuth,
             resolution="15min",
-            auto_select=False  ***REMOVED*** Force historical data, not forecast
+            auto_select=False  # Force historical data, not forecast
         )
         
         data['data_source'] = 'era5'
@@ -107,7 +107,7 @@ class ERA5Fetcher:
         
         all_data = []
         
-        ***REMOVED*** Generate chunk dates
+        # Generate chunk dates
         current = pd.to_datetime(start_date)
         end_dt = pd.to_datetime(end_date)
         total_days = (end_dt - current).days
@@ -119,14 +119,14 @@ class ERA5Fetcher:
         while current <= end_dt:
             chunk_idx += 1
             
-            ***REMOVED*** Calculate days for this chunk
+            # Calculate days for this chunk
             days_left = (end_dt - current).days + 1
             days_to_fetch = min(chunk_days, days_left)
             
             try:
                 logger.info(f"[Chunk {chunk_idx}] {current.strftime('%Y-%m-%d')} (+{days_to_fetch}d)")
                 
-                ***REMOVED*** Fetch chunk
+                # Fetch chunk
                 chunk_data = self.fetch_era5_chunk(
                     start_date=current.strftime("%Y-%m-%d"),
                     days=days_to_fetch
@@ -139,7 +139,7 @@ class ERA5Fetcher:
                 
             except Exception as e:
                 logger.error(f"  ✗ Failed chunk {chunk_idx}: {e}\n")
-                ***REMOVED*** Try smaller chunk on error
+                # Try smaller chunk on error
                 if days_to_fetch > 7:
                     logger.info(f"  Retrying with smaller chunk (7 days)...")
                     try:
@@ -155,16 +155,16 @@ class ERA5Fetcher:
                     except:
                         pass
             
-            ***REMOVED*** Move to next chunk
+            # Move to next chunk
             current += timedelta(days=days_to_fetch)
         
-        ***REMOVED*** Combine all chunks
+        # Combine all chunks
         if not all_data:
             raise RuntimeError("No ERA5 data fetched!")
         
         full_dataset = pd.concat(all_data, ignore_index=True)
         
-        ***REMOVED*** Remove duplicates (chunk overlaps)
+        # Remove duplicates (chunk overlaps)
         full_dataset = full_dataset.drop_duplicates(subset=['timestamp_utc']).sort_values('timestamp_utc').reset_index(drop=True)
         
         logger.info(f"\n{'='*70}")
@@ -187,14 +187,14 @@ def main():
     
     fetcher = ERA5Fetcher()
     
-    ***REMOVED*** Fetch ERA5 (Dec 2023 - Dec 2025 = 25 months)
+    # Fetch ERA5 (Dec 2023 - Dec 2025 = 25 months)
     dataset = fetcher.generate_era5_dataset(
         start_date="2023-12-01",
         end_date="2025-12-31",
-        chunk_days=30  ***REMOVED*** Fetch in 30-day chunks
+        chunk_days=30  # Fetch in 30-day chunks
     )
     
-    ***REMOVED*** Save
+    # Save
     output_path = Path("/home/dwijenayake/pv_forecast_30d/data/processed/era5_2023_2025_extended.parquet")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     dataset.to_parquet(output_path, index=False)

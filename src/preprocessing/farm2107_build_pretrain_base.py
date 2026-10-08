@@ -20,9 +20,9 @@ Note:
 from pathlib import Path
 import pandas as pd
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Paths
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------
 
 PV_INTERIM = Path("data/interim/farm_2107/farm2107_elec_irradiance_15min.parquet")
 WEATHER_15 = Path("data/processed/pretraining/farm2107_weather_15min.parquet")
@@ -55,7 +55,7 @@ def load_weather_15(path: Path) -> pd.DataFrame:
 
     df = pd.read_parquet(path)
 
-    ***REMOVED*** Depending on how you saved it, 'date' might be a column or the index.
+    # Depending on how you saved it, 'date' might be a column or the index.
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
         df = df.set_index("date")

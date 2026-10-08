@@ -63,7 +63,7 @@ def main() -> None:
         how="inner",
     ).sort_values(args.time_col)
 
-    ***REMOVED*** Final schema for LSTM encoder (exact order expected by your YAML)
+    # Final schema for LSTM encoder (exact order expected by your YAML)
     ordered = ["power_norm"] + REQ_WEATHER
     df = df[[args.time_col] + ordered]
 

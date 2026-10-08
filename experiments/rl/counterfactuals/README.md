@@ -1,4 +1,4 @@
-***REMOVED*** RL counterfactual experiments
+# RL counterfactual experiments
 
 This folder contains tools and outputs for RL counterfactual / stress‑test experiments.
 

@@ -1,4 +1,4 @@
-***REMOVED*** src/inference/rl_controller.py
+# src/inference/rl_controller.py
 """
 RL Meta-Controller for Adaptive Forecast Optimization.
 
@@ -84,17 +84,17 @@ class RLMetaController:
         Returns:
             api_name: Selected weather API identifier
         """
-        ***REMOVED*** TODO: Implement RL-based selection
-        ***REMOVED*** For now, use heuristic based on horizon
+        # TODO: Implement RL-based selection
+        # For now, use heuristic based on horizon
         
         if day < 7:
-            ***REMOVED*** Near-term: Base API sufficient
+            # Near-term: Base API sufficient
             return "openmeteo_base"
         elif day < 14:
-            ***REMOVED*** Mid-term: Ensemble for better accuracy
+            # Mid-term: Ensemble for better accuracy
             return "openmeteo_ensemble"
         else:
-            ***REMOVED*** Long-term: Ensemble critical
+            # Long-term: Ensemble critical
             return "openmeteo_ensemble"
     
     def get_blend_weights(
@@ -127,12 +127,12 @@ class RLMetaController:
             >>> weights
             {'alpha_short': 0.65, 'alpha_long': 0.35, 'alpha_ml': 0.75, 'alpha_pvlib': 0.25}
         """
-        ***REMOVED*** TODO: Replace with RL policy network
-        ***REMOVED*** Current: Simple heuristic rules
+        # TODO: Replace with RL policy network
+        # Current: Simple heuristic rules
         
-        ***REMOVED*** Rule 1: Short-head weight decreases with horizon
-        ***REMOVED*** Near-term: Trust short-head's precision
-        ***REMOVED*** Long-term: Trust long-head's strategic view
+        # Rule 1: Short-head weight decreases with horizon
+        # Near-term: Trust short-head's precision
+        # Long-term: Trust long-head's strategic view
         if day < 7:
             alpha_short = 0.65
             alpha_long = 0.35
@@ -143,15 +143,15 @@ class RLMetaController:
             alpha_short = 0.35
             alpha_long = 0.65
         
-        ***REMOVED*** Rule 2: ML weight decreases with horizon and low confidence
-        ***REMOVED*** Near-term + high confidence: Trust ML
-        ***REMOVED*** Long-term + low confidence: Trust physics
+        # Rule 2: ML weight decreases with horizon and low confidence
+        # Near-term + high confidence: Trust ML
+        # Long-term + low confidence: Trust physics
         base_ml_weight = 0.75
-        confidence_penalty = (1.0 - weather_confidence) * 0.2  ***REMOVED*** Max -20%
-        horizon_penalty = day * 0.005  ***REMOVED*** -0.5% per day (max -15% at day 30)
+        confidence_penalty = (1.0 - weather_confidence) * 0.2  # Max -20%
+        horizon_penalty = day * 0.005  # -0.5% per day (max -15% at day 30)
         
         alpha_ml = base_ml_weight - confidence_penalty - horizon_penalty
-        alpha_ml = np.clip(alpha_ml, 0.45, 0.85)  ***REMOVED*** Keep in reasonable range
+        alpha_ml = np.clip(alpha_ml, 0.45, 0.85)  # Keep in reasonable range
         
         alpha_pvlib = 1.0 - alpha_ml
         
@@ -199,7 +199,7 @@ class RLMetaController:
         """
         if api_name in self.api_performance:
             self.api_performance[api_name].append(rmse)
-            ***REMOVED*** Keep only last 30 days
+            # Keep only last 30 days
             if len(self.api_performance[api_name]) > 30:
                 self.api_performance[api_name] = self.api_performance[api_name][-30:]
     
@@ -210,7 +210,7 @@ class RLMetaController:
         Returns:
             api_name: API with lowest average RMSE
         """
-        best_api = "openmeteo_base"  ***REMOVED*** Default
+        best_api = "openmeteo_base"  # Default
         best_rmse = float('inf')
         
         for api, rmses in self.api_performance.items():
@@ -234,25 +234,25 @@ class RLMetaController:
         Args:
             ground_truth: Actual PV power measurements
         """
-        ***REMOVED*** Placeholder for future implementation
+        # Placeholder for future implementation
         print("[INFO] RL training not yet implemented")
         print(f"       History size: {len(self.history)} forecasts")
         print(f"       Ground truth size: {len(ground_truth)}")
 
 
-***REMOVED*** Example usage
+# Example usage
 if __name__ == "__main__":
     print("[INFO] Testing RL Meta-Controller...")
     
     controller = RLMetaController(mode="heuristic")
     
-    ***REMOVED*** Test 1: Weather API selection
+    # Test 1: Weather API selection
     print("\n[TEST 1] Weather API selection")
     for day in [0, 7, 15, 29]:
         api = controller.select_weather_api(day)
         print(f"    Day {day:2d}: {api}")
     
-    ***REMOVED*** Test 2: Blend weights
+    # Test 2: Blend weights
     print("\n[TEST 2] Blend weights by day")
     for day in [0, 7, 14, 21, 29]:
         weights = controller.get_blend_weights(day)
@@ -261,13 +261,13 @@ if __name__ == "__main__":
               f"ml={weights['alpha_ml']:.2f}, "
               f"pvlib={weights['alpha_pvlib']:.2f}")
     
-    ***REMOVED*** Test 3: Weather confidence impact
+    # Test 3: Weather confidence impact
     print("\n[TEST 3] Weather confidence impact (Day 7)")
     for conf in [0.9, 0.7, 0.5]:
         weights = controller.get_blend_weights(day=7, weather_confidence=conf)
         print(f"    Confidence={conf:.1f}: ml={weights['alpha_ml']:.3f}")
     
-    ***REMOVED*** Test 4: Record forecast
+    # Test 4: Record forecast
     print("\n[TEST 4] Recording forecasts")
     fake_forecast = np.random.rand(96)
     controller.record_forecast(

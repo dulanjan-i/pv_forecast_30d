@@ -39,14 +39,14 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
     """
     df = weather_df.copy()
     
-    ***REMOVED*** Ensure timestamp column exists
+    # Ensure timestamp column exists
     if 'timestamp_utc' not in df.columns:
         if 'timestamp' in df.columns:
             df['timestamp_utc'] = df['timestamp']
         else:
             raise ValueError("DataFrame must have 'timestamp_utc' or 'timestamp' column")
     
-    ***REMOVED*** Create location object
+    # Create location object
     location = pvlib.location.Location(
         latitude=latitude,
         longitude=longitude,
@@ -54,24 +54,24 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
         tz=timezone
     )
     
-    ***REMOVED*** Get timestamps
+    # Get timestamps
     times = pd.to_datetime(df['timestamp_utc'])
     
-    ***REMOVED*** Calculate solar position
+    # Calculate solar position
     solar_position = location.get_solarposition(times)
     
     df['solar_zenith'] = solar_position['zenith'].values
     df['solar_azimuth'] = solar_position['azimuth'].values
     df['solar_elevation'] = solar_position['elevation'].values
     
-    ***REMOVED*** Calculate POA irradiance if GHI/DNI/DHI available
+    # Calculate POA irradiance if GHI/DNI/DHI available
     if all(col in df.columns for col in ['shortwave_radiation', 'direct_radiation', 'diffuse_radiation']):
-        ***REMOVED*** Open-Meteo provides these as shortwave/direct/diffuse
+        # Open-Meteo provides these as shortwave/direct/diffuse
         ghi = df['shortwave_radiation'].values
         dni = df['direct_radiation'].values if 'direct_radiation' in df.columns else df.get('direct_normal_irradiance', np.zeros_like(ghi)).values
         dhi = df['diffuse_radiation'].values
         
-        ***REMOVED*** Calculate POA irradiance
+        # Calculate POA irradiance
         poa_irradiance = pvlib.irradiance.get_total_irradiance(
             surface_tilt=tilt,
             surface_azimuth=azimuth,
@@ -87,7 +87,7 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
         df['poa_diffuse'] = poa_irradiance['poa_diffuse'].values
         
     elif 'ghi' in df.columns:
-        ***REMOVED*** Standard naming convention
+        # Standard naming convention
         ghi = df['ghi'].values
         dni = df.get('dni', np.zeros_like(ghi)).values
         dhi = df.get('dhi', np.zeros_like(ghi)).values
@@ -106,7 +106,7 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
         df['poa_direct'] = poa_irradiance['poa_direct'].values
         df['poa_diffuse'] = poa_irradiance['poa_diffuse'].values
     else:
-        ***REMOVED*** No irradiance data - use clear sky model
+        # No irradiance data - use clear sky model
         print("   ⚠️  No GHI/DNI/DHI found - using clear sky model")
         clearsky = location.get_clearsky(times)
         
@@ -124,7 +124,7 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
         df['poa_direct'] = poa_irradiance['poa_direct'].values
         df['poa_diffuse'] = poa_irradiance['poa_diffuse'].values
     
-    ***REMOVED*** Add time features
+    # Add time features
     df['hour_sin'] = np.sin(2 * np.pi * times.hour / 24)
     df['hour_cos'] = np.cos(2 * np.pi * times.hour / 24)
     df['day_of_year'] = times.dayofyear
@@ -137,10 +137,10 @@ def generate_pvlib_features(weather_df: pd.DataFrame,
 
 
 if __name__ == "__main__":
-    ***REMOVED*** Test
+    # Test
     import pandas as pd
     
-    ***REMOVED*** Create test weather data
+    # Create test weather data
     times = pd.date_range('2024-01-01', periods=96, freq='15min', tz='UTC')
     weather = pd.DataFrame({
         'timestamp_utc': times,
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         'diffuse_radiation': np.random.rand(96) * 200
     })
     
-    ***REMOVED*** Generate features
+    # Generate features
     result = generate_pvlib_features(
         weather_df=weather,
         latitude=51.3397,

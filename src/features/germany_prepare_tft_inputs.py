@@ -37,7 +37,7 @@ from src.data.schema import TIME_COL, PLANT_ID_COL
 def _find_stats_node(obj: Any, max_depth: int = 6) -> Optional[Dict[str, Any]]:
     """Find a dict that looks like scaler stats: {col: {"mean":..., "std":...}, ...}."""
     if isinstance(obj, dict):
-        ***REMOVED*** Direct match
+        # Direct match
         if obj and all(
             isinstance(v, dict) and ("mean" in v) and ("std" in v)
             for v in obj.values()
@@ -130,7 +130,7 @@ def maybe_merge_plant_meta(df: pd.DataFrame, plant_meta_csv: Optional[Path]) -> 
     if PLANT_ID_COL not in meta.columns:
         raise ValueError(f"plant_meta_csv missing '{PLANT_ID_COL}': {plant_meta_csv}")
 
-    ***REMOVED*** Drop duplicates to avoid exploding rows
+    # Drop duplicates to avoid exploding rows
     meta = meta.drop_duplicates(subset=[PLANT_ID_COL]).copy()
 
     out = df.merge(meta, on=PLANT_ID_COL, how="left")

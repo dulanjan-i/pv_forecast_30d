@@ -1,4 +1,4 @@
-***REMOVED*** src/inference/physics_aware_forecaster.py
+# src/inference/physics_aware_forecaster.py
 """
 Physics-Aware Forecaster: Complete 30-day PV Power Forecasting Pipeline.
 
@@ -215,7 +215,7 @@ class PhysicsAwareForecaster:
 
         print(f"\n[INFO] Hierarchical 30-day forecast starting {forecast_start}")
 
-        ***REMOVED*** 0) Weather acquisition (live fetch only if weather_df is missing)
+        # 0) Weather acquisition (live fetch only if weather_df is missing)
         if use_live_weather and weather_df is None:
             print("[INFO] Fetching live weather from OpenMeteo API...")
             from .weather_client import WeatherClient
@@ -255,7 +255,7 @@ class PhysicsAwareForecaster:
         if "timestamp_utc" not in weather_df.columns:
             raise RuntimeError("weather_df missing required column: timestamp_utc")
 
-        ***REMOVED*** 1) Historical/encoder data
+        # 1) Historical/encoder data
         if historical_df is None:
             print("[INFO] No historical data provided, using training data for encoder")
             historical_df = pd.read_parquet(self.short_train_parquet)
@@ -265,7 +265,7 @@ class PhysicsAwareForecaster:
 
         print("       Architecture: Long-head (strategic) + 30× Short-head (tactical) + Physics")
 
-        ***REMOVED*** 2) Prepare hourly views for long-head
+        # 2) Prepare hourly views for long-head
         print("\n[PREP] Preparing data for multi-resolution inference...")
         if "timestamp_utc" in historical_df.columns:
             try:
@@ -311,7 +311,7 @@ class PhysicsAwareForecaster:
             hourly_hist = historical_df
             hourly_weather = weather_df
 
-        ***REMOVED*** 3) Strict 30-day weather window (fail fast offline)
+        # 3) Strict 30-day weather window (fail fast offline)
         forecast_end = forecast_start + pd.Timedelta(days=30)
         weather_window = weather_df[
             (weather_df["timestamp_utc"] >= forecast_start)
@@ -327,7 +327,7 @@ class PhysicsAwareForecaster:
                 f"weather_df range: {avail_min} -> {avail_max}"
             )
 
-        ***REMOVED*** Step 1: PVLib baseline
+        # Step 1: PVLib baseline
         print("\n[STEP 1/4] Computing PVLib physics baseline (2880 steps @ 15-min)...")
         print(
             f"          Weather window: {len(weather_window)} steps "
@@ -348,7 +348,7 @@ class PhysicsAwareForecaster:
             f"range: [{np.nanmin(pvlib_15min):.3f}, {np.nanmax(pvlib_15min):.3f}]"
         )
 
-        ***REMOVED*** Step 2: Long-head inference
+        # Step 2: Long-head inference
         print("\n[STEP 2/4] Running long-head TFT (strategic: 720 hours @ 1-hour)...")
         long_head_pred = self._predict_long_head(forecast_start, hourly_hist, hourly_weather)
         print(f"          Long-head shape: {long_head_pred.shape}")
@@ -357,7 +357,7 @@ class PhysicsAwareForecaster:
         long_upsampled = upsample_with_pvlib_shape(long_head_pred, pvlib_15min, method="proportional")
         print(f"          Long upsampled shape: {long_upsampled.shape}")
 
-        ***REMOVED*** Step 3: Rolling short-head refinement + blending
+        # Step 3: Rolling short-head refinement + blending
         print("\n[STEP 3/4] Rolling short-head refinement (30 days × 96 steps)...")
         forecast_15min = np.zeros(2880, dtype=float)
         short_head_daily: list[np.ndarray] = []
@@ -365,7 +365,7 @@ class PhysicsAwareForecaster:
 
         print("[DEBUG] blend_weights passed in:", blend_weights)
 
-        ***REMOVED*** Normalize / validate RL weights once (if provided)
+        # Normalize / validate RL weights once (if provided)
         rl_w_short = rl_w_long = rl_w_phys = None
         if blend_weights is not None:
             if not all(k in blend_weights for k in ("short", "long", "physics")):
@@ -391,7 +391,7 @@ class PhysicsAwareForecaster:
             pvlib_slice = pvlib_15min[day_start_idx:day_end_idx]
 
             if blend_weights is not None:
-                ***REMOVED*** RL override blending (no None anywhere)
+                # RL override blending (no None anywhere)
                 w_short = rl_w_short
                 w_long = rl_w_long
                 w_phys = rl_w_phys
@@ -415,7 +415,7 @@ class PhysicsAwareForecaster:
                     constraints=True,
                 )
 
-                ***REMOVED*** record weights in a consistent schema
+                # record weights in a consistent schema
                 blend_weights_daily.append(
                     {
                         "alpha_short": float(alpha_short_norm),
@@ -432,7 +432,7 @@ class PhysicsAwareForecaster:
                     "alpha_ml": float(w_ml),
                 }
             else:
-                ***REMOVED*** Default scheduled blending
+                # Default scheduled blending
                 weights = self.rl_controller.get_blend_weights(day=day)
                 day_forecast = blend_hierarchical(
                     short_pred=short_day_pred,
@@ -448,7 +448,7 @@ class PhysicsAwareForecaster:
 
             forecast_15min[day_start_idx:day_end_idx] = day_forecast
 
-            ***REMOVED*** Update historical_df with today's prediction for next day's encoder
+            # Update historical_df with today's prediction for next day's encoder
             day_weather_slice = weather_df[
                 (weather_df["timestamp_utc"] >= day_start)
                 & (weather_df["timestamp_utc"] < day_start + pd.Timedelta(hours=24))
@@ -465,7 +465,7 @@ class PhysicsAwareForecaster:
         print(f"          Final forecast shape: {forecast_15min.shape}")
         print(f"          Final range: [{forecast_15min.min():.3f}, {forecast_15min.max():.3f}]")
 
-        ***REMOVED*** Step 4: Validation checks
+        # Step 4: Validation checks
         print("\n[STEP 4/4] Validation...")
         self._validate_forecast(forecast_15min, pvlib_15min)
 

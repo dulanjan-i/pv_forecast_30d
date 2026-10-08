@@ -1,4 +1,4 @@
-***REMOVED*** TFT Integration Status Report
+# TFT Integration Status Report
 
 **Date:** 2026-01-02  
 **Status:** ✅ **CORE TFT INTEGRATION COMPLETE**  
@@ -6,17 +6,17 @@
 
 ---
 
-***REMOVED******REMOVED*** 🎯 Achievement Summary
+## 🎯 Achievement Summary
 
-***REMOVED******REMOVED******REMOVED*** ✅ COMPLETED: Real TFT Integration
+### ✅ COMPLETED: Real TFT Integration
 - **Short-head TFT inference**: Working perfectly (96 steps @ 15min)
 - **Long-head TFT inference**: Working perfectly (720 hours @ 1hour)
 - **Hierarchical architecture**: Implemented and tested
 - **TFT utils library**: 560 lines, 8 utility functions, all tests passing
 
-***REMOVED******REMOVED******REMOVED*** 📊 Test Results
+### 📊 Test Results
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Individual TFT Model Tests (`test_tft_integration.py`)
+#### Individual TFT Model Tests (`test_tft_integration.py`)
 ```
 TEST RESULTS:
 ✅ short_head          : PASSED
@@ -28,7 +28,7 @@ Metrics:
 - Both models produce valid predictions [0, ~0.5]
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Component Validation
+#### Component Validation
 1. **TFT Model Loading** ✅
    - Short-head: encoder=96, pred=96
    - Long-head: encoder=168, pred=720
@@ -50,9 +50,9 @@ Metrics:
 
 ---
 
-***REMOVED******REMOVED*** 📁 Files Created/Modified
+## 📁 Files Created/Modified
 
-***REMOVED******REMOVED******REMOVED*** New Files
+### New Files
 1. **src/inference/tft_utils.py** (560 lines)
    - `load_tft_config()`: Load run_config.json + column_roles.json
    - `ensure_time_columns()`: Fix time_idx gaps
@@ -77,7 +77,7 @@ Metrics:
    - End-to-end pipeline test
    - Status: ⚠️ Blocked by PVLib pandas compatibility issue (not TFT-related)
 
-***REMOVED******REMOVED******REMOVED*** Modified Files
+### Modified Files
 1. **src/inference/physics_aware_forecaster.py** (669 lines, heavily modified)
    - Updated `__init__()`: Added train_parquet params, loads training datasets
    - Implemented `_predict_short_head_for_day()`: 87 lines real TFT (was 11-line placeholder)
@@ -92,9 +92,9 @@ Metrics:
 
 ---
 
-***REMOVED******REMOVED*** 🏗️ Architecture Verification
+## 🏗️ Architecture Verification
 
-***REMOVED******REMOVED******REMOVED*** Hierarchical Inference (v2.0)
+### Hierarchical Inference (v2.0)
 ```
 Long-head (Strategic)         1 TFT call  → 720h @ 1h   (40% weight)
 Short-head (Tactical)        30 TFT calls → 96×15min    (60% weight)
@@ -105,7 +105,7 @@ Physics Constraints           Night=0     → Cap≤120%
 Total: 31 TFT inference calls → Final 2880 steps @ 15min
 ```
 
-***REMOVED******REMOVED******REMOVED*** Validated Components
+### Validated Components
 - ✅ TFT short-head inference (96 steps @ 15min)
 - ✅ TFT long-head inference (720 hours @ 1h)
 - ✅ Hierarchical blending (short 60% + long 40%)
@@ -115,9 +115,9 @@ Total: 31 TFT inference calls → Final 2880 steps @ 15min
 
 ---
 
-***REMOVED******REMOVED*** ⚠️ Known Issues
+## ⚠️ Known Issues
 
-***REMOVED******REMOVED******REMOVED*** Issue 1: PVLib-Pandas Compatibility
+### Issue 1: PVLib-Pandas Compatibility
 **Status:** Low priority (not TFT-related)  
 **Error:** `TypeError: '<' not supported between instances of 'Timestamp' and 'int'`  
 **Location:** pvlib.irradiance.poa_components() → pandas DataFrame construction  
@@ -130,43 +130,43 @@ Total: 31 TFT inference calls → Final 2880 steps @ 15min
 
 **Decision:** Defer to next session. TFT integration is the critical path milestone and is complete.
 
-***REMOVED******REMOVED******REMOVED*** Issue 2: Test Data History Requirements
+### Issue 2: Test Data History Requirements
 **Status:** Resolved  
 **Solution:** Start forecasts at Day 10+ to ensure 168-hour encoder history  
 **Impact:** Test dates adjusted, no code changes needed
 
 ---
 
-***REMOVED******REMOVED*** 🎯 What Works (Validated)
+## 🎯 What Works (Validated)
 
-***REMOVED******REMOVED******REMOVED*** Core TFT Inference ✅
+### Core TFT Inference ✅
 ```python
-***REMOVED*** Short-head (single day)
+# Short-head (single day)
 pred = forecaster._predict_short_head_for_day(
     day_start=pd.Timestamp("2023-10-14 00:00:00", tz="UTC"),
     day_idx=2,
     historical_df=test_df,
     weather_df=test_df
 )
-***REMOVED*** Result: shape (96,), range [0.0, 0.18], MAE vs baseline: 0.049
+# Result: shape (96,), range [0.0, 0.18], MAE vs baseline: 0.049
 
-***REMOVED*** Long-head (30 days strategic)
+# Long-head (30 days strategic)
 pred = forecaster._predict_long_head(
     forecast_start=pd.Timestamp("2023-10-19 00:00:00", tz="UTC"),
     historical_df=hourly_test,
     weather_df=hourly_test
 )
-***REMOVED*** Result: shape (720,), range [0.0, 0.48], valid predictions
+# Result: shape (720,), range [0.0, 0.48], valid predictions
 ```
 
-***REMOVED******REMOVED******REMOVED*** Normalization Inheritance ✅
+### Normalization Inheritance ✅
 ```python
-***REMOVED*** Training dataset loaded for normalization
+# Training dataset loaded for normalization
 short_train_ds = create_training_dataset(
     train_df, config, group_col="plant_name"
 )
 
-***REMOVED*** Test dataset inherits normalization
+# Test dataset inherits normalization
 test_ds = TimeSeriesDataSet.from_dataset(
     short_train_ds,
     test_df,
@@ -175,15 +175,15 @@ test_ds = TimeSeriesDataSet.from_dataset(
 )
 ```
 
-***REMOVED******REMOVED******REMOVED*** Window Extraction ✅
+### Window Extraction ✅
 ```python
-***REMOVED*** Encoder: 96 steps @ 15min BEFORE day_start
+# Encoder: 96 steps @ 15min BEFORE day_start
 encoder_df = historical_df[
     (historical_df['timestamp_utc'] >= encoder_start) &
     (historical_df['timestamp_utc'] < day_start)
 ].copy()
 
-***REMOVED*** Decoder: 96 steps @ 15min FROM day_start
+# Decoder: 96 steps @ 15min FROM day_start
 decoder_df = weather_df[
     (weather_df['timestamp_utc'] >= day_start) &
     (weather_df['timestamp_utc'] < day_end)
@@ -192,14 +192,14 @@ decoder_df = weather_df[
 
 ---
 
-***REMOVED******REMOVED*** 📝 Implementation Details
+## 📝 Implementation Details
 
-***REMOVED******REMOVED******REMOVED*** Configuration Handling
+### Configuration Handling
 - Supports both naming conventions: `encoder_len` vs `max_encoder_length`
 - Handles missing column_roles.json (falls back to defaults)
 - Validates encoder/pred lengths match model expectations
 
-***REMOVED******REMOVED******REMOVED*** Data Flow
+### Data Flow
 1. Load TFT configs (run_config.json + column_roles.json)
 2. Create training datasets (for normalization)
 3. Load model weights (best_state_dict.pt)
@@ -209,7 +209,7 @@ decoder_df = weather_df[
 7. Extract Q50 from 7 quantiles (index 3)
 8. Return numpy array
 
-***REMOVED******REMOVED******REMOVED*** Error Handling
+### Error Handling
 - Window length validation (catches empty windows early)
 - Missing config file fallbacks
 - Shape assertions at each step
@@ -217,9 +217,9 @@ decoder_df = weather_df[
 
 ---
 
-***REMOVED******REMOVED*** 🚀 Next Steps
+## 🚀 Next Steps
 
-***REMOVED******REMOVED******REMOVED*** Immediate (Next Session)
+### Immediate (Next Session)
 1. **Resolve PVLib issue** (30 min)
    - Option A: Use pre-computed baseline from test data
    - Option B: Mock with synthetic clear-sky
@@ -237,7 +237,7 @@ decoder_df = weather_df[
    - Test end-to-end with live weather
    - Deploy production system
 
-***REMOVED******REMOVED******REMOVED*** Future (Post-Weather API)
+### Future (Post-Weather API)
 4. **RL Controller v2.0** (not blocking)
    - Replace heuristic with learned policy
    - Train on validation set
@@ -251,27 +251,27 @@ decoder_df = weather_df[
 
 ---
 
-***REMOVED******REMOVED*** 📊 Performance Metrics
+## 📊 Performance Metrics
 
-***REMOVED******REMOVED******REMOVED*** Inference Speed (CPU)
+### Inference Speed (CPU)
 - Short-head single day: ~1-2 seconds
 - Long-head 720 hours: ~2-3 seconds
 - Total 31 calls estimate: ~60-90 seconds
 - **Production target:** <2 minutes for 30-day forecast
 
-***REMOVED******REMOVED******REMOVED*** Accuracy (Preliminary)
+### Accuracy (Preliminary)
 - Short-head MAE: 0.049 vs offline baseline
 - Long-head: Valid strategic predictions
 - Final blended forecast: TBD (pending full pipeline test)
 
-***REMOVED******REMOVED******REMOVED*** Memory Usage
+### Memory Usage
 - Model loading: ~500 MB (both models)
 - Inference: <1 GB RAM
 - Suitable for production deployment
 
 ---
 
-***REMOVED******REMOVED*** ✅ Acceptance Criteria (Status)
+## ✅ Acceptance Criteria (Status)
 
 | Criterion | Status | Notes |
 |-----------|--------|-------|
@@ -288,7 +288,7 @@ decoder_df = weather_df[
 
 ---
 
-***REMOVED******REMOVED*** 🎉 Milestone Achievement
+## 🎉 Milestone Achievement
 
 **TFT Integration Complete!**
 
@@ -300,15 +300,15 @@ The core TFT inference system is fully implemented and validated. Both short-hea
 
 ---
 
-***REMOVED******REMOVED*** 📚 References
+## 📚 References
 
-***REMOVED******REMOVED******REMOVED*** Key Files
+### Key Files
 - Implementation: `src/inference/physics_aware_forecaster.py`
 - Utils: `src/inference/tft_utils.py`
 - Tests: `test_tft_integration.py`
 - Documentation: `TFT_INTEGRATION_ACTION_PLAN.md`
 
-***REMOVED******REMOVED******REMOVED*** Related Documents
+### Related Documents
 - `README_LSTM.md`: LSTM encoder documentation
 - `PROGRESS_TRACKER.md`: Overall project status
 - `PHYSICS_GLUE_IMPLEMENTATION.md`: Hierarchical blending details

@@ -1,8 +1,8 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-***REMOVED*** Live GPU stats, refresh every 1s
-***REMOVED*** Works on calc02 and compute nodes if nvidia-smi exists.
+# Live GPU stats, refresh every 1s
+# Works on calc02 and compute nodes if nvidia-smi exists.
 
 INTERVAL="${1:-1}"
 

@@ -1,13 +1,13 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH -J longhead_p03_720
-***REMOVED***SBATCH -p gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH -c 16
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=06:00:00
-***REMOVED***SBATCH --array=0-5
-***REMOVED***SBATCH -o /shared/%u/miracle/logs/%x_%A_%a.out
-***REMOVED***SBATCH -e /shared/%u/miracle/logs/%x_%A_%a.err
+#!/bin/bash
+#SBATCH -J longhead_p03_720
+#SBATCH -p gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH -c 16
+#SBATCH --mem=64G
+#SBATCH --time=06:00:00
+#SBATCH --array=0-5
+#SBATCH -o /shared/%u/miracle/logs/%x_%A_%a.out
+#SBATCH -e /shared/%u/miracle/logs/%x_%A_%a.err
 
 set -euo pipefail
 export OMP_NUM_THREADS=1
@@ -19,17 +19,17 @@ export SINGULARITY_BINDPATH="/shared:/shared,/home/$USER:/home/$USER,/tmp:/tmp,/
 cd "$REPO"
 export PYTHONPATH="$REPO:${PYTHONPATH:-}"
 
-***REMOVED*** Plant03 15min source splits
+# Plant03 15min source splits
 P15_DIR="$REPO/data/processed/plant_level/plant_03/15min_pca32"
 P15_TRAIN="$P15_DIR/train.parquet"
 P15_VAL="$P15_DIR/val.parquet"
 
-***REMOVED*** Hourly plant03 output
+# Hourly plant03 output
 P1H_DIR="$REPO/data/processed/plant_level/plant_03/1h_pca32"
 P1H_TRAIN="$P1H_DIR/train.parquet"
 P1H_VAL="$P1H_DIR/val.parquet"
 
-***REMOVED*** Build hourly plant parquets if missing
+# Build hourly plant parquets if missing
 if [[ ! -f "$P1H_TRAIN" || ! -f "$P1H_VAL" ]]; then
   echo "[INFO] Building plant_03 hourly parquets at: $P1H_DIR"
   singularity exec --nv "$IMG" python3 -m src.data.make_hourly_from_15min_parquets \
@@ -41,17 +41,17 @@ else
   echo "[INFO] Plant_03 hourly parquets already exist. Skipping build."
 fi
 
-***REMOVED*** Long head lengths
+# Long head lengths
 ENC_LEN=168
 PRED_LEN=720
 
-***REMOVED*** Train knobs
+# Train knobs
 BS=64
 ACCUM=8
 MAX_EPOCHS=40
 PATIENCE=5
 
-***REMOVED*** Seeds for cold/warm
+# Seeds for cold/warm
 SEEDS=(42 43 44)
 IDX=$SLURM_ARRAY_TASK_ID
 
@@ -63,12 +63,12 @@ else
   REGIME="warm"
   SEED="${SEEDS[$((IDX-3))]}"
 
-  ***REMOVED*** TODO: set this to the winner of global sweep (best_state_dict.pt from that run)
+  # TODO: set this to the winner of global sweep (best_state_dict.pt from that run)
   GLOBAL_SD="$REPO/experiments/tft/runs/germany/longhead/global_noleak_target03/hourly720/<WINNER_RUN>/checkpoints/best_state_dict.pt"
   INIT_SD="$GLOBAL_SD"
 fi
 
-***REMOVED*** Use your proven LR/dropout as starting point for finetune
+# Use your proven LR/dropout as starting point for finetune
 LR=6e-4
 DROP=0.15
 

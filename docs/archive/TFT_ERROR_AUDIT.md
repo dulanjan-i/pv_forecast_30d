@@ -1,36 +1,36 @@
-***REMOVED*** TFT Pipeline Error Audit Report
+# TFT Pipeline Error Audit Report
 **Date**: 2025-12-22  
 **Status**: ✅ RESOLVED
 
 ---
 
-***REMOVED******REMOVED*** Summary
+## Summary
 
 Your TFT pipeline had **1 critical blocking error** that prevented training from starting. The error was in the optimizer initialization logic when building the TemporalFusionTransformer model.
 
 ---
 
-***REMOVED******REMOVED*** Error Details
+## Error Details
 
-***REMOVED******REMOVED******REMOVED*** 🔴 CRITICAL: Double `weight_decay` Argument
+### 🔴 CRITICAL: Double `weight_decay` Argument
 
-**File**: [src/models/tft_model.py](src/models/tft_model.py***REMOVED***L87-L94)  
+**File**: [src/models/tft_model.py](src/models/tft_model.py#L87-L94)  
 **Function**: `build_tft_model()`  
 **Error Type**: TypeError (Optimizer Configuration)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Symptom
+#### Symptom
 ```
 TypeError: torch.optim.adamw.AdamW() got multiple values for keyword argument 'weight_decay'
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Root Cause
+#### Root Cause
 The `TemporalFusionTransformer.from_dataset()` method was receiving `weight_decay` in two ways:
 1. **Directly as a parameter**: `weight_decay=cfg.weight_decay`
 2. **Inside optimizer_params dict**: `optimizer_params={"weight_decay": cfg.weight_decay}`
 
 The pytorch-forecasting library internally passes all `optimizer_params` to the optimizer, which already has a `weight_decay` parameter. This causes a duplicate keyword argument error.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Stack Trace
+#### Stack Trace
 ```
 File "/home/dwijenayake/.venvs/pvforecast/lib/python3.12/site-packages/pytorch_forecasting/models/base/_base_model.py", line 1388, in configure_optimizers
     optimizer = torch.optim.AdamW(
@@ -38,7 +38,7 @@ File "/home/dwijenayake/.venvs/pvforecast/lib/python3.12/site-packages/pytorch_f
 TypeError: torch.optim.adamw.AdamW() got multiple values for keyword argument 'weight_decay'
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Original Buggy Code
+#### Original Buggy Code
 ```python
 model = TemporalFusionTransformer.from_dataset(
     train_ds,
@@ -49,14 +49,14 @@ model = TemporalFusionTransformer.from_dataset(
     dropout=cfg.dropout,
     loss=loss,
     optimizer="adamw",
-    optimizer_params={"weight_decay": cfg.weight_decay},  ***REMOVED*** ❌ PROBLEM
+    optimizer_params={"weight_decay": cfg.weight_decay},  # ❌ PROBLEM
     reduce_on_plateau_patience=4,
     output_size=len(cfg.quantiles),
     log_interval=50,
 )
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Fixed Code
+#### Fixed Code
 ```python
 model = TemporalFusionTransformer.from_dataset(
     train_ds,
@@ -65,10 +65,10 @@ model = TemporalFusionTransformer.from_dataset(
     lstm_layers=cfg.lstm_layers,
     attention_head_size=cfg.attention_head_size,
     dropout=cfg.dropout,
-    weight_decay=cfg.weight_decay,  ***REMOVED*** ✅ Direct parameter
+    weight_decay=cfg.weight_decay,  # ✅ Direct parameter
     loss=loss,
     optimizer="adamw",
-    ***REMOVED*** ✅ Removed optimizer_params
+    # ✅ Removed optimizer_params
     reduce_on_plateau_patience=4,
     output_size=len(cfg.quantiles),
     log_interval=50,
@@ -77,16 +77,16 @@ model = TemporalFusionTransformer.from_dataset(
 
 ---
 
-***REMOVED******REMOVED*** Validation
+## Validation
 
-***REMOVED******REMOVED******REMOVED*** Before Fix
+### Before Fix
 ```bash
 $ python -m src.training.train_tft_v1 --train_parquet ... --val_parquet ...
 TypeError: torch.optim.adamw.AdamW() got multiple values for keyword argument 'weight_decay'
 Exit code: 1 ❌
 ```
 
-***REMOVED******REMOVED******REMOVED*** After Fix
+### After Fix
 ```bash
 $ python -m src.training.train_tft_v1 --train_parquet ... --val_parquet ...
 Epoch 0: 100%|██████████| 550/550 [15:17<00:00,  0.60it/s]
@@ -103,7 +103,7 @@ Exit code: 0 ✅
 
 ---
 
-***REMOVED******REMOVED*** Changes Made
+## Changes Made
 
 | File | Change | Status |
 |------|--------|--------|
@@ -111,7 +111,7 @@ Exit code: 0 ✅
 
 ---
 
-***REMOVED******REMOVED*** Testing
+## Testing
 
 Executed test run with:
 ```bash
@@ -128,7 +128,7 @@ python -m src.training.train_tft_v1 \
 
 ---
 
-***REMOVED******REMOVED*** Why This Happened
+## Why This Happened
 
 The pytorch-forecasting `TemporalFusionTransformer.from_dataset()` API signature includes both:
 - A direct `weight_decay` parameter (for convenience)
@@ -138,7 +138,7 @@ Passing `weight_decay` in both locations causes a conflict. The fix uses the dir
 
 ---
 
-***REMOVED******REMOVED*** Impact
+## Impact
 
 - **Blocking issue**: YES — Training was completely blocked
 - **Data loss**: NO — No data corruption, purely a code bug
@@ -148,7 +148,7 @@ Passing `weight_decay` in both locations causes a conflict. The fix uses the dir
 
 ---
 
-***REMOVED******REMOVED*** Next Steps
+## Next Steps
 
 1. ✅ Run full Stage 4 training with proper hyperparameters
 2. ✅ Validate model metrics and checkpoints
@@ -157,7 +157,7 @@ Passing `weight_decay` in both locations causes a conflict. The fix uses the dir
 
 ---
 
-***REMOVED******REMOVED*** Related Files
+## Related Files
 
 - [src/models/tft_model.py](src/models/tft_model.py) — Fixed file
 - [src/training/train_tft_v1.py](src/training/train_tft_v1.py) — Training script (no changes needed)
@@ -165,7 +165,7 @@ Passing `weight_decay` in both locations causes a conflict. The fix uses the dir
 
 ---
 
-***REMOVED******REMOVED*** Appendix: Feature Data Integrity
+## Appendix: Feature Data Integrity
 
 The TFT input parquets are healthy:
 - ✅ `regional_train_tft_full.parquet`: 142,190 rows × 97 columns (82 MB)

@@ -1,4 +1,4 @@
-***REMOVED*** src/evaluation/inspect_parquets.py
+# src/evaluation/inspect_parquets.py
 from __future__ import annotations
 
 import argparse

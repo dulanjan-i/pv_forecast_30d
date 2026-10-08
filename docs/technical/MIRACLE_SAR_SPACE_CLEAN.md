@@ -1,4 +1,4 @@
-***REMOVED*** MiRACLE V1.0 - State-Action-Reward (SAR) Space
+# MiRACLE V1.0 - State-Action-Reward (SAR) Space
 
 **Date:** 2026-01-02  
 **Architecture:** 1 DDQN Meta-Controller + 3 Rule-Based Advisors  
@@ -7,7 +7,7 @@
 
 ---
 
-***REMOVED******REMOVED*** 🏗️ Architecture Overview
+## 🏗️ Architecture Overview
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -40,12 +40,12 @@
 
 ---
 
-***REMOVED******REMOVED*** 📊 STATE SPACE (S) - 35 Dimensions
+## 📊 STATE SPACE (S) - 35 Dimensions
 
 State is built by aggregating advisor observations + meta-context.
 
 ```python
-***REMOVED*** Code Location: src/rl/rl_meta_controller.py, line ~720
+# Code Location: src/rl/rl_meta_controller.py, line ~720
 def build_meta_state(self, metrics: Dict) -> np.ndarray:
     """
     Layout: [short_advisory(10), long_advisory(10), pvlib_advisory(8), context(7)]
@@ -53,16 +53,16 @@ def build_meta_state(self, metrics: Dict) -> np.ndarray:
     short_state = self.advisor_short_tft.get_advisory_state(metrics)
     long_state = self.advisor_long_tft.get_advisory_state(metrics)
     pvlib_state = self.advisor_pvlib.get_advisory_state(metrics)
-    meta_context = ...  ***REMOVED*** 7 dims
+    meta_context = ...  # 7 dims
     
     return np.concatenate([short_state, long_state, pvlib_state, meta_context])
 ```
 
-***REMOVED******REMOVED******REMOVED*** SHORT-TFT ADVISOR (10 dimensions)
+### SHORT-TFT ADVISOR (10 dimensions)
 
 **Purpose:** Monitor short-term forecast quality (1-24h horizon)
 
-| ***REMOVED*** | Feature | Range | Normalization | Code Reference |
+| # | Feature | Range | Normalization | Code Reference |
 |---|---------|-------|---------------|----------------|
 | 1 | `short_rmse_1h` | [0.0, 0.3] | Raw kW | Line 235 |
 | 2 | `short_rmse_24h` | [0.0, 0.3] | Raw kW | Line 236 |
@@ -77,23 +77,23 @@ def build_meta_state(self, metrics: Dict) -> np.ndarray:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 205-245
+# src/rl/rl_meta_controller.py, lines 205-245
 class LocalAdvisor:
     def _build_short_tft_state(self, metrics: Dict) -> np.ndarray:
         rmse_1h = metrics.get('short_rmse_1h', 0.0)
         rmse_24h = metrics.get('short_rmse_24h', 0.0)
         
-        ***REMOVED*** Compute trend (slope of last 20 samples)
+        # Compute trend (slope of last 20 samples)
         rmse_trend = np.polyfit(x, recent, 1)[0] if len(history) >= 20 else 0.0
         
         return np.array([rmse_1h, rmse_24h, confidence, drift, age/24, ...])
 ```
 
-***REMOVED******REMOVED******REMOVED*** LONG-TFT ADVISOR (10 dimensions)
+### LONG-TFT ADVISOR (10 dimensions)
 
 **Purpose:** Monitor long-term forecast quality (1-30 day horizon)
 
-| ***REMOVED*** | Feature | Range | Normalization | Code Reference |
+| # | Feature | Range | Normalization | Code Reference |
 |---|---------|-------|---------------|----------------|
 | 11 | `long_rmse_24h` | [0.0, 0.4] | Raw kW | Line 251 |
 | 12 | `long_rmse_7d` | [0.0, 0.5] | Raw kW | Line 252 |
@@ -108,23 +108,23 @@ class LocalAdvisor:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 248-263
+# src/rl/rl_meta_controller.py, lines 248-263
 def _build_long_tft_state(self, metrics: Dict) -> np.ndarray:
     rmse_24h = metrics.get('long_rmse_24h', 0.0)
     rmse_7d = metrics.get('long_rmse_7d', 0.0)
     rmse_30d = metrics.get('long_rmse_30d', 0.0)
     
-    ***REMOVED*** Horizon degradation: how much worse is 30d vs 24h?
+    # Horizon degradation: how much worse is 30d vs 24h?
     horizon_rmse_trend = (rmse_30d - rmse_24h) if rmse_24h > 0 else 0.0
     
     return np.array([rmse_24h, rmse_7d, rmse_30d, confidence, drift, ...])
 ```
 
-***REMOVED******REMOVED******REMOVED*** PVLIB ADVISOR (8 dimensions)
+### PVLIB ADVISOR (8 dimensions)
 
 **Purpose:** Monitor physics-based model alignment and calibration
 
-| ***REMOVED*** | Feature | Range | Normalization | Code Reference |
+| # | Feature | Range | Normalization | Code Reference |
 |---|---------|-------|---------------|----------------|
 | 21 | `physics_residual` | [0.0, 0.5] | TFT-PVLib RMSE | Line 268 |
 | 22 | `ghi` | [0, 1500] | / 1500.0 | Line 269 |
@@ -137,7 +137,7 @@ def _build_long_tft_state(self, metrics: Dict) -> np.ndarray:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 266-277
+# src/rl/rl_meta_controller.py, lines 266-277
 def _build_pvlib_state(self, metrics: Dict) -> np.ndarray:
     return np.array([
         metrics.get('physics_residual', 0.0),
@@ -151,11 +151,11 @@ def _build_pvlib_state(self, metrics: Dict) -> np.ndarray:
     ])
 ```
 
-***REMOVED******REMOVED******REMOVED*** META-CONTEXT (7 dimensions)
+### META-CONTEXT (7 dimensions)
 
 **Purpose:** Global system state for meta-controller decision-making
 
-| ***REMOVED*** | Feature | Range | Normalization | Code Reference |
+| # | Feature | Range | Normalization | Code Reference |
 |---|---------|-------|---------------|----------------|
 | 29 | `ensemble_rmse` | [0.0, 0.5] | Combined RMSE | Line 737 |
 | 30 | `short_long_mismatch` | [0.0, 0.3] | Head disagreement | Line 738 |
@@ -167,7 +167,7 @@ def _build_pvlib_state(self, metrics: Dict) -> np.ndarray:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 736-745
+# src/rl/rl_meta_controller.py, lines 736-745
 meta_context = np.array([
     metrics.get('ensemble_rmse', 0.0),
     metrics.get('short_long_mismatch', 0.0),
@@ -181,12 +181,12 @@ meta_context = np.array([
 
 ---
 
-***REMOVED******REMOVED*** ⚡ ACTION SPACE (A) - 8 Discrete Actions
+## ⚡ ACTION SPACE (A) - 8 Discrete Actions
 
 Only the meta-controller selects actions. Advisors do not act.
 
 ```python
-***REMOVED*** Code Location: src/rl/rl_meta_controller.py, lines 380-402
+# Code Location: src/rl/rl_meta_controller.py, lines 380-402
 class MetaController:
     ACTION_MAINTAIN = 0
     ACTION_FINE_TUNE_SHORT = 1
@@ -198,7 +198,7 @@ class MetaController:
     ACTION_SUGGEST_RETRAIN = 7
 ```
 
-***REMOVED******REMOVED******REMOVED*** A0: MAINTAIN
+### A0: MAINTAIN
 
 **Purpose:** No changes, keep current configuration  
 **Cost:** 0.0 (free)  
@@ -207,12 +207,12 @@ class MetaController:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, line 537
+# src/rl/rl_meta_controller.py, line 537
 if everything_nominal:
     return self.ACTION_MAINTAIN
 ```
 
-***REMOVED******REMOVED******REMOVED*** A1: FINE_TUNE_SHORT_TFT
+### A1: FINE_TUNE_SHORT_TFT
 
 **Purpose:** Adjust short-head TFT hyperparameters (automated)  
 **Cost:** 0.1  
@@ -225,12 +225,12 @@ if everything_nominal:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, line 549
+# src/rl/rl_meta_controller.py, line 549
 if short_rmse_1h > 0.10 and short_drift > 0.5:
     return self.ACTION_FINE_TUNE_SHORT
 ```
 
-***REMOVED******REMOVED******REMOVED*** A2: FINE_TUNE_LONG_TFT
+### A2: FINE_TUNE_LONG_TFT
 
 **Purpose:** Adjust long-head TFT hyperparameters (automated)  
 **Cost:** 0.15  
@@ -243,12 +243,12 @@ if short_rmse_1h > 0.10 and short_drift > 0.5:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, line 553
+# src/rl/rl_meta_controller.py, line 553
 if horizon_degradation > 0.05 or long_rmse_30d > 0.12:
     return self.ACTION_FINE_TUNE_LONG
 ```
 
-***REMOVED******REMOVED******REMOVED*** A3: RECALIBRATE_PVLIB
+### A3: RECALIBRATE_PVLIB
 
 **Purpose:** Update panel metadata (automated within safe ranges)  
 **Cost:** 0.05  
@@ -263,12 +263,12 @@ if horizon_degradation > 0.05 or long_rmse_30d > 0.12:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, line 542
+# src/rl/rl_meta_controller.py, line 542
 if physics_residual > 0.25:
     return self.ACTION_RECALIBRATE_PVLIB
 ```
 
-***REMOVED******REMOVED******REMOVED*** A4: ADJUST_BLEND_WEIGHTS_HIGH_SHORT
+### A4: ADJUST_BLEND_WEIGHTS_HIGH_SHORT
 
 **Purpose:** Favor short-term TFT in ensemble  
 **Cost:** 0.0 (free)  
@@ -279,14 +279,14 @@ if physics_residual > 0.25:
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 420-424
+# src/rl/rl_meta_controller.py, lines 420-424
 BLEND_PRESETS = {
-    4: {'short': 0.7, 'long': 0.2, 'physics': 0.1},  ***REMOVED*** High short
+    4: {'short': 0.7, 'long': 0.2, 'physics': 0.1},  # High short
     ...
 }
 ```
 
-***REMOVED******REMOVED******REMOVED*** A5: ADJUST_BLEND_WEIGHTS_HIGH_LONG
+### A5: ADJUST_BLEND_WEIGHTS_HIGH_LONG
 
 **Purpose:** Favor long-term TFT in ensemble  
 **Cost:** 0.0 (free)  
@@ -295,7 +295,7 @@ BLEND_PRESETS = {
 **When Used:** Planning horizon > 7 days, stable conditions  
 **Heuristic Rule:** Rarely used in heuristic mode (RL learns when)  
 
-***REMOVED******REMOVED******REMOVED*** A6: ADJUST_BLEND_WEIGHTS_HIGH_PHYSICS
+### A6: ADJUST_BLEND_WEIGHTS_HIGH_PHYSICS
 
 **Purpose:** Favor PVLib physics model in ensemble  
 **Cost:** 0.0 (free)  
@@ -306,12 +306,12 @@ BLEND_PRESETS = {
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, line 538
+# src/rl/rl_meta_controller.py, line 538
 if is_night > 0.5 and physics_residual < 0.15:
     return self.ACTION_BLEND_HIGH_PHYSICS
 ```
 
-***REMOVED******REMOVED******REMOVED*** A7: SUGGEST_RETRAIN
+### A7: SUGGEST_RETRAIN
 
 **Purpose:** Request full TFT retrain (human approval required)  
 **Cost:** 1.0 (expensive)  
@@ -320,7 +320,7 @@ if is_night > 0.5 and physics_residual < 0.15:
 
 **Human-in-the-Loop Workflow:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 780-790
+# src/rl/rl_meta_controller.py, lines 780-790
 if action == self.ACTION_SUGGEST_RETRAIN:
     self.retrain_queue.append({
         'timestamp': now,
@@ -328,19 +328,19 @@ if action == self.ACTION_SUGGEST_RETRAIN:
         'state': current_state
     })
     logger.warning("Retrain suggested - awaiting human confirmation")
-    ***REMOVED*** Human reviews queue and approves/rejects
+    # Human reviews queue and approves/rejects
 ```
 
 **Code Location:**
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, line 545
+# src/rl/rl_meta_controller.py, line 545
 if short_rmse_1h > 0.15 and total_retrain_count < 2:
     return self.ACTION_SUGGEST_RETRAIN
 ```
 
 ---
 
-***REMOVED******REMOVED*** 🎁 REWARD FUNCTION (R)
+## 🎁 REWARD FUNCTION (R)
 
 Aligned with original MiRACLE paper formulation.
 
@@ -350,23 +350,23 @@ R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−Cost_t) + w₄(−RetrainFreq
 
 **Code Location:** `src/rl/rl_meta_controller.py`, lines 805-835
 
-***REMOVED******REMOVED******REMOVED*** Component Breakdown
+### Component Breakdown
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 1. Accuracy (w₁ = 1.0)
+#### 1. Accuracy (w₁ = 1.0)
 
 ```python
-***REMOVED*** lines 815-818
+# lines 815-818
 rmse_prev = metrics.get('ensemble_rmse', 0.0)
 rmse_next = metrics_next.get('ensemble_rmse', 0.0)
-r_accuracy = 1.0 * (rmse_prev - rmse_next) / 0.01  ***REMOVED*** Normalize by 10W
+r_accuracy = 1.0 * (rmse_prev - rmse_next) / 0.01  # Normalize by 10W
 ```
 
 **Interpretation:** Reward RMSE improvement, penalize degradation. Normalized by 10W (0.01 kW) for numerical stability.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 2. Drift Control (w₂ = 0.5)
+#### 2. Drift Control (w₂ = 0.5)
 
 ```python
-***REMOVED*** lines 821-823
+# lines 821-823
 drift_score = metrics_next.get('data_drift_score', 0.0)
 short_long_mismatch = metrics_next.get('short_long_mismatch', 0.0)
 r_drift = -0.5 * (drift_score + short_long_mismatch) / 2.0
@@ -374,10 +374,10 @@ r_drift = -0.5 * (drift_score + short_long_mismatch) / 2.0
 
 **Interpretation:** Penalize distribution shift AND model disagreement. Higher weight than original (0.5 vs paper's w₂) because drift is critical indicator.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 3. Computational Cost (w₃ = 0.2)
+#### 3. Computational Cost (w₃ = 0.2)
 
 ```python
-***REMOVED*** lines 826-828
+# lines 826-828
 action_cost = self.meta_controller.ACTION_COSTS.get(action, 0.0)
 r_cost = -0.2 * action_cost
 ```
@@ -390,27 +390,27 @@ r_cost = -0.2 * action_cost
 - Blend adjustments: 0.0
 - Suggest retrain: 1.0
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 4. Retrain Frequency (w₄ = 0.3)
+#### 4. Retrain Frequency (w₄ = 0.3)
 
 ```python
-***REMOVED*** lines 831-832
+# lines 831-832
 retrain_count = metrics_next.get('total_retrain_count_7d', 0)
 r_retrain = -0.3 * retrain_count / 10.0
 ```
 
 **Interpretation:** Penalize excessive retraining requests. Normalized by 10 retrains/week.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 5. Bonus: API Agreement
+#### 5. Bonus: API Agreement
 
 ```python
-***REMOVED*** lines 835-836
+# lines 835-836
 api_agreement = metrics_next.get('api_agreement', 1.0)
 bonus = 0.1 if api_agreement > 0.9 else 0.0
 ```
 
 **Interpretation:** Small reward when weather APIs agree (high confidence).
 
-***REMOVED******REMOVED******REMOVED*** Reward Range
+### Reward Range
 
 **Typical Range:** `[-2.0, +2.0]`  
 **Best Case:** RMSE improvement + high API agreement = +2.1  
@@ -418,33 +418,33 @@ bonus = 0.1 if api_agreement > 0.9 else 0.0
 
 ---
 
-***REMOVED******REMOVED*** 🧠 Learning Algorithm (DDQN)
+## 🧠 Learning Algorithm (DDQN)
 
 **Code Location:** `src/rl/rl_meta_controller.py`, lines 570-622
 
-***REMOVED******REMOVED******REMOVED*** Hyperparameters (from MiRACLE paper)
+### Hyperparameters (from MiRACLE paper)
 
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 25-40
+# src/rl/rl_meta_controller.py, lines 25-40
 class RLConfig:
     learning_rate: float = 1e-4
     gamma: float = 0.95
     batch_size: int = 64
     epsilon_start: float = 1.0
     epsilon_end: float = 0.1
-    epsilon_decay: int = 10000  ***REMOVED*** steps
+    epsilon_decay: int = 10000  # steps
     buffer_capacity: int = 20000
-    target_update_freq: int = 1  ***REMOVED*** Soft update every step (smooth weather)
-    tau: float = 0.005  ***REMOVED*** Soft update (0.5% per step)
-    alpha: float = 0.6  ***REMOVED*** Prioritized replay
+    target_update_freq: int = 1  # Soft update every step (smooth weather)
+    tau: float = 0.005  # Soft update (0.5% per step)
+    alpha: float = 0.6  # Prioritized replay
     beta_start: float = 0.4
     beta_frames: int = 100000
 ```
 
-***REMOVED******REMOVED******REMOVED*** Q-Network Architecture
+### Q-Network Architecture
 
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 124-138
+# src/rl/rl_meta_controller.py, lines 124-138
 class DQN(nn.Module):
     def __init__(self, state_dim=35, action_dim=8, hidden_dim=256):
         self.fc1 = nn.Linear(state_dim, hidden_dim)
@@ -454,47 +454,47 @@ class DQN(nn.Module):
     def forward(self, state):
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        return self.fc3(x)  ***REMOVED*** Q-values for each action
+        return self.fc3(x)  # Q-values for each action
 ```
 
-***REMOVED******REMOVED******REMOVED*** DDQN Update Rule
+### DDQN Update Rule
 
 ```python
-***REMOVED*** src/rl/rl_meta_controller.py, lines 586-610
+# src/rl/rl_meta_controller.py, lines 586-610
 def update(self) -> float:
-    ***REMOVED*** Sample batch with prioritization
+    # Sample batch with prioritization
     transitions, indices, weights = self.replay_buffer.sample(batch_size, beta)
     
-    ***REMOVED*** Compute Q(s,a) from policy network
+    # Compute Q(s,a) from policy network
     q_values = self.policy_net(state_batch).gather(1, action_batch)
     
-    ***REMOVED*** Compute target: r + γ * Q_target(s', argmax_a' Q_policy(s', a'))
+    # Compute target: r + γ * Q_target(s', argmax_a' Q_policy(s', a'))
     with torch.no_grad():
         next_q_values = self.target_net(next_state_batch).max(1)[0]
         target_q_values = reward_batch + gamma * next_q_values
     
-    ***REMOVED*** TD-errors for priority update
+    # TD-errors for priority update
     td_errors = abs(q_values - target_q_values)
     self.replay_buffer.update_priorities(indices, td_errors)
     
-    ***REMOVED*** Weighted MSE loss (importance sampling)
+    # Weighted MSE loss (importance sampling)
     loss = (weights_batch * (q_values - target_q_values)**2).mean()
     
-    ***REMOVED*** Gradient descent
+    # Gradient descent
     self.optimizer.zero_grad()
     loss.backward()
     nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
     self.optimizer.step()
     
-    ***REMOVED*** Soft target update every step for smooth weather tracking
-    ***REMOVED*** θ_target = τ*θ_policy + (1-τ)*θ_target
-    if steps % target_update_freq == 0:  ***REMOVED*** target_update_freq = 1
+    # Soft target update every step for smooth weather tracking
+    # θ_target = τ*θ_policy + (1-τ)*θ_target
+    if steps % target_update_freq == 0:  # target_update_freq = 1
         soft_update_target()
 ```
 
 ---
 
-***REMOVED******REMOVED*** 📍 Code Map Summary
+## 📍 Code Map Summary
 
 | Component | File | Lines | Description |
 |-----------|------|-------|-------------|
@@ -511,16 +511,16 @@ def update(self) -> float:
 
 ---
 
-***REMOVED******REMOVED*** 🎯 Usage Example
+## 🎯 Usage Example
 
 ```python
 from src.rl import RLMetaControllerSystem, RLConfig
 
-***REMOVED*** Initialize system
-config = RLConfig(mode="heuristic")  ***REMOVED*** Start with rule-based
+# Initialize system
+config = RLConfig(mode="heuristic")  # Start with rule-based
 rl_system = RLMetaControllerSystem(config=config)
 
-***REMOVED*** Collect metrics from forecaster
+# Collect metrics from forecaster
 metrics = {
     'short_rmse_1h': 0.08,
     'short_rmse_24h': 0.12,
@@ -534,28 +534,28 @@ metrics = {
     'is_night': False,
     'hour_of_day': 14,
     'season': 2,
-    ***REMOVED*** ... (35 features total)
+    # ... (35 features total)
 }
 
-***REMOVED*** Meta-controller selects action
+# Meta-controller selects action
 action_info = rl_system.step(metrics)
 
 print(f"Action: {action_info['action_name']}")
 print(f"Blend Weights: {action_info['blend_weights']}")
 print(f"Advisor Alerts: {action_info['advisor_alerts']}")
 
-***REMOVED*** After forecasting, update with reward
-metrics_next = {...}  ***REMOVED*** New metrics after action
+# After forecasting, update with reward
+metrics_next = {...}  # New metrics after action
 rl_system.update(metrics_next, done=False)
 
-***REMOVED*** Switch to learned policy after training
+# Switch to learned policy after training
 config.mode = "rl"
 rl_system.load_checkpoint(Path("checkpoints/rl/meta_controller.pt"))
 ```
 
 ---
 
-***REMOVED******REMOVED*** 📚 References
+## 📚 References
 
 1. Original MiRACLE Paper: Hierarchical RL formulation (R_t = w₁(−RMSE) + w₂(−Drift) + w₃(−Cost) + w₄(−RetrainFreq))
 2. DDQN Paper: van Hasselt et al., "Deep Reinforcement Learning with Double Q-learning" (2015)

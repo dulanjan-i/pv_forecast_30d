@@ -1,13 +1,13 @@
-***REMOVED*** MiRACLE RL Meta-Controller Implementation Progress
+# MiRACLE RL Meta-Controller Implementation Progress
 **Date:** January 3, 2026  
 **Session Duration:** ~6 hours  
 **Status:** Phase 1 Complete, Ready for Phase 2
 
 ---
 
-***REMOVED******REMOVED*** ✅ COMPLETED TODAY
+## ✅ COMPLETED TODAY
 
-***REMOVED******REMOVED******REMOVED*** 1. Core RL Architecture Implementation
+### 1. Core RL Architecture Implementation
 - ✅ **RLMetaControllerSystem** (`src/rl/rl_meta_controller.py`)
   - DDQN with prioritized experience replay
   - 3 LocalAdvisors (short-TFT, long-TFT, PVLib) with rule-based logic
@@ -22,12 +22,12 @@
   - Logs to JSONL for dashboard monitoring
   - Heuristic mode: advisors make decisions, DDQN observes
 
-***REMOVED******REMOVED******REMOVED*** 2. Action Executors
+### 2. Action Executors
 - ✅ **BlendAdjuster** - Modify short/long/physics blend weights
 - ✅ **FineTuner** - Adjust TFT learning rates (simulated for now)
 - ✅ **PVLibRecalibrator** - Recalibrate physics model parameters
 
-***REMOVED******REMOVED******REMOVED*** 3. Monitoring Dashboard
+### 3. Monitoring Dashboard
 - ✅ **Streamlit Dashboard** (`src/rl/monitoring_dashboard.py`)
   - Real-time RL diagnostics: ε, Q-values, loss, buffer size
   - TFT RMSE tracking: 1h/6h/24h/7d/30d horizons
@@ -37,7 +37,7 @@
   - Action distribution histogram
   - UTC timestamp compliance verified
 
-***REMOVED******REMOVED******REMOVED*** 4. Data Collection Pipeline
+### 4. Data Collection Pipeline
 - ✅ **Historical Data Generator** (`src/rl/generate_historical_data.py`)
   - Runs TFT pipeline on test.parquet
   - Computes real RMSE from forecast vs ground truth
@@ -54,7 +54,7 @@
   - Heuristic mode data collection
   - Checkpoint every 100 samples
 
-***REMOVED******REMOVED******REMOVED*** 5. Training Infrastructure
+### 5. Training Infrastructure
 - ✅ **Offline DDQN Trainer** (`src/training/train_rl_offline.py`)
   - Loads transitions from parquet
   - Experience replay with prioritized sampling
@@ -62,7 +62,7 @@
   - Checkpoint saving every 1000 epochs
   - Training curves export (loss, Q-values, rewards)
 
-***REMOVED******REMOVED******REMOVED*** 6. Code Reorganization & Path Standardization
+### 6. Code Reorganization & Path Standardization
 - ✅ **All scripts moved from `scripts/` to `src/`**
   - `src/rl/`: collect_rl_data, generate_*, compute_rewards
   - `src/training/`: train_rl_offline
@@ -84,7 +84,7 @@
   - src/training/train_rl_offline.py
   - tests/test_rl_integration.py
 
-***REMOVED******REMOVED******REMOVED*** 7. Testing & Verification
+### 7. Testing & Verification
 - ✅ **Unit Tests** (`tests/test_rl_integration.py`)
   - Action executors (blend, fine-tune, recalibrate)
   - State collection (35-dim vector)
@@ -97,7 +97,7 @@
   - Metrics collection and state building
   - All tests passing
 
-***REMOVED******REMOVED******REMOVED*** 8. UTC Timestamp Compliance
+### 8. UTC Timestamp Compliance
 - ✅ **Global audit completed:** 13 timestamps fixed
   - src/rl/rl_integrated_forecaster.py (6 fixes)
   - src/rl/monitoring_dashboard.py (1 fix)
@@ -106,38 +106,38 @@
   - scripts/ (2 fixes)
   - **100% UTC compliance verified**
 
-***REMOVED******REMOVED******REMOVED*** 9. Documentation
+### 9. Documentation
 - ✅ `PATH_VERIFICATION.md` - Canonical paths reference
 - ✅ Test data generated: 20 transitions with realistic RMSE variance
 - ✅ Logs structured in `checkpoints/rl/logs/`
 
 ---
 
-***REMOVED******REMOVED*** 🔧 KNOWN ISSUES
+## 🔧 KNOWN ISSUES
 
-***REMOVED******REMOVED******REMOVED*** 1. Training Script Batch Size Bug
+### 1. Training Script Batch Size Bug
 **Problem:** `ValueError: inhomogeneous shape` when batch_size=16 > dataset_size=20
 **Location:** `src/training/train_rl_offline.py:101`
 **Fix Needed:** Clamp batch size to min(batch_size, len(buffer)) or handle small datasets
 
-***REMOVED******REMOVED******REMOVED*** 2. Limited Training Data
+### 2. Limited Training Data
 **Problem:** Only 20 transitions from test set (50 days, 30-day windows)
 **Impact:** Insufficient for meaningful DDQN training
 **Solution:** See Phase 2 below
 
-***REMOVED******REMOVED******REMOVED*** 3. Weather Data Access in Live Collection
+### 3. Weather Data Access in Live Collection
 **Problem:** `collect_rl_data.py` had DataFrame vs dict type mismatch
 **Status:** Fixed, but untested after path reorganization
 
-***REMOVED******REMOVED******REMOVED*** 4. Reward Computation
+### 4. Reward Computation
 **Problem:** Initial rewards were all 0.0 because ground_truth wasn't passed
 **Status:** Fixed in simulated generator, needs verification in live collector
 
 ---
 
-***REMOVED******REMOVED*** 📋 TODO FOR TOMORROW (Phase 2)
+## 📋 TODO FOR TOMORROW (Phase 2)
 
-***REMOVED******REMOVED******REMOVED*** Priority 1: Fix Training Pipeline (30 min)
+### Priority 1: Fix Training Pipeline (30 min)
 1. **Fix batch size clamping in train_rl_offline.py**
    ```python
    batch_size = min(self.batch_size, len(self.rl_system.meta_controller.replay_buffer))
@@ -156,7 +156,7 @@
    - Check `checkpoints/rl/ddqn_*.pt`
    - Verify training curves export
 
-***REMOVED******REMOVED******REMOVED*** Priority 2: Generate More Training Data (2-3 hours)
+### Priority 2: Generate More Training Data (2-3 hours)
 
 **Option A: Fix Historical Data Generator with Real TFT**
 1. Verify `predict_30d()` method signature in PhysicsAwareForecaster
@@ -174,7 +174,7 @@
 3. **Combine datasets:** `pd.concat([historical, online])`
 4. **Target:** 200+ transitions for meaningful training
 
-***REMOVED******REMOVED******REMOVED*** Priority 3: Online Data Collection (3-4 hours)
+### Priority 3: Online Data Collection (3-4 hours)
 
 1. **Test live collector with canonical paths**
    ```bash
@@ -193,7 +193,7 @@
    - Rewards reflect performance
    - Actions diverse (not all same)
 
-***REMOVED******REMOVED******REMOVED*** Priority 4: DDQN Training (2 hours)
+### Priority 4: DDQN Training (2 hours)
 
 1. **Train with combined dataset (200+ samples)**
    ```bash
@@ -215,13 +215,13 @@
    - Check if DDQN learns better blend strategies
    - Measure RMSE improvement
 
-***REMOVED******REMOVED******REMOVED*** Priority 5: Deployment Testing (1-2 hours)
+### Priority 5: Deployment Testing (1-2 hours)
 
 1. **Switch RLIntegratedForecaster to RL mode**
    ```python
    rl_forecaster = RLIntegratedForecaster(
        ...,
-       rl_mode="rl",  ***REMOVED*** Use trained DDQN
+       rl_mode="rl",  # Use trained DDQN
        rl_checkpoint="/path/to/ddqn_epoch_5000.pt"
    )
    ```
@@ -238,21 +238,21 @@
 
 ---
 
-***REMOVED******REMOVED*** 📊 METRICS TO TRACK
+## 📊 METRICS TO TRACK
 
-***REMOVED******REMOVED******REMOVED*** Training Metrics
+### Training Metrics
 - DDQN loss (TD-error)
 - Average Q-value per action
 - Replay buffer diversity
 - Epsilon decay curve
 
-***REMOVED******REMOVED******REMOVED*** Deployment Metrics
+### Deployment Metrics
 - Forecast RMSE (1h, 6h, 24h, 7d, 30d)
 - Blend weight stability (std over 100 samples)
 - Action frequency (% each action taken)
 - Compute cost (API calls, fine-tune operations)
 
-***REMOVED******REMOVED******REMOVED*** Success Criteria
+### Success Criteria
 - [ ] DDQN converges (loss < 0.01 stable for 100 epochs)
 - [ ] RL mode RMSE ≤ heuristic mode RMSE
 - [ ] Blend weights adapt to weather changes
@@ -260,36 +260,36 @@
 
 ---
 
-***REMOVED******REMOVED*** 🗂️ REPOSITORY STATE
+## 🗂️ REPOSITORY STATE
 
-***REMOVED******REMOVED******REMOVED*** Clean Structure
+### Clean Structure
 ```
 pv_forecast_30d/
 ├── src/
 │   ├── rl/
-│   │   ├── rl_meta_controller.py        ***REMOVED*** Core DDQN + advisors
-│   │   ├── rl_integrated_forecaster.py  ***REMOVED*** PhysicsAware + RL wrapper
-│   │   ├── monitoring_dashboard.py      ***REMOVED*** Streamlit dashboard
-│   │   ├── collect_rl_data.py           ***REMOVED*** Live data collection
-│   │   ├── generate_historical_data.py  ***REMOVED*** Historical TFT runs
-│   │   ├── generate_simulated_data.py   ***REMOVED*** Bootstrap with noise
-│   │   └── compute_rewards.py           ***REMOVED*** Post-process rewards
+│   │   ├── rl_meta_controller.py        # Core DDQN + advisors
+│   │   ├── rl_integrated_forecaster.py  # PhysicsAware + RL wrapper
+│   │   ├── monitoring_dashboard.py      # Streamlit dashboard
+│   │   ├── collect_rl_data.py           # Live data collection
+│   │   ├── generate_historical_data.py  # Historical TFT runs
+│   │   ├── generate_simulated_data.py   # Bootstrap with noise
+│   │   └── compute_rewards.py           # Post-process rewards
 │   ├── training/
-│   │   └── train_rl_offline.py          ***REMOVED*** DDQN offline trainer
+│   │   └── train_rl_offline.py          # DDQN offline trainer
 │   ├── inference/
-│   │   ├── physics_aware_forecaster.py  ***REMOVED*** Dual-TFT + PVLib
+│   │   ├── physics_aware_forecaster.py  # Dual-TFT + PVLib
 │   │   └── (other inference modules)
 │   └── (features, models, utils)
 ├── tests/
-│   └── test_rl_integration.py           ***REMOVED*** RL system tests
+│   └── test_rl_integration.py           # RL system tests
 ├── data/
 │   ├── rl_transitions/
-│   │   └── historical_batch.parquet     ***REMOVED*** 20 samples (simulated)
-│   └── processed/plant_level/plant_03/  ***REMOVED*** TFT train/test/val
+│   │   └── historical_batch.parquet     # 20 samples (simulated)
+│   └── processed/plant_level/plant_03/  # TFT train/test/val
 ├── checkpoints/
 │   └── rl/
-│       └── logs/                         ***REMOVED*** metrics.jsonl, rl_state.json
-├── V1.0_FINAL_TFT/                       ***REMOVED*** CANONICAL TFT checkpoints
+│       └── logs/                         # metrics.jsonl, rl_state.json
+├── V1.0_FINAL_TFT/                       # CANONICAL TFT checkpoints
 │   ├── shorthead_seed42/checkpoints/best.ckpt
 │   ├── longhead_seed43/checkpoints/best.ckpt
 │   └── plant_metadata/plant_03.json
@@ -299,7 +299,7 @@ pv_forecast_30d/
     └── (other logs)
 ```
 
-***REMOVED******REMOVED******REMOVED*** Git Status
+### Git Status
 - Branch: `rl-meta-build`
 - Uncommitted changes: ~15 new/modified files
 - Recommendation: **Commit before Phase 2**
@@ -320,21 +320,21 @@ pv_forecast_30d/
 
 ---
 
-***REMOVED******REMOVED*** 🎯 LONG-TERM ROADMAP
+## 🎯 LONG-TERM ROADMAP
 
-***REMOVED******REMOVED******REMOVED*** Phase 3: Online Learning (Week 2)
+### Phase 3: Online Learning (Week 2)
 - [ ] Continuous learning from production forecasts
 - [ ] Incremental DDQN updates
 - [ ] Drift detection triggers
 - [ ] Human-in-the-loop for SUGGEST_RETRAIN
 
-***REMOVED******REMOVED******REMOVED*** Phase 4: Multi-Plant Scaling (Week 3)
+### Phase 4: Multi-Plant Scaling (Week 3)
 - [ ] Transfer learning across plants
 - [ ] Plant-specific fine-tuning
 - [ ] Shared DDQN with plant embeddings
 - [ ] Regional vs local adaptation strategies
 
-***REMOVED******REMOVED******REMOVED*** Phase 5: Advanced RL (Week 4)
+### Phase 5: Advanced RL (Week 4)
 - [ ] Multi-objective optimization (RMSE + stability + cost)
 - [ ] Temporal abstraction (hierarchical RL)
 - [ ] Safe RL constraints (prevent catastrophic degradation)
@@ -342,7 +342,7 @@ pv_forecast_30d/
 
 ---
 
-***REMOVED******REMOVED*** 💡 KEY INSIGHTS FROM TODAY
+## 💡 KEY INSIGHTS FROM TODAY
 
 1. **Heuristic mode is essential** - Need expert demonstrations before RL can learn
 2. **Data is the bottleneck** - 50 days of test data → only 20 30-day windows
@@ -353,7 +353,7 @@ pv_forecast_30d/
 
 ---
 
-***REMOVED******REMOVED*** 🚀 READY FOR PHASE 2
+## 🚀 READY FOR PHASE 2
 
 **What's working:**
 - RL architecture complete and tested

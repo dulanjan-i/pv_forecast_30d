@@ -1,16 +1,16 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --job-name=tft_manual
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --cpus-per-task=16
-***REMOVED***SBATCH --mem=250G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
-***REMOVED***SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
+#!/bin/bash
+#SBATCH --job-name=tft_manual
+#SBATCH --partition=gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=250G
+#SBATCH --time=04:00:00
+#SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
+#SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
 
 set -euo pipefail
 
-***REMOVED*** --- CONFIG ---
+# --- CONFIG ---
 REPO="/shared/$USER/miracle/pv_forecast_30d"
 IMG="/shared/$USER/miracle/containers/tft_env_v1.sif"
 LOCAL_DIR="/tmp/$USER/$SLURM_JOB_ID"
@@ -20,11 +20,11 @@ ALLOCATED_GPU="${SLURM_JOB_GPUS:-0}"
 mkdir -p "$LOCAL_DIR"
 
 echo "=== COPYING DATA ==="
-***REMOVED*** Adjust these paths if they differ
+# Adjust these paths if they differ
 cp "$REPO/data/processed/pretraining/germany/global/tft_inputs/regional_train_tft_full.parquet" "$LOCAL_DIR/train.parquet"
 cp "$REPO/data/processed/pretraining/germany/global/tft_inputs/regional_val_tft_full.parquet" "$LOCAL_DIR/val.parquet"
 
-***REMOVED*** --- RUNNING MANUAL LOOP ---
+# --- RUNNING MANUAL LOOP ---
 singularity exec -C --nv \
   --env SLURM_ID_PASS=$ALLOCATED_GPU \
   --bind "/shared/$USER:/shared/$USER,/home/$USER:/home/$USER,/tmp:/tmp,/dev/shm:/dev/shm" \

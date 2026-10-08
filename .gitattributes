@@ -1,17 +1,17 @@
-***REMOVED*** .gitattributes
-***REMOVED*** Controls GitHub Linguist language detection for the repository language bar.
-***REMOVED*** Files marked linguist-documentation or linguist-vendored are excluded
-***REMOVED*** from the language breakdown shown on the GitHub repo page.
+# .gitattributes
+# Controls GitHub Linguist language detection for the repository language bar.
+# Files marked linguist-documentation or linguist-vendored are excluded
+# from the language breakdown shown on the GitHub repo page.
 
-***REMOVED*** Jupyter notebooks — not representative of the codebase language
+# Jupyter notebooks — not representative of the codebase language
 *.ipynb linguist-vendored
 
-***REMOVED*** LaTeX thesis tables and eval outputs — documentation artefacts, not source code
+# LaTeX thesis tables and eval outputs — documentation artefacts, not source code
 *.tex linguist-documentation
 
-***REMOVED*** Shell scripts — infrastructure, not the primary language
+# Shell scripts — infrastructure, not the primary language
 *.sh linguist-documentation
 
-***REMOVED*** YAML configs — not source code
+# YAML configs — not source code
 *.yaml linguist-documentation
 *.yml  linguist-documentation

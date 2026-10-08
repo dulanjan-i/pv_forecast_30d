@@ -1,10 +1,10 @@
-***REMOVED*** Thesis Figures & Tables Checklist (MiRACLE)
+# Thesis Figures & Tables Checklist (MiRACLE)
 
 This file maps the “must-have” checklist to **existing canonical artifacts** in the repo (prefer `freeze/final_thesis_v1/` for thesis headline results).
 
-***REMOVED******REMOVED*** Figures
+## Figures
 
-***REMOVED******REMOVED******REMOVED*** Architecture
+### Architecture
 
 - MiRACLE system architecture diagram (high-level)
   - Figure: [figures/architecture/miracle_high_level.png](figures/architecture/miracle_high_level.png)
@@ -15,7 +15,7 @@ This file maps the “must-have” checklist to **existing canonical artifacts**
   - Vector/PDF: [figures/architecture/miracle_full_data_pipeline.pdf](figures/architecture/miracle_full_data_pipeline.pdf)
   - Source (PlantUML): [architecture diagrams/miracle_full_data_pipeline.puml](../architecture%20diagrams/miracle_full_data_pipeline.puml)
 
-***REMOVED******REMOVED******REMOVED*** Benchmarks / Results (canonical)
+### Benchmarks / Results (canonical)
 
 - Error vs. forecast horizon plot
   - `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/figures/facets_leadtime_rmse_curve_0_24h.png`
@@ -25,14 +25,14 @@ This file maps the “must-have” checklist to **existing canonical artifacts**
 - Monthly RMSE plot (all models)
   - `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/figures/monthly_rmse_all_models.png`
 
-***REMOVED******REMOVED******REMOVED*** RL
+### RL
 
 - Baseline vs policy evaluation results
   - `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/text/results.md`
 
-***REMOVED******REMOVED*** Tables
+## Tables
 
-***REMOVED******REMOVED******REMOVED*** Canonical benchmark tables (thesis headline)
+### Canonical benchmark tables (thesis headline)
 
 - Overall metrics
   - CSV: `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/tables/overall_metrics.csv`
@@ -47,7 +47,7 @@ This file maps the “must-have” checklist to **existing canonical artifacts**
   - CSV: `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/tables/paired_daily_deltas_vs_baseline.csv`
   - LaTeX: `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/tables/paired_daily_deltas_vs_baseline.tex`
 
-***REMOVED******REMOVED******REMOVED*** RQ evaluation tables
+### RQ evaluation tables
 
 - RQ1 warm vs baselines
   - `freeze/final_thesis_v1/eval/rq1_warm_vs_tft/`
@@ -59,7 +59,7 @@ This file maps the “must-have” checklist to **existing canonical artifacts**
 - RQ4 baseline vs policy
   - `freeze/final_thesis_v1/eval/rq4_baseline_vs_policy/`
 
-***REMOVED******REMOVED*** Chapter drafts
+## Chapter drafts
 
 - Chapter 3: `thesis/chapters/CH03_Methodology_MiRACLE.md`
 - Chapter 4: `thesis/chapters/CH04_Experimental_Design_Ablations.md`

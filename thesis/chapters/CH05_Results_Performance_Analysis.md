@@ -1,6 +1,6 @@
-***REMOVED*** Chapter 5 — Results & Performance Analysis
+# Chapter 5 — Results & Performance Analysis
 
-***REMOVED******REMOVED*** Canonical results policy (thesis headline)
+## Canonical results policy (thesis headline)
 
 All headline quantitative claims in this chapter are taken from the **canonical 2024 inference backtests** under:
 
@@ -10,9 +10,9 @@ All headline quantitative claims in this chapter are taken from the **canonical 
 These artifacts apply night filtering (**$y_{true} \ge 0.01$**) and report **N = 394,008**.
 
 
-***REMOVED******REMOVED*** 5.1 Overall system performance
+## 5.1 Overall system performance
 
-***REMOVED******REMOVED******REMOVED*** 5.1.1 30-day forecast performance (overall)
+### 5.1.1 30-day forecast performance (overall)
 
 From the canonical benchmark suite (`text/results.md`, `tables/overall_metrics.csv`), the end-to-end performance (night-filtered) is:
 
@@ -30,7 +30,7 @@ Vector/PDF version: [../figures/ablations/ablation_rmse_overall.pdf](../figures/
 
 This establishes MiRACLE’s full integration as the strongest overall performer among the tested baselines.
 
-***REMOVED******REMOVED******REMOVED*** 5.1.2 Horizon-disaggregated performance (Day 1 vs Weeks 2–4)
+### 5.1.2 Horizon-disaggregated performance (Day 1 vs Weeks 2–4)
 
 Horizon bucket results are provided in:
 
@@ -50,7 +50,7 @@ For comparison, TFT-Only RMSE is consistently higher:
 
 These bucketed metrics show that MiRACLE’s advantage persists across the full 30-day horizon, not only in the near-term window.
 
-***REMOVED******REMOVED******REMOVED*** 5.1.3 Multi-resolution performance and hierarchical effect
+### 5.1.3 Multi-resolution performance and hierarchical effect
 
 MiRACLE’s multi-resolution design is supported by two strands of evidence:
 
@@ -73,7 +73,7 @@ Case-study figures are available for qualitative illustration:
 - `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/figures/facets_case_winter_week.png`
 
 
-***REMOVED******REMOVED*** 5.2 Transfer learning effectiveness
+## 5.2 Transfer learning effectiveness
 
 Transfer-learning impact is evaluated as RQ2:
 
@@ -93,7 +93,7 @@ Lead-bucket deltas indicate warm-start improves across:
 This supports the thesis hypothesis that regional/warm initialization reduces error, particularly in the short horizon where operational calibration matters.
 
 
-***REMOVED******REMOVED*** 5.3 Physics-informed features impact
+## 5.3 Physics-informed features impact
 
 Physics contribution is evaluated as RQ1 (MiRACLE vs PVLib-only):
 
@@ -107,7 +107,7 @@ Overall RMSE:
 This demonstrates that physics alone is not sufficient for high-accuracy forecasting in this setting, but **physics becomes highly valuable as a prior and constraint mechanism** when combined with learned models.
 
 
-***REMOVED******REMOVED*** 5.4 RL meta-controller performance
+## 5.4 RL meta-controller performance
 
 RL policy evaluation is captured in:
 
@@ -131,7 +131,7 @@ Interpretation:
 Action distribution for the evaluated policy is included in the canonical artifact (counts of selected actions).
 
 
-***REMOVED******REMOVED*** 5.5 Interpretability analysis
+## 5.5 Interpretability analysis
 
 MiRACLE’s interpretability story has two layers:
 
@@ -141,7 +141,7 @@ MiRACLE’s interpretability story has two layers:
 (If desired, a dedicated interpretability figure set can be generated alongside the benchmark suite using the same `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/` workflow.)
 
 
-***REMOVED******REMOVED*** 5.6 Computational efficiency
+## 5.6 Computational efficiency
 
 Computational feasibility is addressed via:
 
@@ -157,7 +157,7 @@ For the thesis, this section should report:
 (Where exact numbers are required, they should be extracted from the saved logs rather than estimated.)
 
 
-***REMOVED******REMOVED*** 5.7 Robustness analysis
+## 5.7 Robustness analysis
 
 Robustness topics to include (and, where available, quantify):
 
@@ -168,7 +168,7 @@ Robustness topics to include (and, where available, quantify):
 The benchmark suite already provides monthly breakdowns (see `monthly_metrics_long.csv`) which support a first robustness lens across seasons.
 
 
-***REMOVED******REMOVED*** 5.8 Summary
+## 5.8 Summary
 
 The canonical 2024 backtests demonstrate:
 

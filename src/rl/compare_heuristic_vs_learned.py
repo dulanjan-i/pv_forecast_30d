@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Compare Heuristic vs Learned RL Policy on Held-Out Test Windows
 
@@ -67,7 +67,7 @@ def main():
     print(f'Device: {args.device}')
     print('='*80)
     
-    ***REMOVED*** Load base forecaster
+    # Load base forecaster
     print('\nLoading PhysicsAwareForecaster...')
     forecaster = PhysicsAwareForecaster(
         short_ckpt=Path(args.short_ckpt),
@@ -79,14 +79,14 @@ def main():
     )
     print('✅ Forecaster loaded')
     
-    ***REMOVED*** Load test data
+    # Load test data
     print('\nLoading test data...')
     test_df = pd.read_parquet(args.test_data)
     test_df = test_df.sort_values('timestamp_utc').reset_index(drop=True)
     
-    ***REMOVED*** Extract test windows
-    lookback = 672  ***REMOVED*** 7 days @ 15min for encoder
-    window_size = 96  ***REMOVED*** 1 day forecast @ 15min
+    # Extract test windows
+    lookback = 672  # 7 days @ 15min for encoder
+    window_size = 96  # 1 day forecast @ 15min
     stride = 96
     num_windows = args.num_windows
     
@@ -106,7 +106,7 @@ def main():
     
     print(f'✅ Extracted {len(windows)} held-out test windows')
     
-    ***REMOVED*** Run both modes
+    # Run both modes
     results = []
     
     for mode in ['heuristic', 'learned']:
@@ -130,7 +130,7 @@ def main():
                     ground_truth=gt
                 )
                 
-                ***REMOVED*** Align and compute Day 1 RMSE only (where blend matters)
+                # Align and compute Day 1 RMSE only (where blend matters)
                 day1_length = min(96, len(gt), len(forecast))
                 forecast_day1 = forecast[:day1_length]
                 gt_day1 = gt[:day1_length]
@@ -150,13 +150,13 @@ def main():
                 print(f'Error window {idx}: {e}')
                 continue
     
-    ***REMOVED*** Save results
+    # Save results
     df_results = pd.DataFrame(results)
     output_path = Path(args.checkpoint_dir) / 'heuristic_vs_learned_comparison.csv'
     df_results.to_csv(output_path, index=False)
     print(f'\n✅ Results saved to: {output_path}')
     
-    ***REMOVED*** Analyze results
+    # Analyze results
     print('\n' + '='*80)
     print('COMPARISON RESULTS')
     print('='*80)
@@ -172,7 +172,7 @@ def main():
             action_name = subset[subset['action'] == action]['action_name'].iloc[0]
             print(f'    {action} ({action_name}): {count} ({100*count/len(subset):.1f}%)')
     
-    ***REMOVED*** Statistical test
+    # Statistical test
     heur_rmse = df_results[df_results['mode'] == 'heuristic']['rmse'].values
     learn_rmse = df_results[df_results['mode'] == 'learned']['rmse'].values
     

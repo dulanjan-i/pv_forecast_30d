@@ -7,9 +7,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Helpers
-***REMOVED*** -----------------------------
+# -----------------------------
+# Helpers
+# -----------------------------
 def rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
@@ -28,7 +28,7 @@ def most_recent_stitch(preds: pd.DataFrame) -> pd.DataFrame:
     df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
     df["forecast_start"] = pd.to_datetime(df["forecast_start"], utc=True)
 
-    ***REMOVED*** Sort so latest forecast_start comes last, then drop duplicates keeping last
+    # Sort so latest forecast_start comes last, then drop duplicates keeping last
     df = df.sort_values(["timestamp_utc", "forecast_start"])
     df = df.drop_duplicates(subset=["timestamp_utc"], keep="last")
     df = df.sort_values("timestamp_utc").reset_index(drop=True)
@@ -80,9 +80,9 @@ def savefig(outdir: Path, name: str):
     print("[OK] wrote", p)
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Plotters
-***REMOVED*** -----------------------------
+# -----------------------------
+# Plotters
+# -----------------------------
 def plot_case_week(df: pd.DataFrame, outdir: Path, week_start_utc: str, title: str, fname: str,
                    colors: dict):
     ws = pd.Timestamp(week_start_utc, tz="UTC")
@@ -149,12 +149,12 @@ def plot_leadtime_rmse_curve(preds_core_path: str, preds_v1_path: str, preds_v2_
     v1 = load_preds_with_step(preds_v1_path)
     v2 = load_preds_with_step(preds_v2_path)
 
-    ***REMOVED*** join each with gt on timestamp_utc
+    # join each with gt on timestamp_utc
     core = core.merge(gt, on="timestamp_utc", how="inner")
     v1 = v1.merge(gt, on="timestamp_utc", how="inner")
     v2 = v2.merge(gt, on="timestamp_utc", how="inner")
 
-    ***REMOVED*** keep only day1 steps 0..95 (if file contains more)
+    # keep only day1 steps 0..95 (if file contains more)
     core = core[(core["step_ahead"] >= 0) & (core["step_ahead"] <= 95)]
     v1 = v1[(v1["step_ahead"] >= 0) & (v1["step_ahead"] <= 95)]
     v2 = v2[(v2["step_ahead"] >= 0) & (v2["step_ahead"] <= 95)]
@@ -200,13 +200,13 @@ def plot_tails(df: pd.DataFrame, outdir: Path, colors: dict):
     d["abs_err_core"] = (d["core"] - d["power_norm"]).abs()
     d["abs_err_v1"] = (d["v1"] - d["power_norm"]).abs()
     d["abs_err_v2"] = (d["v2"] - d["power_norm"]).abs()
-    ***REMOVED*** Robust histogram: clip x-axis (abs error), use denser bins, emphasize MiRACLE Core on top
+    # Robust histogram: clip x-axis (abs error), use denser bins, emphasize MiRACLE Core on top
     core_vals = d["abs_err_core"].to_numpy()
     v1_vals = d["abs_err_v1"].to_numpy()
     v2_vals = d["abs_err_v2"].to_numpy()
 
     all_vals = np.concatenate([core_vals, v1_vals, v2_vals])
-    ***REMOVED*** choose a clipping threshold similar to example: min(0.8, 99.5th percentile)
+    # choose a clipping threshold similar to example: min(0.8, 99.5th percentile)
     try:
         clip_x = float(min(0.8, np.quantile(all_vals[np.isfinite(all_vals)], 0.995)))
         if clip_x <= 0 or not np.isfinite(clip_x):
@@ -218,11 +218,11 @@ def plot_tails(df: pd.DataFrame, outdir: Path, colors: dict):
 
     plt.figure(figsize=(12, 4.5))
 
-    ***REMOVED*** plot RL variants behind
+    # plot RL variants behind
     plt.hist(np.clip(v1_vals, 0, clip_x), bins=bins, alpha=0.6, label="RL v1", color=colors["v1"], zorder=1)
     plt.hist(np.clip(v2_vals, 0, clip_x), bins=bins, alpha=0.6, label="RL v2", color=colors["v2"], zorder=1)
 
-    ***REMOVED*** plot core on top with black edge for clarity
+    # plot core on top with black edge for clarity
     plt.hist(np.clip(core_vals, 0, clip_x), bins=bins, alpha=0.9, label="MiRACLE Core",
              color=colors["core"], zorder=3, edgecolor="black", linewidth=0.4)
 
@@ -241,7 +241,7 @@ def plot_tails(df: pd.DataFrame, outdir: Path, colors: dict):
 
     savefig(outdir, "tails_abs_error_hist_core_vs_rl_v1_v2.png")
 
-    ***REMOVED*** quantiles table plot
+    # quantiles table plot
     qs = [0.50, 0.90, 0.95, 0.99]
     qtab = pd.DataFrame({
         "q": qs,
@@ -264,9 +264,9 @@ def plot_tails(df: pd.DataFrame, outdir: Path, colors: dict):
     print("[OK] wrote", outdir / "tails_abs_error_quantiles_core_vs_rl_v1_v2.csv")
 
 
-***REMOVED*** -----------------------------
-***REMOVED*** Main
-***REMOVED*** -----------------------------
+# -----------------------------
+# Main
+# -----------------------------
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--core", required=True, help="Core predictions parquet (baseline)")
@@ -281,15 +281,15 @@ def main():
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Color rules 
+    # Color rules 
     colors = {
         "gt": "grey",
         "core": "green",
-        "v1": "***REMOVED***7EC8E3",   ***REMOVED*** light blue
+        "v1": "#7EC8E3",   # light blue
         "v2": "orange",
     }
 
-    ***REMOVED*** Load and stitch (most-recent)
+    # Load and stitch (most-recent)
     gt = pd.read_parquet(args.gt)[["timestamp_utc", "power_norm"]].copy()
     gt["timestamp_utc"] = pd.to_datetime(gt["timestamp_utc"], utc=True)
 
@@ -297,7 +297,7 @@ def main():
     v1_st = join_gt(most_recent_stitch(load_preds(args.v1)), gt).rename(columns={"predicted_power_norm": "v1"})
     v2_st = join_gt(most_recent_stitch(load_preds(args.v2)), gt).rename(columns={"predicted_power_norm": "v2"})
 
-    ***REMOVED*** Merge into a single stitched frame
+    # Merge into a single stitched frame
     df = core_st[["timestamp_utc", "power_norm", "core"]].merge(
         v1_st[["timestamp_utc", "v1"]], on="timestamp_utc", how="inner"
     ).merge(
@@ -313,13 +313,13 @@ def main():
     df.to_parquet(outdir / "stitched_core_vs_rl_v1_v2.parquet", index=False)
     print("[OK] wrote", outdir / "stitched_core_vs_rl_v1_v2.parquet")
 
-    ***REMOVED*** Plots
+    # Plots
     plot_tails(df, outdir, colors)
     plot_case_week(df, outdir, args.summer_week_start_utc, "Case study: summer week", "case_summer_week_core_vs_rl_v1_v2.png", colors)
     plot_case_week(df, outdir, args.winter_week_start_utc, "Case study: winter week", "case_winter_week_core_vs_rl_v1_v2.png", colors)
     plot_monthly_rmse(df, outdir, colors)
 
-    ***REMOVED*** Lead-time curve from raw forecast rows
+    # Lead-time curve from raw forecast rows
     plot_leadtime_rmse_curve(args.core, args.v1, args.v2, args.gt, outdir, colors)
 
     print("[OK] wrote plots to:", outdir)

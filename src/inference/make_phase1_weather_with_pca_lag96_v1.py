@@ -22,7 +22,7 @@ def main() -> None:
     base = pd.read_parquet(base_weather)
     pca = pd.read_parquet(pca_weather)
 
-    ***REMOVED*** normalize dtypes
+    # normalize dtypes
     base[args.time_col] = pd.to_datetime(base[args.time_col], utc=True)
     pca[args.time_col] = pd.to_datetime(pca[args.time_col], utc=True)
 
@@ -43,12 +43,12 @@ def main() -> None:
     key = [args.time_col, args.id_col]
     merged = base.merge(pca_small, on=key, how="left")
 
-    ***REMOVED*** coverage sanity
+    # coverage sanity
     cov = float(merged["lstm_enc_pca_000_lag96"].notna().mean()) if "lstm_enc_pca_000_lag96" in merged.columns else 0.0
     print(f"[INFO] merged rows={len(merged)}  coverage lstm_enc_pca_000_lag96={cov:.4f}")
     print(f"[INFO] base min/max: {merged[args.time_col].min()}  {merged[args.time_col].max()}")
 
-    ***REMOVED*** write both root and processed, to satisfy whichever path your pipeline expects
+    # write both root and processed, to satisfy whichever path your pipeline expects
     (out_dir / "processed").mkdir(parents=True, exist_ok=True)
     out1 = out_dir / "weather_with_pvlib_15min.parquet"
     out2 = out_dir / "processed" / "weather_with_pvlib_15min.parquet"

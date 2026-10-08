@@ -64,13 +64,13 @@ import pvlib
 import inspect
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Canonical column names (keep consistent with your schema)
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Canonical column names (keep consistent with your schema)
+# ---------------------------------------------------------------------
 TIME_COL = "timestamp_utc"
 PLANT_ID_COL = "plant_id"
 
-***REMOVED*** Weather columns expected in Stage 3.7 outputs
+# Weather columns expected in Stage 3.7 outputs
 REQ_WEATHER_COLS = [
     "temperature_2m",
     "relative_humidity_2m",
@@ -79,17 +79,17 @@ REQ_WEATHER_COLS = [
     "cloud_cover",
     "wind_speed_10m",
     "wind_direction_10m",
-    "shortwave_radiation_instant",          ***REMOVED*** GHI proxy
-    "direct_radiation_instant",             ***REMOVED*** often DNI-projected, but we rely on DNI below
-    "diffuse_radiation_instant",            ***REMOVED*** DHI
-    "direct_normal_irradiance_instant",     ***REMOVED*** DNI
-    "global_tilted_irradiance_instant",     ***REMOVED*** GTI (not used for POA calc here)
+    "shortwave_radiation_instant",          # GHI proxy
+    "direct_radiation_instant",             # often DNI-projected, but we rely on DNI below
+    "diffuse_radiation_instant",            # DHI
+    "direct_normal_irradiance_instant",     # DNI
+    "global_tilted_irradiance_instant",     # GTI (not used for POA calc here)
     "surface_pressure",
 ]
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Helpers
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
 def _read_json(path: Path) -> dict:
     with open(path, "r") as f:
         return json.load(f)
@@ -115,18 +115,18 @@ def compute_cell_temperature(poa_global: np.ndarray, temp_air: np.ndarray, wind:
     temp_air = np.asarray(temp_air, dtype=float)
     wind = np.asarray(wind, dtype=float)
 
-    ***REMOVED*** Try SAPM
+    # Try SAPM
     try:
         sig = inspect.signature(pvlib.temperature.sapm_cell)
         params = sig.parameters
 
         if {"a", "b", "deltaT"}.issubset(set(params.keys())):
-            ***REMOVED*** Newer pvlib API, needs a, b, deltaT
+            # Newer pvlib API, needs a, b, deltaT
             sapm_params = None
             try:
                 sapm_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS["sapm"]["open_rack_glass_glass"]
             except Exception:
-                ***REMOVED*** Reasonable fallback config name
+                # Reasonable fallback config name
                 sapm_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS["sapm"]["open_rack_glass_polymerback"]
 
             a = float(sapm_params["a"])
@@ -134,14 +134,14 @@ def compute_cell_temperature(poa_global: np.ndarray, temp_air: np.ndarray, wind:
             deltaT = float(sapm_params["deltaT"])
             return pvlib.temperature.sapm_cell(poa_global, temp_air, wind, a=a, b=b, deltaT=deltaT).to_numpy()
 
-        ***REMOVED*** Older pvlib API (no a,b,deltaT required)
+        # Older pvlib API (no a,b,deltaT required)
         out = pvlib.temperature.sapm_cell(poa_global, temp_air, wind)
         return np.asarray(out, dtype=float)
 
     except Exception:
         pass
 
-    ***REMOVED*** Fallback: PVsyst
+    # Fallback: PVsyst
     try:
         pvsyst_params = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS["pvsyst"]["freestanding"]
         u_c = float(pvsyst_params["u_c"])
@@ -156,21 +156,21 @@ def _get_capacity_kw(meta: dict) -> float:
     Return plant capacity in kW from metadata.
     Accepts common key variants.
     """
-    ***REMOVED*** Most likely in your JSON
+    # Most likely in your JSON
     if isinstance(meta.get("installed_capacity_kw", None), (int, float)):
         return float(meta["installed_capacity_kw"])
 
-    ***REMOVED*** Other possible variants
+    # Other possible variants
     for k in ["capacity_kw", "pdc0_kw"]:
         if isinstance(meta.get(k, None), (int, float)):
             return float(meta[k])
 
-    ***REMOVED*** MW variants
+    # MW variants
     for k in ["installed_capacity_mw", "capacity_mw", "pdc0_mw"]:
         if isinstance(meta.get(k, None), (int, float)):
             return float(meta[k]) * 1000.0
 
-    ***REMOVED*** Watts variant
+    # Watts variant
     if isinstance(meta.get("pdc0_w", None), (int, float)):
         return float(meta["pdc0_w"]) / 1000.0
 
@@ -185,7 +185,7 @@ def _get_surface_azimuth(meta: dict) -> float:
     if isinstance(meta.get("azimuth_deg", None), (int, float)):
         return float(meta["azimuth_deg"])
 
-    ***REMOVED*** Convert from South=0 style if present
+    # Convert from South=0 style if present
     if isinstance(meta.get("azimuth_deg_sy", None), (int, float)):
         return (180.0 + float(meta["azimuth_deg_sy"])) % 360.0
 
@@ -216,7 +216,7 @@ def _ensure_clean_time_index(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     d[TIME_COL] = pd.to_datetime(d[TIME_COL], utc=True)
     d = d.sort_values([PLANT_ID_COL, TIME_COL]).reset_index(drop=True)
-    ***REMOVED*** Drop duplicate timestamps within each plant (keep last to match most recent row)
+    # Drop duplicate timestamps within each plant (keep last to match most recent row)
     d = d.drop_duplicates(subset=[PLANT_ID_COL, TIME_COL], keep="last")
     return d
 
@@ -239,7 +239,7 @@ def _compute_pvlib_for_one_plant(wp: pd.DataFrame, meta: dict) -> pd.DataFrame:
     azm = float(_get_surface_azimuth(meta))
     cap_kw = float(_get_capacity_kw(meta))
 
-    ***REMOVED*** Sort and set index
+    # Sort and set index
     wp = wp.copy()
     wp[TIME_COL] = pd.to_datetime(wp[TIME_COL], utc=True)
     wp = wp.sort_values(TIME_COL).reset_index(drop=True)
@@ -247,7 +247,7 @@ def _compute_pvlib_for_one_plant(wp: pd.DataFrame, meta: dict) -> pd.DataFrame:
     times = wp[TIME_COL]
     idx = pd.DatetimeIndex(times)
 
-    ***REMOVED*** Irradiance: clamp negatives to 0 (interpolation artifacts can create negatives)
+    # Irradiance: clamp negatives to 0 (interpolation artifacts can create negatives)
     dni = wp["direct_normal_irradiance_instant"].astype(float).clip(lower=0.0).to_numpy()
     ghi = wp["shortwave_radiation_instant"].astype(float).clip(lower=0.0).to_numpy()
     dhi = wp["diffuse_radiation_instant"].astype(float).clip(lower=0.0).to_numpy()
@@ -255,15 +255,15 @@ def _compute_pvlib_for_one_plant(wp: pd.DataFrame, meta: dict) -> pd.DataFrame:
     temp_air = wp["temperature_2m"].astype(float).to_numpy()
     wind = wp["wind_speed_10m"].astype(float).clip(lower=0.0).to_numpy()
 
-    ***REMOVED*** Solar position
+    # Solar position
     solpos = pvlib.solarposition.get_solarposition(time=idx, latitude=lat, longitude=lon)
     solar_zenith = solpos["zenith"].to_numpy()
     solar_azimuth = solpos["azimuth"].to_numpy()
 
-    ***REMOVED*** dni_extra required for haydavies
+    # dni_extra required for haydavies
     dni_extra = pvlib.irradiance.get_extra_radiation(idx).to_numpy()
 
-    ***REMOVED*** POA irradiance via Hay-Davies
+    # POA irradiance via Hay-Davies
     poa = pvlib.irradiance.get_total_irradiance(
         surface_tilt=tilt,
         surface_azimuth=azm,
@@ -277,18 +277,18 @@ def _compute_pvlib_for_one_plant(wp: pd.DataFrame, meta: dict) -> pd.DataFrame:
         albedo=0.2,
     )
 
-    ***REMOVED*** Ensure numpy arrays
+    # Ensure numpy arrays
     poa_global = np.asarray(poa["poa_global"]).clip(min=0.0)
     poa_direct = np.asarray(poa.get("poa_direct", np.full_like(poa_global, np.nan))).clip(min=0.0)
     poa_diffuse = np.asarray(poa.get("poa_diffuse", np.full_like(poa_global, np.nan))).clip(min=0.0)
     poa_ground_diffuse = np.asarray(poa.get("poa_ground_diffuse", np.full_like(poa_global, np.nan))).clip(min=0.0)
 
-    ***REMOVED*** Cell temperature (simple SAPM model)
+    # Cell temperature (simple SAPM model)
     temp_cell = compute_cell_temperature(poa_global, temp_air, wind)
 
-    ***REMOVED*** PVWatts DC/AC proxies
+    # PVWatts DC/AC proxies
     pdc0_w = cap_kw * 1000.0
-    gamma_pdc = -0.003  ***REMOVED*** typical
+    gamma_pdc = -0.003  # typical
     pdc_w = pvlib.pvsystem.pvwatts_dc(poa_global, temp_cell, pdc0=pdc0_w, gamma_pdc=gamma_pdc)
     pac_w = pvlib.inverter.pvwatts(pdc_w, pdc0=pdc0_w)
 
@@ -315,7 +315,7 @@ def build_pvlib_table(weather_df: pd.DataFrame, meta_dir: Path) -> pd.DataFrame:
     """
     weather_df = _ensure_clean_time_index(weather_df)
 
-    ***REMOVED*** Basic column validation
+    # Basic column validation
     need = set([PLANT_ID_COL, TIME_COL]) | set(REQ_WEATHER_COLS)
     missing = sorted(need - set(weather_df.columns))
     if missing:

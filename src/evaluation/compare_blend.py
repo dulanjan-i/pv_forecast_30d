@@ -15,7 +15,7 @@ except Exception as e:
     print("Failed to read one of the parquet files:", e)
     sys.exit(2)
 
-***REMOVED*** try common join keys
+# try common join keys
 keys = [k for k in ["timestamp_utc", "plant_id", "horizon", "lead_time", "target_time"]
         if k in tft.columns and k in sh.columns and k in lo.columns]
 if not keys:
@@ -27,12 +27,12 @@ if not keys:
     print("No common join keys found between the three tables. Exiting.")
     sys.exit(1)
 
-***REMOVED*** guess prediction column
+# guess prediction column
 def pred_col(df, keys):
     for c in ["y_hat", "y_pred", "pred", "power_pred", "power_norm_pred", "prediction", "p_hat"]:
         if c in df.columns:
             return c
-    ***REMOVED*** fallback: numeric columns excluding keys (use pandas is_numeric_dtype to avoid TZ dtype issues)
+    # fallback: numeric columns excluding keys (use pandas is_numeric_dtype to avoid TZ dtype issues)
     num = [c for c in df.columns if c not in keys and is_numeric_dtype(df[c])]
     return num[0] if num else None
 
@@ -47,32 +47,32 @@ if ct is None or cs is None or cl is None:
     print("Please provide explicit column names.")
     sys.exit(1)
 
-***REMOVED*** Ensure selected columns actually exist in the dataframes (defensive)
+# Ensure selected columns actually exist in the dataframes (defensive)
 for name, df, col in [("tft", tft, ct), ("short", sh, cs), ("long", lo, cl)]:
     if col not in df.columns:
         print(f"Expected column '{col}' not found in {name} dataframe. Exiting.")
         sys.exit(1)
 
-***REMOVED*** Merge safely: select only keys + pred cols from short/long to avoid duplicate columns
+# Merge safely: select only keys + pred cols from short/long to avoid duplicate columns
 left = tft
 right_sh = sh[keys + [cs]].copy()
 right_lo = lo[keys + [cl]].copy()
 
 m = left.merge(right_sh, on=keys, how="inner").merge(right_lo, on=keys, how="inner")
 
-***REMOVED*** Drop rows with NaNs in the prediction columns
+# Drop rows with NaNs in the prediction columns
 m = m.dropna(subset=[ct, cs, cl])
 
 if len(m) == 0:
     print("No rows after merging and dropping NaNs. Exiting.")
     sys.exit(1)
 
-***REMOVED*** Convert to numeric arrays (coerce if needed)
+# Convert to numeric arrays (coerce if needed)
 y = pd.to_numeric(m[ct], errors="coerce").to_numpy(dtype=float)
 ys = pd.to_numeric(m[cs], errors="coerce").to_numpy(dtype=float)
 yl = pd.to_numeric(m[cl], errors="coerce").to_numpy(dtype=float)
 
-***REMOVED*** best linear blend y ≈ a*ys + (1-a)*yl
+# best linear blend y ≈ a*ys + (1-a)*yl
 den = np.mean((ys - yl) ** 2)
 if den <= 0 or np.isnan(den):
     print("Degenerate denominator when computing optimal blend (ys == yl).")

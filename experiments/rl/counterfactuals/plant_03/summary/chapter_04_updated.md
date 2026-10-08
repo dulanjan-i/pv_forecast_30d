@@ -1,14 +1,14 @@
-***REMOVED*** Chapter 4 Updates: RQ4 Results Section
+# Chapter 4 Updates: RQ4 Results Section
 
-***REMOVED******REMOVED*** 4.5 Self-Adaptive Pipeline and Drift Reaction (RQ4)
+## 4.5 Self-Adaptive Pipeline and Drift Reaction (RQ4)
 
 **Success Criterion**: The RL Meta-Controller must demonstrate the ability to identify drift and adjust blending weights dynamically, establishing both Operational Readiness and measurable performance improvement.
 
-***REMOVED******REMOVED******REMOVED*** 4.5.1 Two-Stage Policy Evaluation
+### 4.5.1 Two-Stage Policy Evaluation
 
 To validate both operational safety and adaptive performance, the RL policy was evaluated under two configurations:
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Stage 1: Restricted Action Space (Safety Validation)
+#### Stage 1: Restricted Action Space (Safety Validation)
 **Configuration**: Actions limited to {0, 2, 3} — baseline plus conservative physics-heavy variants  
 **Purpose**: Validate operational stability and conservative behavior under constrained conditions  
 **Test Period**: 2024 full year (n=288 forecast starts)
@@ -21,7 +21,7 @@ To validate both operational safety and adaptive performance, the RL policy was 
 
 **Interpretation**: Under restricted action space, the policy behaved conservatively but was artificially constrained. The slight performance degradation indicates the policy could not access optimal blend configurations outside the restricted set.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Stage 2: Full Action Space (Performance Validation)
+#### Stage 2: Full Action Space (Performance Validation)
 **Configuration**: All 8 actions enabled {0, 1, 2, 3, 4, 5, 6, 7}  
 **Purpose**: Quantify maximum adaptive performance when policy has full optimization flexibility  
 **Test Period**: 2024 full year (n=288 forecast starts)
@@ -39,7 +39,7 @@ To validate both operational safety and adaptive performance, the RL policy was 
 | a₀ | 36.5% | Baseline (0.6/0.2/0.2) | Maintained when conditions match heuristic optimum |
 | a₃ | 3.5% | Physics-heavy (0.25/0.15/0.6) | Safety fallback during high uncertainty |
 
-***REMOVED******REMOVED******REMOVED*** 4.5.2 Key Findings
+### 4.5.2 Key Findings
 
 **1. Action Space Richness Enables Performance**  
 The restricted evaluation (Stage 1) artificially limited the policy's ability to discover superior blend configurations. When granted full flexibility (Stage 2), the policy identified that action a₁ (long-head dominant: 60% selection rate) consistently outperformed the fixed heuristic baseline.
@@ -56,7 +56,7 @@ Despite having access to extreme actions (a₄: pure physics, a₅: short-aggres
 - Cost-aware behavior: expensive actions (extreme reweighting) only justified under drift
 - Operational maturity: ready for production deployment
 
-***REMOVED******REMOVED******REMOVED*** 4.5.3 RQ4 Conclusion: SUCCESS
+### 4.5.3 RQ4 Conclusion: SUCCESS
 
 **Verdict**: The RL meta-controller achieves both Operational Readiness and Performance Improvement.
 
@@ -80,7 +80,7 @@ Despite having access to extreme actions (a₄: pure physics, a₅: short-aggres
 2. **Long-Term Adaptability**: The policy's ability to dynamically select blend weights positions the system to handle multi-year sensor drift, climate shifts, and panel degradation
 3. **Human-in-Loop Readiness**: Conservative behavior (no extreme actions) enables deployment with operator oversight and manual override capability
 
-***REMOVED******REMOVED******REMOVED*** 4.5.4 Comparison to Prior Work
+### 4.5.4 Comparison to Prior Work
 
 | Study | Approach | Performance Gain | Deployment Status |
 |-------|----------|------------------|-------------------|
@@ -92,7 +92,7 @@ Despite having access to extreme actions (a₄: pure physics, a₅: short-aggres
 
 ---
 
-***REMOVED******REMOVED*** Updated Figure Captions
+## Updated Figure Captions
 
 **Figure 4.X: RL Policy Performance — Restricted vs. Full Action Space**
 

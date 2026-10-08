@@ -1,54 +1,54 @@
-***REMOVED*** Path Verification & Reorganization (2026-01-03)
+# Path Verification & Reorganization (2026-01-03)
 
-***REMOVED******REMOVED*** ✅ COMPLETED REORGANIZATION
+## ✅ COMPLETED REORGANIZATION
 
-***REMOVED******REMOVED******REMOVED*** Scripts Moved from scripts/ to src/
+### Scripts Moved from scripts/ to src/
 - `scripts/collect_rl_data.py` → `src/rl/collect_rl_data.py`
 - `scripts/generate_rl_data_from_historical.py` → `src/rl/generate_historical_data.py`
 - `scripts/generate_rl_data_simulated.py` → `src/rl/generate_simulated_data.py`
 - `scripts/compute_rewards.py` → `src/rl/compute_rewards.py`
 - `scripts/train_rl_offline.py` → `src/training/train_rl_offline.py`
 
-***REMOVED******REMOVED******REMOVED*** CANONICAL HARDCODED PATHS
+### CANONICAL HARDCODED PATHS
 
 All code now uses these **absolute paths**:
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** TFT Model Checkpoints
+#### TFT Model Checkpoints
 ```
 /home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt
 /home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Plant Metadata
+#### Plant Metadata
 ```
 /home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Training Data
+#### Training Data
 ```
 /home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/train.parquet
 /home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/hourly_longhead/train.parquet
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Test/Validation Data
+#### Test/Validation Data
 ```
 /home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/test.parquet
 /home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/val.parquet
 /home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/hourly_longhead/val.parquet
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** RL Checkpoints & Logs
+#### RL Checkpoints & Logs
 ```
 /home/dwijenayake/pv_forecast_30d/checkpoints/rl/
 /home/dwijenayake/pv_forecast_30d/checkpoints/rl/logs/
 ```
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** RL Transitions Data
+#### RL Transitions Data
 ```
 /home/dwijenayake/pv_forecast_30d/data/rl_transitions/
 ```
 
-***REMOVED******REMOVED******REMOVED*** Files Updated with Canonical Paths
+### Files Updated with Canonical Paths
 1. ✅ `src/rl/collect_rl_data.py`
 2. ✅ `src/rl/generate_historical_data.py`
 3. ✅ `src/rl/generate_simulated_data.py`
@@ -56,7 +56,7 @@ All code now uses these **absolute paths**:
 5. ✅ `src/training/train_rl_offline.py`
 6. ✅ `tests/test_rl_integration.py`
 
-***REMOVED******REMOVED******REMOVED*** Verification Commands
+### Verification Commands
 
 Test imports:
 ```bash
@@ -78,12 +78,12 @@ python src/training/train_rl_offline.py \
   --device cuda
 ```
 
-***REMOVED******REMOVED******REMOVED*** NO MORE RELATIVE PATHS!
+### NO MORE RELATIVE PATHS!
 All paths are now absolute and hardcoded. No more path jumbles or spaghetti code.
 
-***REMOVED******REMOVED*** ✅ VERIFICATION COMPLETE
+## ✅ VERIFICATION COMPLETE
 
-***REMOVED******REMOVED******REMOVED*** All Scripts Moved
+### All Scripts Moved
 ```bash
 ls src/rl/*.py | grep -E "collect|generate|compute"
 ```
@@ -93,13 +93,13 @@ Output:
 - src/rl/generate_historical_data.py
 - src/rl/generate_simulated_data.py
 
-***REMOVED******REMOVED******REMOVED*** All Paths Hardcoded
+### All Paths Hardcoded
 ```bash
 grep -r "V1.0_FINAL_TFT" src/rl/*.py | wc -l
 ```
 All references use absolute paths starting with `/home/dwijenayake/pv_forecast_30d/`
 
-***REMOVED******REMOVED******REMOVED*** Tests Pass
+### Tests Pass
 - ✅ Imports work correctly
 - ✅ TFT checkpoints found
 - ✅ Plant metadata accessible  
@@ -107,5 +107,5 @@ All references use absolute paths starting with `/home/dwijenayake/pv_forecast_3
 - ✅ RL system initializes
 - ✅ Training pipeline loads data
 
-***REMOVED******REMOVED******REMOVED*** NO MORE PATH ISSUES!
+### NO MORE PATH ISSUES!
 All code now uses CANONICAL ABSOLUTE PATHS. No relative paths, no guessing, no spaghetti.

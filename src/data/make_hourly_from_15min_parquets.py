@@ -49,7 +49,7 @@ def _infer_agg_map(df: pd.DataFrame) -> dict:
         if pd.api.types.is_numeric_dtype(df[c]):
             agg[c] = "mean"
         else:
-            ***REMOVED*** best-effort for non-numeric: take first
+            # best-effort for non-numeric: take first
             agg[c] = "first"
     return agg
 
@@ -60,7 +60,7 @@ def _resample_one_plant(df_plant: pd.DataFrame, freq: str) -> pd.DataFrame:
     df_plant = df_plant.dropna(subset=[KEY_T])
     df_plant = df_plant.sort_values(KEY_T)
 
-    ***REMOVED*** floor timestamps to hour and aggregate
+    # floor timestamps to hour and aggregate
     df_plant["ts_bucket"] = df_plant[KEY_T].dt.floor(freq)
     agg_map = _infer_agg_map(df_plant)
 
@@ -68,10 +68,10 @@ def _resample_one_plant(df_plant: pd.DataFrame, freq: str) -> pd.DataFrame:
     g[KEY_T] = g["ts_bucket"]
     g.drop(columns=["ts_bucket"], inplace=True)
 
-    ***REMOVED*** restore group id reliably
+    # restore group id reliably
     g[KEY_GROUP] = df_plant[KEY_GROUP].iloc[0]
 
-    ***REMOVED*** per-plant time_idx starting at 0
+    # per-plant time_idx starting at 0
     t0 = g[KEY_T].min()
     g[KEY_TIME_IDX] = ((g[KEY_T] - t0) / pd.Timedelta(freq)).astype(np.int64)
 

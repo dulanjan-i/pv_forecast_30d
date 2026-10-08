@@ -1,77 +1,77 @@
-***REMOVED***!/bin/bash
+#!/bin/bash
 
-***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***
-***REMOVED*** run_stage3_global_training.sh
-***REMOVED***
-***REMOVED*** Version 3 - Global Forecasting Model: Rolling Origin Training Wrapper
-***REMOVED***
-***REMOVED*** PURPOSE
-***REMOVED*** -------
-***REMOVED*** Sequential training of all 4 rolling origin folds for the Global LSTM Encoder.
-***REMOVED*** This script automates the training pipeline by calling train_global_lstm_v3.py
-***REMOVED*** four times (once per fold).
-***REMOVED***
-***REMOVED*** FOLDS
-***REMOVED*** -----
-***REMOVED*** Fold 1 (Spring): Val = Mar-May 2023, Train = all before Mar 2023
-***REMOVED*** Fold 2 (Summer): Val = Jun-Aug 2023, Train = all before Jun 2023
-***REMOVED*** Fold 3 (Fall): Val = Sep-Nov 2023, Train = all before Sep 2023
-***REMOVED*** Fold 4 (Winter): Val = Dec 2023 - Feb 2024, Train = all before Dec 2023
-***REMOVED***
-***REMOVED*** USAGE
-***REMOVED*** -----
-***REMOVED*** Make executable:
-***REMOVED***   chmod +x run_stage3_global_training.sh
-***REMOVED***
-***REMOVED*** Run all folds:
-***REMOVED***   ./run_stage3_global_training.sh
-***REMOVED***
-***REMOVED*** Run specific fold (optional):
-***REMOVED***   python src/training/train_global_lstm_v3.py --fold 1
-***REMOVED***
-***REMOVED*** PREREQUISITES
-***REMOVED*** -------------
-***REMOVED*** 1. Preprocessing completed:
-***REMOVED***    - data/processed/pretraining/germany/global/supermatrix_base.parquet
-***REMOVED***    - data/processed/pretraining/germany/global/fold_{1,2,3,4}_{train,val}.parquet
-***REMOVED*** 2. Farm2107 checkpoint exists:
-***REMOVED***    - experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt
-***REMOVED*** 3. Python environment activated with PyTorch, Lightning, pandas
-***REMOVED***
-***REMOVED*** OUTPUTS
-***REMOVED*** -------
-***REMOVED*** For each fold, saves to: experiments/lstm/runs/germany/global_v3/fold_X/
-***REMOVED***   - lstm_encoder_global_fold_X.pt  ***REMOVED*** Final model weights
-***REMOVED***   - best_checkpoint.ckpt            ***REMOVED*** Best val_loss checkpoint
-***REMOVED***   - metrics.csv                     ***REMOVED*** Train/val loss per epoch
-***REMOVED***   - hparams.yaml                    ***REMOVED*** Logged hyperparameters
-***REMOVED***
-***REMOVED*** ESTIMATED RUNTIME
-***REMOVED*** -----------------
-***REMOVED*** Per fold: ~30-45 minutes on GPU (RTX 3090)
-***REMOVED*** Total: ~2-3 hours for all 4 folds (with early stopping)
-***REMOVED***
-***REMOVED*** GPU MEMORY
-***REMOVED*** ----------
-***REMOVED*** ~2-3 GB per fold (batch_size=128, hidden_size=64)
-***REMOVED*** Adjust --batch_size if OOM errors occur
-***REMOVED***
-***REMOVED*** Author: Dulanjana Wijenayake
-***REMOVED*** Date: December 2024
-***REMOVED*** Version: 3.0 (Global Model with Rolling Origin CV)
-***REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED******REMOVED***
+################################################################################
+# run_stage3_global_training.sh
+#
+# Version 3 - Global Forecasting Model: Rolling Origin Training Wrapper
+#
+# PURPOSE
+# -------
+# Sequential training of all 4 rolling origin folds for the Global LSTM Encoder.
+# This script automates the training pipeline by calling train_global_lstm_v3.py
+# four times (once per fold).
+#
+# FOLDS
+# -----
+# Fold 1 (Spring): Val = Mar-May 2023, Train = all before Mar 2023
+# Fold 2 (Summer): Val = Jun-Aug 2023, Train = all before Jun 2023
+# Fold 3 (Fall): Val = Sep-Nov 2023, Train = all before Sep 2023
+# Fold 4 (Winter): Val = Dec 2023 - Feb 2024, Train = all before Dec 2023
+#
+# USAGE
+# -----
+# Make executable:
+#   chmod +x run_stage3_global_training.sh
+#
+# Run all folds:
+#   ./run_stage3_global_training.sh
+#
+# Run specific fold (optional):
+#   python src/training/train_global_lstm_v3.py --fold 1
+#
+# PREREQUISITES
+# -------------
+# 1. Preprocessing completed:
+#    - data/processed/pretraining/germany/global/supermatrix_base.parquet
+#    - data/processed/pretraining/germany/global/fold_{1,2,3,4}_{train,val}.parquet
+# 2. Farm2107 checkpoint exists:
+#    - experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt
+# 3. Python environment activated with PyTorch, Lightning, pandas
+#
+# OUTPUTS
+# -------
+# For each fold, saves to: experiments/lstm/runs/germany/global_v3/fold_X/
+#   - lstm_encoder_global_fold_X.pt  # Final model weights
+#   - best_checkpoint.ckpt            # Best val_loss checkpoint
+#   - metrics.csv                     # Train/val loss per epoch
+#   - hparams.yaml                    # Logged hyperparameters
+#
+# ESTIMATED RUNTIME
+# -----------------
+# Per fold: ~30-45 minutes on GPU (RTX 3090)
+# Total: ~2-3 hours for all 4 folds (with early stopping)
+#
+# GPU MEMORY
+# ----------
+# ~2-3 GB per fold (batch_size=128, hidden_size=64)
+# Adjust --batch_size if OOM errors occur
+#
+# Author: Dulanjana Wijenayake
+# Date: December 2024
+# Version: 3.0 (Global Model with Rolling Origin CV)
+################################################################################
 
-***REMOVED*** Exit on any error
+# Exit on any error
 set -e
 
-***REMOVED*** Color codes for pretty output
+# Color codes for pretty output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' ***REMOVED*** No Color
+NC='\033[0m' # No Color
 
-***REMOVED*** Function to print colored messages
+# Function to print colored messages
 print_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -92,14 +92,14 @@ print_separator() {
     echo "================================================================================"
 }
 
-***REMOVED*** Print header
+# Print header
 print_separator
 echo -e "${GREEN}STAGE 3: GLOBAL LSTM ENCODER TRAINING${NC}"
 echo -e "${GREEN}Version 3 - Rolling Origin Cross-Validation${NC}"
 print_separator
 echo ""
 
-***REMOVED*** Step 1: Activate Python environment
+# Step 1: Activate Python environment
 print_info "Activating Python environment..."
 if [ -f "$HOME/.venvs/pvforecast/bin/activate" ]; then
     source "$HOME/.venvs/pvforecast/bin/activate"
@@ -116,16 +116,16 @@ else
     exit 1
 fi
 
-***REMOVED*** Step 2: Set PYTHONPATH
+# Step 2: Set PYTHONPATH
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PYTHONPATH="$REPO_ROOT:$PYTHONPATH"
 print_info "PYTHONPATH set to: $REPO_ROOT"
 echo ""
 
-***REMOVED*** Step 3: Validate prerequisites
+# Step 3: Validate prerequisites
 print_info "Validating prerequisites..."
 
-***REMOVED*** Check supermatrix
+# Check supermatrix
 SUPERMATRIX="$REPO_ROOT/data/processed/pretraining/germany/global/supermatrix_base.parquet"
 if [ ! -f "$SUPERMATRIX" ]; then
     print_error "Super matrix not found: $SUPERMATRIX"
@@ -135,7 +135,7 @@ if [ ! -f "$SUPERMATRIX" ]; then
 fi
 print_success "Super matrix found: $SUPERMATRIX"
 
-***REMOVED*** Check fold data
+# Check fold data
 for fold in 1 2 3 4; do
     TRAIN_FILE="$REPO_ROOT/data/processed/pretraining/germany/global/fold_${fold}_train.parquet"
     VAL_FILE="$REPO_ROOT/data/processed/pretraining/germany/global/fold_${fold}_val.parquet"
@@ -154,7 +154,7 @@ for fold in 1 2 3 4; do
 done
 print_success "All fold data files found (folds 1-4)"
 
-***REMOVED*** Check Farm2107 checkpoint
+# Check Farm2107 checkpoint
 FARM2107_CKPT="$REPO_ROOT/experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"
 if [ ! -f "$FARM2107_CKPT" ]; then
     print_warning "Farm2107 checkpoint not found: $FARM2107_CKPT"
@@ -166,7 +166,7 @@ fi
 echo ""
 print_separator
 
-***REMOVED*** Step 4: Train all folds (1-4 CV, 5 test)
+# Step 4: Train all folds (1-4 CV, 5 test)
 TOTAL_FOLDS=5
 FAILED_FOLDS=()
 
@@ -176,10 +176,10 @@ for fold in 1 2 3 4; do
     print_separator
     echo ""
     
-    ***REMOVED*** Start timestamp
+    # Start timestamp
     START_TIME=$(date +%s)
     
-    ***REMOVED*** Run training
+    # Run training
     if python "$REPO_ROOT/src/training/train_global_lstm_v3.py" \
         --fold "$fold" \
         --window_size 96 \
@@ -195,7 +195,7 @@ for fold in 1 2 3 4; do
         --precision 16-mixed \
         --precision_override high; then
         
-        ***REMOVED*** Calculate elapsed time
+        # Calculate elapsed time
         END_TIME=$(date +%s)
         ELAPSED=$((END_TIME - START_TIME))
         MINUTES=$((ELAPSED / 60))
@@ -210,13 +210,13 @@ for fold in 1 2 3 4; do
     fi
 done
 
-***REMOVED*** Step 5: Summary
+# Step 5: Summary
 print_separator
 echo -e "${GREEN}TRAINING SUMMARY${NC}"
 print_separator
 echo ""
 
-if [ ${***REMOVED***FAILED_FOLDS[@]} -eq 0 ]; then
+if [ ${#FAILED_FOLDS[@]} -eq 0 ]; then
     print_success "All 5 folds trained successfully! ✅"
     echo ""
     print_info "Results saved to:"

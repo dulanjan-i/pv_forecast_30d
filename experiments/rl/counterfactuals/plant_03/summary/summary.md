@@ -1,4 +1,4 @@
-***REMOVED*** Variant summary
+# Variant summary
 
 Files aggregated: 25
 

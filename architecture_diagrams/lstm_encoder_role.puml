@@ -8,15 +8,15 @@ skinparam ArrowThickness 3
 title LSTM Encoder – Role in MiRACLE
 
 ' Colors
-' Inputs:  ***REMOVED***D9EDF7
-' Model:   ***REMOVED***E6E6FA
-' Output:  ***REMOVED***DFF0D8
+' Inputs:  #D9EDF7
+' Model:   #E6E6FA
+' Output:  #DFF0D8
 
-rectangle "Sliding window of history\n(past PV + weather,\n≈24 h at 15 min)" as WIN ***REMOVED***D9EDF7
+rectangle "Sliding window of history\n(past PV + weather,\n≈24 h at 15 min)" as WIN #D9EDF7
 
-rectangle "Stacked LSTM Encoder\n(pretrained global core\n+ site adapted layers)" as LSTM ***REMOVED***E6E6FA
+rectangle "Stacked LSTM Encoder\n(pretrained global core\n+ site adapted layers)" as LSTM #E6E6FA
 
-rectangle "Latent temporal encoding\n(vector passed to TFT\nas additional feature)" as ENC ***REMOVED***DFF0D8
+rectangle "Latent temporal encoding\n(vector passed to TFT\nas additional feature)" as ENC #DFF0D8
 
 WIN --> LSTM
 LSTM --> ENC

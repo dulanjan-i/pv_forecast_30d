@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 repo_root = Path(__file__).parent.parent
 sys.path.insert(0, str(repo_root))
-***REMOVED*** Replace whole file with a single consistent implementation.
+# Replace whole file with a single consistent implementation.
 from __future__ import annotations
 
 import argparse
@@ -77,7 +77,7 @@ def load_test_data(
                 df = df.rename(columns={c: 'timestamp_utc'})
                 break
     df = df.sort_values('timestamp_utc').reset_index(drop=True)
-    ***REMOVED*** make timezone-aware to help infer_freq and comparisons
+    # make timezone-aware to help infer_freq and comparisons
     df['timestamp_utc'] = pd.to_datetime(df['timestamp_utc'], utc=True)
 
     power_col_candidates = ['power_norm', 'pvlib_ac_kw', 'power_kw', 'ac_power', 'pvlib_dc_kw']
@@ -399,7 +399,7 @@ def collect_transitions(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Collect RL transitions from test data")
-    ***REMOVED*** Support both old and new flag names for compatibility
+    # Support both old and new flag names for compatibility
     parser.add_argument("--test-data", type=str, required=False, help="Test parquet file path")
     parser.add_argument("--model-dir", type=str, required=False, help="Model directory containing short/long heads")
     parser.add_argument("--short-ckpt", type=str, required=False, help="Short-head checkpoint")
@@ -536,14 +536,14 @@ def collect_transitions(
     pbar = tqdm(total=num_samples, desc="Collecting")
     
     for sample_idx in range(num_samples):
-        ***REMOVED*** Cycle windows if we requested more samples than we have windows
+        # Cycle windows if we requested more samples than we have windows
         window_idx = sample_idx % len(test_windows)
         historical_df, weather_df, ground_truth = test_windows[window_idx]
         
         try:
             forecast_start = weather_df['timestamp_utc'].iloc[0]
             
-            ***REMOVED*** Run forecast
+            # Run forecast
             forecast, info = rl_forecaster.forecast_with_rl(
                 weather_data=weather_df,
                 forecast_start=forecast_start,
@@ -551,11 +551,11 @@ def collect_transitions(
                 ground_truth=ground_truth
             )
             
-            ***REMOVED*** Extract basic RL components
+            # Extract basic RL components
             state = info['meta_state']
             action = info['action_index']
             
-            ***REMOVED*** Compute Reward (Day 1 RMSE)
+            # Compute Reward (Day 1 RMSE)
             if isinstance(forecast, np.ndarray) and len(forecast) >= 96:
                 forecast_day1 = forecast[:96]
                 gt_day1 = ground_truth[:96] if len(ground_truth) >= 96 else ground_truth
@@ -564,20 +564,20 @@ def collect_transitions(
                     rmse = np.sqrt(np.mean((forecast_day1 - gt_day1) ** 2))
                     reward = -rmse 
                 else:
-                    reward = -0.05 ***REMOVED*** Fallback (should be rare with patched data)
+                    reward = -0.05 # Fallback (should be rare with patched data)
             else:
                 reward = -0.05
             
-            ***REMOVED*** Store transition
+            # Store transition
             transition = {
                 'sample_idx': sample_idx,
                 'timestamp': pd.Timestamp.now(tz='UTC').isoformat(),
                 'forecast_start': str(forecast_start),
                 'action': action,
                 'reward': reward,
-                ***REMOVED*** Flatten state
+                # Flatten state
                 **{f'state_{i}': state[i] for i in range(len(state))},
-                ***REMOVED*** Metrics
+                # Metrics
                 'blend_short': rl_forecaster.blend_weights.get('short', 0),
                 'blend_long': rl_forecaster.blend_weights.get('long', 0),
                 'blend_physics': rl_forecaster.blend_weights.get('physics', 0)
@@ -586,7 +586,7 @@ def collect_transitions(
             transitions.append(transition)
             pbar.update(1)
             
-            ***REMOVED*** Checkpoint
+            # Checkpoint
             if (sample_idx + 1) % checkpoint_freq == 0:
                 pd.DataFrame(transitions).to_parquet(save_path)
                 
@@ -603,14 +603,14 @@ def collect_transitions(
 def main():
     parser = argparse.ArgumentParser()
     
-    ***REMOVED*** Paths
+    # Paths
     parser.add_argument('--short-ckpt', default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt')
     parser.add_argument('--long-ckpt', default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt')
     parser.add_argument('--plant-meta', default='/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/plant_metadata/plant_03.json')
     parser.add_argument('--short-train', default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/train.parquet')
     parser.add_argument('--long-train', default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/hourly_longhead/train.parquet')
     
-    ***REMOVED*** Data & Fill Args
+    # Data & Fill Args
     parser.add_argument('--test-data', default='/home/dwijenayake/pv_forecast_30d/data/processed/plant_level/plant_03/15min_pca32/test.parquet')
     parser.add_argument('--fill-data', type=str, default=None, help='Path to predictions parquet to patch missing history')
     
@@ -620,7 +620,7 @@ def main():
     
     args = parser.parse_args()
     
-    ***REMOVED*** Init Forecaster
+    # Init Forecaster
     logger.info("Initializing Forecaster...")
     forecaster = PhysicsAwareForecaster(
         short_ckpt=Path(args.short_ckpt),
@@ -636,7 +636,7 @@ def main():
         rl_mode="heuristic"
     )
     
-    ***REMOVED*** Load Data (With Patching)
+    # Load Data (With Patching)
     fill_path = Path(args.fill_data) if args.fill_data else None
     test_windows = load_and_patch_data(Path(args.test_data), fill_path, num_samples=args.num_samples)
     
@@ -644,7 +644,7 @@ def main():
         logger.error("No valid windows found! Exiting.")
         return
 
-    ***REMOVED*** Run Collection
+    # Run Collection
     collect_transitions(
         rl_forecaster=rl_forecaster,
         test_windows=test_windows,

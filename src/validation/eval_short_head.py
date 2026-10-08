@@ -59,7 +59,7 @@ def load_json(path: Path) -> Dict:
 
 
 def build_datasets(train_df: pd.DataFrame, val_df: pd.DataFrame, roles: Dict, enc_len: int, pred_len: int):
-    ***REMOVED*** Validate required cols
+    # Validate required cols
     required = {KEY_GROUP, KEY_TARGET, KEY_TIME_IDX}
     missing_train = sorted([c for c in required if c not in train_df.columns])
     missing_val = sorted([c for c in required if c not in val_df.columns])
@@ -71,7 +71,7 @@ def build_datasets(train_df: pd.DataFrame, val_df: pd.DataFrame, roles: Dict, en
     known_time_reals = roles.get("known_time_reals", [])
     unknown_time_reals = roles.get("unknown_time_reals", [KEY_TARGET])
 
-    ***REMOVED*** Ensure feature columns exist
+    # Ensure feature columns exist
     feat_missing = [c for c in known_time_reals if c not in train_df.columns]
     if feat_missing:
         raise KeyError(f"Train parquet missing known_time_reals columns (from column_roles.json): {feat_missing[:20]}")
@@ -156,7 +156,7 @@ def eval_one(mode: str, run_dir: Path, train_parquet: Path, val_parquet: Path, b
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ***REMOVED*** Rebuild model exactly like training, then load state_dict
+    # Rebuild model exactly like training, then load state_dict
     model = TemporalFusionTransformer.from_dataset(
         train_ds,
         hidden_size=hidden_size,
@@ -176,7 +176,7 @@ def eval_one(mode: str, run_dir: Path, train_parquet: Path, val_parquet: Path, b
     sum_abs, sum_sq, n = 0.0, 0.0, 0
     with torch.no_grad():
         for x, y in val_dl:
-            ***REMOVED*** Move batch to device
+            # Move batch to device
             x = {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in x.items()}
             if isinstance(y, (list, tuple)):
                 targets = y[0]
@@ -217,7 +217,7 @@ def write_markdown(df: pd.DataFrame, out_md: Path) -> None:
     winner = df2.iloc[0]
 
     lines = []
-    lines.append("***REMOVED*** Short-head (15-min, 24h) evaluation\n\n")
+    lines.append("# Short-head (15-min, 24h) evaluation\n\n")
     lines.append("Metrics are computed on validation as RMSE/MAE over all horizons (flattened).\n\n")
     lines.append("| mode | rmse | mae | enc_len | pred_len | hidden | lstm_layers | attn_heads | dropout | lr |\n")
     lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
@@ -227,7 +227,7 @@ def write_markdown(df: pd.DataFrame, out_md: Path) -> None:
             f"{int(r['hidden_size'])} | {int(r['lstm_layers'])} | {int(r['attn_heads'])} | {float(r['dropout']):.3f} | {float(r['lr']):.2e} |\n"
         )
 
-    lines.append("\n***REMOVED******REMOVED*** Selected model\n")
+    lines.append("\n## Selected model\n")
     lines.append(f"Winner by RMSE: **{winner['mode']}**\n\n")
     lines.append(f"- run_dir: {winner['run_dir']}\n")
     lines.append(f"- ckpt: {winner['ckpt']}\n")
@@ -236,14 +236,14 @@ def write_markdown(df: pd.DataFrame, out_md: Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ***REMOVED*** Flexible interface: either legacy ablation args OR new multi-mode args
+    # Flexible interface: either legacy ablation args OR new multi-mode args
     ap.add_argument("--run_tft_only", help="(Legacy) TFT-only run dir")
     ap.add_argument("--run_tft_pvlib", help="(Legacy) TFT+PVLib run dir")
     ap.add_argument("--train_tft_only", help="(Legacy) TFT-only train parquet")
     ap.add_argument("--val_tft_only", help="(Legacy) TFT-only val parquet")
     ap.add_argument("--train_tft_pvlib", help="(Legacy) TFT+PVLib train parquet")
     ap.add_argument("--val_tft_pvlib", help="(Legacy) TFT+PVLib val parquet")
-    ***REMOVED*** New multi-mode interface
+    # New multi-mode interface
     ap.add_argument("--modes", nargs="+", help="Mode labels (e.g., warm_seed42 cold_seed43)")
     ap.add_argument("--run_dirs", nargs="+", help="Run directories with checkpoints/best.ckpt")
     ap.add_argument("--train_parquet", help="Training parquet path (shared for all runs)")
@@ -257,9 +257,9 @@ def main() -> None:
 
     rows = []
     
-    ***REMOVED*** Detect which interface to use
+    # Detect which interface to use
     if args.modes and args.run_dirs:
-        ***REMOVED*** New multi-mode interface
+        # New multi-mode interface
         if len(args.modes) != len(args.run_dirs):
             raise ValueError(f"Length mismatch: {len(args.modes)} modes vs {len(args.run_dirs)} run_dirs")
         train_parquet = Path(args.train_parquet)
@@ -275,7 +275,7 @@ def main() -> None:
             except Exception as e:
                 print(f"  ✗ Failed: {e}")
     else:
-        ***REMOVED*** Legacy ablation interface
+        # Legacy ablation interface
         rows.append(
             eval_one(
                 "tft_only",

@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 import sys
 from pathlib import Path
 import pyarrow.parquet as pq
@@ -17,12 +17,12 @@ for df in (truth, base, heur, full):
     if 'timestamp_utc' in df.columns:
         df['timestamp_utc'] = pd.to_datetime(df['timestamp_utc'], utc=True)
 
-***REMOVED*** join on timestamp_utc selecting most recent per timestamp if multiple hours_ahead present
+# join on timestamp_utc selecting most recent per timestamp if multiple hours_ahead present
 base_j = base.merge(truth[['timestamp_utc','power_norm']].rename(columns={'power_norm':'y_true'}), on='timestamp_utc')
 heur_j = heur.merge(truth[['timestamp_utc','power_norm']].rename(columns={'power_norm':'y_true'}), on='timestamp_utc')
 full_j = full.merge(truth[['timestamp_utc','power_norm']].rename(columns={'power_norm':'y_true'}), on='timestamp_utc')
 
-***REMOVED*** If multiple rows per timestamp, take smallest hours_ahead
+# If multiple rows per timestamp, take smallest hours_ahead
 for df in (base_j, heur_j, full_j):
     if 'hours_ahead' in df.columns:
         df.sort_values(['timestamp_utc','hours_ahead'], inplace=True)

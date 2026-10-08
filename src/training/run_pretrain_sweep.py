@@ -11,10 +11,10 @@ Grid size: 3 x 2 x 2 = 12 runs
 Supports parallel execution across multiple GPUs.
 
 Usage:
-    ***REMOVED*** Sequential (one GPU):
+    # Sequential (one GPU):
     python src/training/run_pretrain_sweep.py
 
-    ***REMOVED*** Parallel (4 GPUs):
+    # Parallel (4 GPUs):
     python src/training/run_pretrain_sweep.py --parallel --num-gpus 4
 """
 
@@ -28,24 +28,24 @@ import os
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-***REMOVED*** Add project root to Python path
-project_root = Path(__file__).resolve().parents[2]  ***REMOVED*** Go up 2 levels: training -> src -> project_root
+# Add project root to Python path
+project_root = Path(__file__).resolve().parents[2]  # Go up 2 levels: training -> src -> project_root
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-***REMOVED*** Configuration
+# Configuration
 BASE_CFG = Path("experiments/lstm/pretrain_farm2107.yaml")
 SWEEPS_DIR = Path("experiments/lstm/sweeps")
 SWEEPS_DIR.mkdir(parents=True, exist_ok=True)
 
-***REMOVED*** Hyperparameter grid
+# Hyperparameter grid
 hidden_sizes = [32, 64, 128]
 num_layers_list = [1, 2]
 lrs = [5e-4, 1e-3]
 
 def make_tag(h: int, l: int, lr: float) -> str:
     """Create a readable tag for this config."""
-    ***REMOVED*** Format: h64_l2_lr1e-3
+    # Format: h64_l2_lr1e-3
     lr_str = f"{lr:.0e}".replace("-", "m").replace("+", "")
     return f"h{h}_l{l}_lr{lr_str}"
 
@@ -58,13 +58,13 @@ def run_single_experiment(cfg_path: Path, gpu_id: int) -> tuple[str, bool, str]:
     """
     tag = cfg_path.stem.replace("pretrain_farm2107_", "")
     
-    ***REMOVED*** Set environment variable to use specific GPU
+    # Set environment variable to use specific GPU
     env = {"CUDA_VISIBLE_DEVICES": str(gpu_id)}
     
     print(f"[GPU {gpu_id}] Starting: {tag}")
     
     try:
-        ***REMOVED*** Don't capture output - let it stream to terminal
+        # Don't capture output - let it stream to terminal
         result = subprocess.run(
             [
                 sys.executable,
@@ -74,7 +74,7 @@ def run_single_experiment(cfg_path: Path, gpu_id: int) -> tuple[str, bool, str]:
             ],
             check=True,
             cwd=project_root,
-            env={**os.environ, **env},  ***REMOVED*** Merge with existing env
+            env={**os.environ, **env},  # Merge with existing env
         )
         print(f"[GPU {gpu_id}] ✓ Completed: {tag}")
         return (tag, True, "")
@@ -104,20 +104,20 @@ def main():
 
     configs_created = []
     
-    ***REMOVED*** Generate all config combinations
+    # Generate all config combinations
     for h, l, lr in itertools.product(hidden_sizes, num_layers_list, lrs):
         tag = make_tag(h, l, lr)
 
-        ***REMOVED*** Load base config
+        # Load base config
         with BASE_CFG.open("r") as f:
             cfg = yaml.safe_load(f)
 
-        ***REMOVED*** Update hyperparameters
+        # Update hyperparameters
         cfg["model"]["hidden_size"] = h
         cfg["model"]["num_layers"] = l
         cfg["training"]["learning_rate"] = lr
 
-        ***REMOVED*** Update experiment tracking
+        # Update experiment tracking
         cfg.setdefault("experiment", {})
         cfg["experiment"]["name"] = "farm2107_pretrain_sweep"
         cfg["experiment"]["tag"] = tag
@@ -125,7 +125,7 @@ def main():
         cfg.setdefault("paths", {})
         cfg["paths"]["output_dir"] = f"experiments/lstm/runs/farm2107_{tag}"
 
-        ***REMOVED*** Save config
+        # Save config
         cfg_path = SWEEPS_DIR / f"pretrain_farm2107_{tag}.yaml"
         with cfg_path.open("w") as f:
             yaml.safe_dump(cfg, f, default_flow_style=False, sort_keys=False)
@@ -140,24 +140,24 @@ def main():
         print(f"Using {args.num_gpus} GPUs")
     print(f"{'='*60}\n")
 
-    ***REMOVED*** Track results
+    # Track results
     successful = []
     failed = []
     start_time = time.time()
 
     if args.parallel:
-        ***REMOVED*** Parallel execution across multiple GPUs
+        # Parallel execution across multiple GPUs
         print(f"Running {len(configs_created)} experiments in parallel on {args.num_gpus} GPUs\n")
         
         with ProcessPoolExecutor(max_workers=args.num_gpus) as executor:
-            ***REMOVED*** Submit all jobs with round-robin GPU assignment
+            # Submit all jobs with round-robin GPU assignment
             futures = {}
             for i, (tag, cfg_path) in enumerate(configs_created):
                 gpu_id = i % args.num_gpus
                 future = executor.submit(run_single_experiment, cfg_path, gpu_id)
                 futures[future] = (tag, cfg_path, gpu_id)
             
-            ***REMOVED*** Collect results as they complete
+            # Collect results as they complete
             for future in as_completed(futures):
                 tag, cfg_path, gpu_id = futures[future]
                 result_tag, success, error_msg = future.result()
@@ -167,7 +167,7 @@ def main():
                 else:
                     failed.append((result_tag, error_msg))
     else:
-        ***REMOVED*** Sequential execution
+        # Sequential execution
         print(f"Running {len(configs_created)} experiments sequentially\n")
         
         for i, (tag, cfg_path) in enumerate(configs_created, 1):

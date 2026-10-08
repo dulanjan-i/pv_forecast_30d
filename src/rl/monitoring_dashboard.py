@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 MiRACLE RL Monitoring Dashboard
 
@@ -28,7 +28,7 @@ import time
 from datetime import datetime, timedelta
 import argparse
 
-***REMOVED*** Page config
+# Page config
 st.set_page_config(
     page_title="MiRACLE RL Monitor",
     page_icon="🤖",
@@ -36,39 +36,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-***REMOVED*** Custom CSS
+# Custom CSS
 st.markdown("""
 <style>
     .main-header {
         font-size: 2.5rem;
         font-weight: bold;
-        color: ***REMOVED***1f77b4;
+        color: #1f77b4;
         text-align: center;
         margin-bottom: 1rem;
     }
     .metric-card {
-        background: linear-gradient(135deg, ***REMOVED***667eea 0%, ***REMOVED***764ba2 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 1rem;
         border-radius: 10px;
         color: white;
         text-align: center;
     }
     .status-good {
-        color: ***REMOVED***28a745;
+        color: #28a745;
         font-weight: bold;
     }
     .status-warning {
-        color: ***REMOVED***ffc107;
+        color: #ffc107;
         font-weight: bold;
     }
     .status-bad {
-        color: ***REMOVED***dc3545;
+        color: #dc3545;
         font-weight: bold;
     }
 </style>
 """, unsafe_allow_html=True)
 
-***REMOVED*** Action names mapping
+# Action names mapping
 ACTION_NAMES = {
     0: "MAINTAIN",
     1: "FINE_TUNE_SHORT",
@@ -81,14 +81,14 @@ ACTION_NAMES = {
 }
 
 ACTION_COLORS = {
-    0: "***REMOVED***2ecc71",  ***REMOVED*** Green (maintain)
-    1: "***REMOVED***3498db",  ***REMOVED*** Blue (short)
-    2: "***REMOVED***9b59b6",  ***REMOVED*** Purple (long)
-    3: "***REMOVED***f39c12",  ***REMOVED*** Orange (pvlib)
-    4: "***REMOVED***1abc9c",  ***REMOVED*** Teal (blend short)
-    5: "***REMOVED***e74c3c",  ***REMOVED*** Red (blend long)
-    6: "***REMOVED***95a5a6",  ***REMOVED*** Gray (blend physics)
-    7: "***REMOVED***e67e22"   ***REMOVED*** Dark orange (retrain)
+    0: "#2ecc71",  # Green (maintain)
+    1: "#3498db",  # Blue (short)
+    2: "#9b59b6",  # Purple (long)
+    3: "#f39c12",  # Orange (pvlib)
+    4: "#1abc9c",  # Teal (blend short)
+    5: "#e74c3c",  # Red (blend long)
+    6: "#95a5a6",  # Gray (blend physics)
+    7: "#e67e22"   # Dark orange (retrain)
 }
 
 
@@ -98,7 +98,7 @@ def load_metrics_log(log_dir: Path):
     if not log_file.exists():
         return None
     
-    ***REMOVED*** Read last 1000 lines (for performance)
+    # Read last 1000 lines (for performance)
     with open(log_file, 'r') as f:
         lines = f.readlines()[-1000:]
     
@@ -164,37 +164,37 @@ def render_rmse_comparison(df):
         specs=[[{"secondary_y": False}, {"secondary_y": False}]]
     )
     
-    ***REMOVED*** Short-TFT RMSE
+    # Short-TFT RMSE
     if 'short_rmse_1h' in df.columns:
         fig.add_trace(
             go.Scatter(x=df.index, y=df['short_rmse_1h'], 
-                      name="1h", line=dict(color='***REMOVED***3498db', width=2)),
+                      name="1h", line=dict(color='#3498db', width=2)),
             row=1, col=1
         )
     if 'short_rmse_6h' in df.columns:
         fig.add_trace(
             go.Scatter(x=df.index, y=df['short_rmse_6h'], 
-                      name="6h", line=dict(color='***REMOVED***9b59b6', width=2)),
+                      name="6h", line=dict(color='#9b59b6', width=2)),
             row=1, col=1
         )
     if 'short_rmse_24h' in df.columns:
         fig.add_trace(
             go.Scatter(x=df.index, y=df['short_rmse_24h'], 
-                      name="24h", line=dict(color='***REMOVED***e74c3c', width=2)),
+                      name="24h", line=dict(color='#e74c3c', width=2)),
             row=1, col=1
         )
     
-    ***REMOVED*** Long-TFT RMSE
+    # Long-TFT RMSE
     if 'long_rmse_7d' in df.columns:
         fig.add_trace(
             go.Scatter(x=df.index, y=df['long_rmse_7d'], 
-                      name="7d", line=dict(color='***REMOVED***2ecc71', width=2)),
+                      name="7d", line=dict(color='#2ecc71', width=2)),
             row=1, col=2
         )
     if 'long_rmse_30d' in df.columns:
         fig.add_trace(
             go.Scatter(x=df.index, y=df['long_rmse_30d'], 
-                      name="30d", line=dict(color='***REMOVED***f39c12', width=2)),
+                      name="30d", line=dict(color='#f39c12', width=2)),
             row=1, col=2
         )
     
@@ -213,7 +213,7 @@ def render_forecasts(df):
         st.warning("No forecast data")
         return
     
-    ***REMOVED*** Get latest predictions
+    # Get latest predictions
     latest = df.iloc[-1]
     
     col1, col2, col3 = st.columns(3)
@@ -233,24 +233,24 @@ def render_forecasts(df):
         st.metric("24h Forecast", f"{pred_24h:.3f} kW",
                   help="24-hour ahead prediction")
     
-    ***REMOVED*** Plot forecast horizon
+    # Plot forecast horizon
     if all(k in df.columns for k in ['pred_power_15min', 'pred_power_1h', 'pred_power_24h']):
         fig = go.Figure()
         
-        ***REMOVED*** Show last 100 steps
+        # Show last 100 steps
         plot_df = df.tail(100)
         
         fig.add_trace(go.Scatter(
             x=plot_df.index, y=plot_df['pred_power_15min'],
-            name="15min", line=dict(color='***REMOVED***2ecc71', width=2)
+            name="15min", line=dict(color='#2ecc71', width=2)
         ))
         fig.add_trace(go.Scatter(
             x=plot_df.index, y=plot_df['pred_power_1h'],
-            name="1h", line=dict(color='***REMOVED***3498db', width=2)
+            name="1h", line=dict(color='#3498db', width=2)
         ))
         fig.add_trace(go.Scatter(
             x=plot_df.index, y=plot_df['pred_power_24h'],
-            name="24h", line=dict(color='***REMOVED***e74c3c', width=2)
+            name="24h", line=dict(color='#e74c3c', width=2)
         ))
         
         fig.update_layout(
@@ -281,19 +281,19 @@ def render_blend_weights(df):
     fig.add_trace(go.Scatter(
         x=plot_df.index, y=plot_df['blend_short'],
         name="Short-TFT", fill='tonexty',
-        line=dict(color='***REMOVED***3498db', width=0),
+        line=dict(color='#3498db', width=0),
         stackgroup='one'
     ))
     fig.add_trace(go.Scatter(
         x=plot_df.index, y=plot_df['blend_long'],
         name="Long-TFT", fill='tonexty',
-        line=dict(color='***REMOVED***9b59b6', width=0),
+        line=dict(color='#9b59b6', width=0),
         stackgroup='one'
     ))
     fig.add_trace(go.Scatter(
         x=plot_df.index, y=plot_df['blend_physics'],
         name="PVLib", fill='tonexty',
-        line=dict(color='***REMOVED***f39c12', width=0),
+        line=dict(color='#f39c12', width=0),
         stackgroup='one'
     ))
     
@@ -323,28 +323,28 @@ def render_reward_trends(df):
     
     plot_df = df.tail(100)
     
-    ***REMOVED*** Rewards
+    # Rewards
     if 'reward' in df.columns:
         fig.add_trace(
             go.Scatter(x=plot_df.index, y=plot_df['reward'],
-                      name="Reward", line=dict(color='***REMOVED***2ecc71', width=2)),
+                      name="Reward", line=dict(color='#2ecc71', width=2)),
             row=1, col=1
         )
         
-        ***REMOVED*** Add moving average
+        # Add moving average
         if len(plot_df) > 10:
             ma = plot_df['reward'].rolling(10).mean()
             fig.add_trace(
                 go.Scatter(x=plot_df.index, y=ma,
-                          name="MA(10)", line=dict(color='***REMOVED***e74c3c', width=2, dash='dash')),
+                          name="MA(10)", line=dict(color='#e74c3c', width=2, dash='dash')),
                 row=1, col=1
             )
     
-    ***REMOVED*** Q-Loss
+    # Q-Loss
     if 'q_loss' in df.columns:
         fig.add_trace(
             go.Scatter(x=plot_df.index, y=plot_df['q_loss'],
-                      name="Q-Loss", line=dict(color='***REMOVED***9b59b6', width=2)),
+                      name="Q-Loss", line=dict(color='#9b59b6', width=2)),
             row=1, col=2
         )
     
@@ -363,12 +363,12 @@ def render_action_distribution(df):
         st.info("No action data yet")
         return
     
-    ***REMOVED*** Count actions
+    # Count actions
     action_counts = df['action'].value_counts().sort_index()
     
     fig = go.Figure()
     
-    colors = [ACTION_COLORS.get(i, '***REMOVED***95a5a6') for i in action_counts.index]
+    colors = [ACTION_COLORS.get(i, '#95a5a6') for i in action_counts.index]
     labels = [ACTION_NAMES.get(i, f"Action {i}") for i in action_counts.index]
     
     fig.add_trace(go.Bar(
@@ -397,7 +397,7 @@ def main():
     parser.add_argument('--refresh-rate', type=int, default=5,
                        help='Refresh rate in seconds')
     
-    ***REMOVED*** Streamlit args handling
+    # Streamlit args handling
     try:
         args = parser.parse_args()
     except SystemExit:
@@ -405,10 +405,10 @@ def main():
     
     log_dir = Path(args.log_dir)
     
-    ***REMOVED*** Render header
+    # Render header
     render_header()
     
-    ***REMOVED*** Sidebar controls
+    # Sidebar controls
     with st.sidebar:
         st.header("⚙️ Controls")
         
@@ -422,29 +422,29 @@ def main():
         st.markdown(f"**Log Directory:**  \n`{log_dir}`")
         st.markdown(f"**Last Updated:**  \n{pd.Timestamp.now(tz='UTC').strftime('%Y-%m-%d %H:%M:%S UTC')}")
     
-    ***REMOVED*** Load data
+    # Load data
     df = load_metrics_log(log_dir)
     rl_state = load_rl_state(log_dir)
     
-    ***REMOVED*** Current Status
+    # Current Status
     st.header("📊 Current Status")
     render_current_status(rl_state)
     
     st.markdown("---")
     
-    ***REMOVED*** RMSE Performance
+    # RMSE Performance
     st.header("📈 Model Performance (RMSE)")
     render_rmse_comparison(df)
     
     st.markdown("---")
     
-    ***REMOVED*** Forecasts
+    # Forecasts
     st.header("🔮 Power Forecasts")
     render_forecasts(df)
     
     st.markdown("---")
     
-    ***REMOVED*** Blend Weights & Rewards in two columns
+    # Blend Weights & Rewards in two columns
     col1, col2 = st.columns(2)
     
     with col1:
@@ -457,11 +457,11 @@ def main():
     
     st.markdown("---")
     
-    ***REMOVED*** Action Distribution
+    # Action Distribution
     st.header("🎯 Action History")
     render_action_distribution(df)
     
-    ***REMOVED*** Auto-refresh
+    # Auto-refresh
     if auto_refresh:
         time.sleep(refresh_rate)
         st.rerun()

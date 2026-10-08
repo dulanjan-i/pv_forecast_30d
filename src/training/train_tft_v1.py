@@ -1,4 +1,4 @@
-***REMOVED*** src/training/train_tft_v1.py
+# src/training/train_tft_v1.py
 """
 Stage 4: Train TFT v1.1 on regional Germany split.
 (Optimized for H100 with async GPU transfers and multi-worker prefetch)
@@ -468,12 +468,12 @@ def main() -> None:
 
     prec = _normalize_precision(args.precision)
 
-    ***REMOVED*** FIX: AMP should be enabled when precision requests it,
-    ***REMOVED*** even if --enable_amp was forgotten.
+    # FIX: AMP should be enabled when precision requests it,
+    # even if --enable_amp was forgotten.
     wants_amp = prec in {"16-mixed", "bf16-mixed"}
     use_amp = bool(device.type == "cuda" and (wants_amp or bool(args.enable_amp)))
 
-    ***REMOVED*** If user set --enable_amp but left precision fp32, default to bf16 on H100.
+    # If user set --enable_amp but left precision fp32, default to bf16 on H100.
     if use_amp and prec == "32-true":
         prec = "bf16-mixed"
 
@@ -566,7 +566,7 @@ def main() -> None:
 
                 optimizer.zero_grad(set_to_none=True)
 
-            ***REMOVED*** FIX: no per-step .item() sync
+            # FIX: no per-step .item() sync
             loss_unscaled = loss.detach()
             if grad_accum_steps > 1:
                 loss_unscaled = loss_unscaled * grad_accum_steps
@@ -577,14 +577,14 @@ def main() -> None:
                 _progress_line("train", epoch, train_steps, n_train, train_t0)
 
             if int(args.log_every_n_steps) > 0 and (train_steps % int(args.log_every_n_steps) == 0):
-                ***REMOVED*** Sync only occasionally
+                # Sync only occasionally
                 print(f"  Epoch {epoch} | Step {train_steps} | Loss: {float(loss_unscaled.item()):.4f}", flush=True)
 
         train_sec = time.time() - train_t0
         train_loss = float((total_loss_t / max(train_steps, 1)).item()) if train_steps > 0 else 0.0
         train_it_s = (train_steps / train_sec) if train_sec > 0 else 0.0
 
-        ***REMOVED*** More meaningful than it/s
+        # More meaningful than it/s
         samples_s = float(int(args.batch_size) * train_it_s)
 
         model.eval()

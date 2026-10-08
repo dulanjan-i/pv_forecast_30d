@@ -1,13 +1,13 @@
-***REMOVED*** Checkpoint & Configuration Verification Report
+# Checkpoint & Configuration Verification Report
 
 **Date**: 2026-01-02  
 **Status**: ⚠️ **ISSUES FOUND** - Need Corrections
 
 ---
 
-***REMOVED******REMOVED*** Issue Summary
+## Issue Summary
 
-| ***REMOVED*** | Issue | Current State | Required State | Action |
+| # | Issue | Current State | Required State | Action |
 |---|-------|---------------|----------------|--------|
 | 1 | ✅ Plant Metadata | plant_03 (correct) | plant_03 | No action |
 | 2 | ❌ Short-head Seed | Unknown (timestamp dir) | warm seed 42 | Fix path |
@@ -16,9 +16,9 @@
 
 ---
 
-***REMOVED******REMOVED*** Detailed Findings
+## Detailed Findings
 
-***REMOVED******REMOVED******REMOVED*** 1. Plant Metadata ✅ CORRECT
+### 1. Plant Metadata ✅ CORRECT
 
 **Weather Client (`src/inference/weather_client.py`)**:
 - Hardcoded test: `latitude=48.694644, longitude=12.597587` ✅
@@ -42,7 +42,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 2. Short-Head Checkpoint ❌ WRONG SEED
+### 2. Short-Head Checkpoint ❌ WRONG SEED
 
 **Currently Used**:
 ```
@@ -79,7 +79,7 @@ experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 3. Long-Head Checkpoint ✅ CORRECT SEED
+### 3. Long-Head Checkpoint ✅ CORRECT SEED
 
 **Currently Used**:
 ```
@@ -106,7 +106,7 @@ warm/
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 4. Checkpoint Organization 📋 RECOMMENDATION
+### 4. Checkpoint Organization 📋 RECOMMENDATION
 
 **Current State**: Checkpoints scattered across:
 ```
@@ -125,17 +125,17 @@ experiments/tft/runs/germany/plant_03/
 ```
 V1.0_FINAL_TFT/
 ├── shorthead_seed42/
-│   ├── best.ckpt                   ***REMOVED*** Canonical checkpoint
-│   ├── config.yaml                 ***REMOVED*** Model hyperparams
-│   ├── train_stats.json            ***REMOVED*** Normalization stats
-│   └── README.md                   ***REMOVED*** Provenance info
+│   ├── best.ckpt                   # Canonical checkpoint
+│   ├── config.yaml                 # Model hyperparams
+│   ├── train_stats.json            # Normalization stats
+│   └── README.md                   # Provenance info
 ├── longhead_seed43/
 │   ├── best_state_dict.pt
 │   ├── config.yaml
 │   ├── train_stats.json
 │   └── README.md
 └── plant_metadata/
-    └── plant_03.json               ***REMOVED*** Symlink or copy
+    └── plant_03.json               # Symlink or copy
 ```
 
 **Benefits**:
@@ -147,9 +147,9 @@ V1.0_FINAL_TFT/
 
 ---
 
-***REMOVED******REMOVED*** Required Actions
+## Required Actions
 
-***REMOVED******REMOVED******REMOVED*** Action 1: Fix Short-Head Checkpoint Path (HIGH PRIORITY)
+### Action 1: Fix Short-Head Checkpoint Path (HIGH PRIORITY)
 
 **Files to Update**:
 1. `test_full_pipeline_real_tft.py`
@@ -158,10 +158,10 @@ V1.0_FINAL_TFT/
 
 **Change**:
 ```python
-***REMOVED*** OLD (WRONG - seed unknown)
+# OLD (WRONG - seed unknown)
 short_ckpt = Path("experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best_state_dict.pt")
 
-***REMOVED*** NEW (CORRECT - seed 42)
+# NEW (CORRECT - seed 42)
 short_ckpt = Path("experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/seed_42/20251229_154617/checkpoints/best.ckpt")
 ```
 
@@ -169,7 +169,7 @@ short_ckpt = Path("experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_f
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Action 2: Create V1.0_FINAL_TFT Structure (RECOMMENDED)
+### Action 2: Create V1.0_FINAL_TFT Structure (RECOMMENDED)
 
 **Step 1: Create Directory**
 ```bash
@@ -178,24 +178,24 @@ mkdir -p V1.0_FINAL_TFT/{shorthead_seed42,longhead_seed43,plant_metadata}
 
 **Step 2: Copy Checkpoints**
 ```bash
-***REMOVED*** Short-head (seed 42)
+# Short-head (seed 42)
 cp experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/seed_42/20251229_154617/checkpoints/best.ckpt \
    V1.0_FINAL_TFT/shorthead_seed42/best.ckpt
 
-***REMOVED*** Long-head (seed 43)
+# Long-head (seed 43)
 cp experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best_state_dict.pt \
    V1.0_FINAL_TFT/longhead_seed43/best_state_dict.pt
 
-***REMOVED*** Plant metadata
+# Plant metadata
 cp data/metadata/germany/plant_03.json \
    V1.0_FINAL_TFT/plant_metadata/plant_03.json
 ```
 
 **Step 3: Create Provenance Files**
 ```bash
-***REMOVED*** V1.0_FINAL_TFT/shorthead_seed42/README.md
+# V1.0_FINAL_TFT/shorthead_seed42/README.md
 cat > V1.0_FINAL_TFT/shorthead_seed42/README.md << 'EOF'
-***REMOVED*** Short-Head TFT Checkpoint (Seed 42)
+# Short-Head TFT Checkpoint (Seed 42)
 
 **Model**: Temporal Fusion Transformer  
 **Architecture**: 96-step encoder, 96-step decoder (15-min resolution)  
@@ -204,18 +204,18 @@ cat > V1.0_FINAL_TFT/shorthead_seed42/README.md << 'EOF'
 **Training Date**: 2025-12-29  
 **Best Checkpoint**: epoch unknown, step unknown  
 
-***REMOVED******REMOVED*** Provenance
+## Provenance
 - Source: experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/seed_42/20251229_154617/
 - Plant: plant_03 (Germany, 7358.9 kW)
 - Training Data: data/processed/plant_level/plant_03/15min_pca32/train.parquet
 - Config: pvlib_warmstart_from_global_noleak
 
-***REMOVED******REMOVED*** Performance
+## Performance
 - Test MAE: [TODO - add from logs]
 - Test RMSE: [TODO - add from logs]
 - Test R²: [TODO - add from logs]
 
-***REMOVED******REMOVED*** Usage
+## Usage
 ```python
 from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
 
@@ -231,7 +231,7 @@ EOF
 
 **Step 4: Update All Inference Paths**
 ```python
-***REMOVED*** Standard paths (after reorganization)
+# Standard paths (after reorganization)
 SHORT_CKPT = Path("V1.0_FINAL_TFT/shorthead_seed42/best.ckpt")
 LONG_CKPT = Path("V1.0_FINAL_TFT/longhead_seed43/best_state_dict.pt")
 PLANT_META = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
@@ -239,7 +239,7 @@ PLANT_META = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
 
 ---
 
-***REMOVED******REMOVED*** Verification Checklist
+## Verification Checklist
 
 Before deploying:
 - [ ] Verify short-head uses seed 42 checkpoint
@@ -255,33 +255,33 @@ Before deploying:
 
 ---
 
-***REMOVED******REMOVED*** Comparison: Current vs Proposed
+## Comparison: Current vs Proposed
 
-***REMOVED******REMOVED******REMOVED*** Current (BEFORE)
+### Current (BEFORE)
 ```
 test_full_pipeline_real_tft.py:
-short_ckpt = "experiments/tft/.../pvlib_warmstart.../20251229_151100/checkpoints/best_state_dict.pt"  ***REMOVED*** ❌ seed unknown
-long_ckpt = "experiments/tft/.../warm/lr8e-4_do0.15_bs64_acc8_seed43/.../best_state_dict.pt"  ***REMOVED*** ✅ seed 43
+short_ckpt = "experiments/tft/.../pvlib_warmstart.../20251229_151100/checkpoints/best_state_dict.pt"  # ❌ seed unknown
+long_ckpt = "experiments/tft/.../warm/lr8e-4_do0.15_bs64_acc8_seed43/.../best_state_dict.pt"  # ✅ seed 43
 
 test_live_weather_forecast.py:
-short_ckpt = (same as above)  ***REMOVED*** ❌ seed unknown
-long_ckpt = (same as above)   ***REMOVED*** ✅ seed 43
+short_ckpt = (same as above)  # ❌ seed unknown
+long_ckpt = (same as above)   # ✅ seed 43
 ```
 
-***REMOVED******REMOVED******REMOVED*** Proposed (AFTER)
+### Proposed (AFTER)
 ```
 test_full_pipeline_real_tft.py:
-short_ckpt = "V1.0_FINAL_TFT/shorthead_seed42/best.ckpt"  ***REMOVED*** ✅ seed 42
-long_ckpt = "V1.0_FINAL_TFT/longhead_seed43/best_state_dict.pt"  ***REMOVED*** ✅ seed 43
+short_ckpt = "V1.0_FINAL_TFT/shorthead_seed42/best.ckpt"  # ✅ seed 42
+long_ckpt = "V1.0_FINAL_TFT/longhead_seed43/best_state_dict.pt"  # ✅ seed 43
 
 test_live_weather_forecast.py:
-short_ckpt = (same as above)  ***REMOVED*** ✅ seed 42
-long_ckpt = (same as above)   ***REMOVED*** ✅ seed 43
+short_ckpt = (same as above)  # ✅ seed 42
+long_ckpt = (same as above)   # ✅ seed 43
 ```
 
 ---
 
-***REMOVED******REMOVED*** Recommendation: PROCEED WITH BOTH FIXES
+## Recommendation: PROCEED WITH BOTH FIXES
 
 **My Take on the 3 Issues**:
 
@@ -310,7 +310,7 @@ long_ckpt = (same as above)   ***REMOVED*** ✅ seed 43
 
 ---
 
-***REMOVED******REMOVED*** Next Steps
+## Next Steps
 
 **Option A (Quick Fix)**:
 - Just update short_ckpt path to seed_42

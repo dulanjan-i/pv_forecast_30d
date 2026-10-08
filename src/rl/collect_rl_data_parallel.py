@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 FAST Parallel RL Data Collection (4-8x speedup)
 
@@ -62,7 +62,7 @@ def load_test_windows(test_parquet: Path, num_samples: int):
             historical_window = historical_window.rename(columns={time_col: 'timestamp_utc'})
             forecast_window = forecast_window.rename(columns={time_col: 'timestamp_utc'})
         
-        ***REMOVED*** Ground truth
+        # Ground truth
         if 'power_norm' in forecast_window.columns:
             ground_truth = forecast_window['power_norm'].values
         elif 'power_normalized' in forecast_window.columns:
@@ -96,10 +96,10 @@ def process_batch(batch_windows, rl_forecaster):
             forecast_start = window_data['forecast_start']
             idx = window_data['idx']
             
-            ***REMOVED*** Get state BEFORE action
+            # Get state BEFORE action
             state = rl_forecaster.get_state()
             
-            ***REMOVED*** Run forecast with RL (single call, internally batched TFT)
+            # Run forecast with RL (single call, internally batched TFT)
             prediction_30d, metrics = rl_forecaster.forecast_with_rl(
                 forecast_start=forecast_start,
                 weather_forecast=forecast_df,
@@ -107,16 +107,16 @@ def process_batch(batch_windows, rl_forecaster):
                 ground_truth_full=ground_truth
             )
             
-            ***REMOVED*** Get state AFTER action
+            # Get state AFTER action
             next_state = rl_forecaster.get_state()
             
-            ***REMOVED*** RL reward and action info
+            # RL reward and action info
             action_idx = rl_forecaster.last_action
             action_name = rl_forecaster.action_space[action_idx].__name__
-            reward = -metrics['ensemble_rmse']  ***REMOVED*** Negative RMSE as reward
+            reward = -metrics['ensemble_rmse']  # Negative RMSE as reward
             action_success = True
             
-            ***REMOVED*** Build transition record
+            # Build transition record
             transition = {
                 'sample_idx': len(transitions),
                 'timestamp': datetime.now().isoformat(),
@@ -126,13 +126,13 @@ def process_batch(batch_windows, rl_forecaster):
                 'reward': reward,
                 'action_success': action_success,
                 
-                ***REMOVED*** State (35 dims)
+                # State (35 dims)
                 **{f'state_{i}': state[i] for i in range(len(state))},
                 
-                ***REMOVED*** Next state (35 dims)
+                # Next state (35 dims)
                 **{f'next_state_{i}': next_state[i] for i in range(len(next_state))},
                 
-                ***REMOVED*** Metrics
+                # Metrics
                 'short_rmse_1h': metrics.get('short_rmse_1h', 0.0),
                 'long_rmse_30d': metrics.get('long_rmse_30d', 0.0),
                 'physics_residual': metrics.get('physics_residual', 0.0),
@@ -164,17 +164,17 @@ def collect_transitions_parallel(rl_forecaster, test_windows, save_path, batch_s
     transitions = []
     pbar = tqdm(total=len(test_windows), desc="Collecting transitions")
     
-    ***REMOVED*** Process in batches
+    # Process in batches
     for batch_start in range(0, len(test_windows), batch_size):
         batch_end = min(batch_start + batch_size, len(test_windows))
         batch = test_windows[batch_start:batch_end]
         
-        ***REMOVED*** Process batch (internally batches TFT calls)
+        # Process batch (internally batches TFT calls)
         batch_transitions = process_batch(batch, rl_forecaster)
         transitions.extend(batch_transitions)
         pbar.update(len(batch))
         
-        ***REMOVED*** Checkpoint
+        # Checkpoint
         if len(transitions) > 0 and len(transitions) % checkpoint_freq == 0:
             df = pd.DataFrame(transitions)
             checkpoint_path = save_path.parent / f"{save_path.stem}_checkpoint_{len(transitions)}.parquet"
@@ -183,7 +183,7 @@ def collect_transitions_parallel(rl_forecaster, test_windows, save_path, batch_s
     
     pbar.close()
     
-    ***REMOVED*** Final save
+    # Final save
     df = pd.DataFrame(transitions)
     df.to_parquet(save_path)
     logger.info(f"✅ Collection complete! Saved {len(df)} transitions to {save_path}")
@@ -194,7 +194,7 @@ def collect_transitions_parallel(rl_forecaster, test_windows, save_path, batch_s
 def main():
     parser = argparse.ArgumentParser(description="FAST parallel RL data collection")
     
-    ***REMOVED*** Paths (use same defaults as original)
+    # Paths (use same defaults as original)
     parser.add_argument('--test-data', type=str, 
                        default='data/processed/plant_level/plant_03/15min_pca32/test.parquet')
     parser.add_argument('--short-train', type=str,
@@ -218,7 +218,7 @@ def main():
     
     args = parser.parse_args()
     
-    ***REMOVED*** Convert paths
+    # Convert paths
     test_data = Path(args.test_data)
     short_train = Path(args.short_train)
     long_train = Path(args.long_train)
@@ -238,7 +238,7 @@ def main():
     logger.info(f"Device: {args.device}")
     logger.info("="*70 + "\n")
     
-    ***REMOVED*** Load forecaster
+    # Load forecaster
     logger.info("Loading PhysicsAwareForecaster...")
     forecaster = PhysicsAwareForecaster(
         short_ckpt=short_ckpt,
@@ -250,7 +250,7 @@ def main():
     )
     logger.info("✅ Forecaster loaded\n")
     
-    ***REMOVED*** Wrap with RL (HEURISTIC MODE)
+    # Wrap with RL (HEURISTIC MODE)
     logger.info("Initializing RL system in HEURISTIC mode...")
     rl_forecaster = RLIntegratedForecaster(
         forecaster=forecaster,
@@ -259,10 +259,10 @@ def main():
     )
     logger.info("✅ RL system ready\n")
     
-    ***REMOVED*** Load all windows upfront
+    # Load all windows upfront
     test_windows = load_test_windows(test_data, num_samples=args.num_samples)
     
-    ***REMOVED*** Collect with batching
+    # Collect with batching
     logger.info("Starting PARALLEL collection...")
     logger.info("💡 This should be 4-6x faster than sequential!\n")
     
@@ -274,7 +274,7 @@ def main():
         checkpoint_freq=args.checkpoint_freq
     )
     
-    ***REMOVED*** Summary stats
+    # Summary stats
     logger.info("\n" + "="*70)
     logger.info("COLLECTION SUMMARY")
     logger.info("="*70)

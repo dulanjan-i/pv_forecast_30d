@@ -19,8 +19,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-***REMOVED*** Add project root to Python path
-project_root = Path(__file__).resolve().parents[2]  ***REMOVED*** Go up 2 levels: training -> src -> project_root
+# Add project root to Python path
+project_root = Path(__file__).resolve().parents[2]  # Go up 2 levels: training -> src -> project_root
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
@@ -45,7 +45,7 @@ def main():
         found_runs += 1
         print(f"Processing: {run_dir.name}")
 
-        ***REMOVED*** Load config to get hyperparameters
+        # Load config to get hyperparameters
         cfg_pattern = run_dir.name.replace("farm2107_", "pretrain_farm2107_") + ".yaml"
         cfg_files = list(SWEEPS_ROOT.glob(cfg_pattern))
         
@@ -57,7 +57,7 @@ def main():
         with cfg_files[0].open("r") as f:
             cfg = yaml.safe_load(f)
 
-        ***REMOVED*** Extract hyperparameters
+        # Extract hyperparameters
         h = cfg["model"]["hidden_size"]
         l = cfg["model"]["num_layers"]
         lr = cfg["training"]["learning_rate"]
@@ -65,8 +65,8 @@ def main():
         batch_size = cfg["training"]["batch_size"]
         tag = cfg["experiment"]["tag"]
 
-        ***REMOVED*** Find Lightning CSV metrics
-        ***REMOVED*** Path should be: experiments/lstm/runs/farm2107_h64_l2_lr1e-3/farm2107_pretrain_sweep/version_0/metrics.csv
+        # Find Lightning CSV metrics
+        # Path should be: experiments/lstm/runs/farm2107_h64_l2_lr1e-3/farm2107_pretrain_sweep/version_0/metrics.csv
         metrics_candidates = [
             run_dir / "farm2107_pretrain_sweep" / "version_0" / "metrics.csv",
             run_dir / "pretrain" / "version_0" / "metrics.csv",
@@ -83,7 +83,7 @@ def main():
             skipped_runs += 1
             continue
 
-        ***REMOVED*** Read metrics
+        # Read metrics
         try:
             df = pd.read_csv(metrics_path)
         except Exception as e:
@@ -102,11 +102,11 @@ def main():
             skipped_runs += 1
             continue
 
-        ***REMOVED*** Get final validation loss (MSE)
+        # Get final validation loss (MSE)
         final_val_mse = float(val_series.iloc[-1])
         final_val_rmse = math.sqrt(final_val_mse)
         
-        ***REMOVED*** Also get min validation loss
+        # Also get min validation loss
         min_val_mse = float(val_series.min())
         min_val_rmse = math.sqrt(min_val_mse)
 
@@ -137,11 +137,11 @@ def main():
         print("No results to save!")
         sys.exit(1)
 
-    ***REMOVED*** Create DataFrame and sort by best RMSE
+    # Create DataFrame and sort by best RMSE
     results = pd.DataFrame(rows)
     results = results.sort_values("best_val_rmse")
 
-    ***REMOVED*** Save to CSV
+    # Save to CSV
     OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
     results.to_csv(OUTPUT_CSV, index=False)
 

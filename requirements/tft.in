@@ -1,12 +1,12 @@
-***REMOVED*** Core
+# Core
 numpy
 pandas
 pyarrow
 
-***REMOVED*** ML
+# ML
 torch
 lightning
 pytorch-forecasting
 
-***REMOVED*** Common deps
+# Common deps
 scikit-learn

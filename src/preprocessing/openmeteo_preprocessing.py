@@ -24,9 +24,9 @@ from pathlib import Path
 import pandas as pd
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Paths
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------
 
 INTERIM_DIR = Path("data/interim/farm_2107")
 PROCESSED_DIR = Path("data/processed/pretraining")
@@ -38,9 +38,9 @@ HOURLY_OUT_15 = PROCESSED_DIR / "farm2107_weather_15min.parquet"
 DAILY_OUT = PROCESSED_DIR / "farm2107_weather_daily.parquet"
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Functions
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Functions
+# ---------------------------------------------------------------------
 
 def load_hourly_weather(path: Path) -> pd.DataFrame:
     """Load hourly Open-Meteo weather (interim) and set index = date."""
@@ -107,21 +107,21 @@ def load_daily_weather(path: Path) -> pd.DataFrame:
     return df
 
 
-***REMOVED*** ---------------------------------------------------------------------
-***REMOVED*** Main
-***REMOVED*** ---------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------
 
 def main():
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** 1) Hourly → 15 min
+    # 1) Hourly → 15 min
     hourly_df = load_hourly_weather(HOURLY_IN)
     weather_15 = resample_to_15min(hourly_df)
 
     print(f"[INFO] Saving 15-min weather to {HOURLY_OUT_15}")
     weather_15.to_parquet(HOURLY_OUT_15)
 
-    ***REMOVED*** 2) Daily (just cleaned, moved to processed)
+    # 2) Daily (just cleaned, moved to processed)
     daily_df = load_daily_weather(DAILY_IN)
     print(f"[INFO] Saving daily weather to {DAILY_OUT}")
     daily_df.to_parquet(DAILY_OUT)

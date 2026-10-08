@@ -1,29 +1,29 @@
-***REMOVED*** requirements/requirements_test.txt
-***REMOVED*** CI test dependencies — minimal set needed to run `pytest -m "not integration"`.
-***REMOVED*** Excludes openmeteo, weather API clients, and heavy training-only deps.
+# requirements/requirements_test.txt
+# CI test dependencies — minimal set needed to run `pytest -m "not integration"`.
+# Excludes openmeteo, weather API clients, and heavy training-only deps.
 
-***REMOVED*** ── Core scientific stack ────────────────────────────────────────────────────
+# ── Core scientific stack ────────────────────────────────────────────────────
 numpy>=1.26.0,<3.0
 pandas>=2.2.0
 scipy>=1.12.0
 scikit-learn>=1.4.0
 
-***REMOVED*** ── PyTorch (CPU-only wheel — keeps CI fast and avoids CUDA setup) ───────────
+# ── PyTorch (CPU-only wheel — keeps CI fast and avoids CUDA setup) ───────────
 torch>=2.6.0
 
-***REMOVED*** ── Lightning ecosystem ──────────────────────────────────────────────────────
+# ── Lightning ecosystem ──────────────────────────────────────────────────────
 pytorch-lightning>=2.2.0
 lightning>=2.2.0
 torchmetrics>=1.3.0
 
-***REMOVED*** ── TFT model (needed by test_rl_checkpoint.py) ──────────────────────────────
+# ── TFT model (needed by test_rl_checkpoint.py) ──────────────────────────────
 pytorch-forecasting>=1.0.0
 
-***REMOVED*** ── PV physics (needed by test_rl_checkpoint.py) ─────────────────────────────
+# ── PV physics (needed by test_rl_checkpoint.py) ─────────────────────────────
 pvlib>=0.11.0
 
-***REMOVED*** ── Data I/O ─────────────────────────────────────────────────────────────────
+# ── Data I/O ─────────────────────────────────────────────────────────────────
 pyarrow>=14.0.0
 
-***REMOVED*** ── Test runner ──────────────────────────────────────────────────────────────
+# ── Test runner ──────────────────────────────────────────────────────────────
 pytest>=8.0.0

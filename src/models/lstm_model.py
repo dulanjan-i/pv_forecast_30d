@@ -12,5 +12,5 @@ class LSTMForecast(nn.Module):
 
     def forward(self, x):
         out, _ = self.lstm(x)
-        out = self.fc(out[:, -1, :])  ***REMOVED*** last time step
+        out = self.fc(out[:, -1, :])  # last time step
         return out

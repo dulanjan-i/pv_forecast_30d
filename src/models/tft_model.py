@@ -1,4 +1,4 @@
-***REMOVED*** src/models/tft_model.py
+# src/models/tft_model.py
 """
 Temporal Fusion Transformer (TFT) wrapper for MiRACLE.
 
@@ -105,7 +105,7 @@ def make_dataloaders(
     """
     Build PyTorch Forecasting dataloaders with sane performance defaults.
     """
-    ***REMOVED*** These kwargs get forwarded to torch DataLoader in pytorch-forecasting
+    # These kwargs get forwarded to torch DataLoader in pytorch-forecasting
     dl_kwargs = dict(
         num_workers=num_workers,
         pin_memory=True,
@@ -113,7 +113,7 @@ def make_dataloaders(
         prefetch_factor=2 if num_workers > 0 else None,
         drop_last=True,
     )
-    ***REMOVED*** Remove None keys (DataLoader errors on prefetch_factor=None)
+    # Remove None keys (DataLoader errors on prefetch_factor=None)
     dl_kwargs = {k: v for k, v in dl_kwargs.items() if v is not None}
 
     train_loader = train_ds.to_dataloader(train=True, batch_size=batch_size, **dl_kwargs)

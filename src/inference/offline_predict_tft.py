@@ -53,7 +53,7 @@ def _infer_roles(roles: Dict[str, Any]) -> Dict[str, Any]:
     """
     Normalize roles into a single dict we can use to build TimeSeriesDataSet.
     """
-    ***REMOVED*** MiRACLE v1 schema
+    # MiRACLE v1 schema
     if "known_time_reals" in roles and "time_idx_col" in roles:
         target = roles["target"]
         time_col = roles.get("time_col", "timestamp_utc")
@@ -76,7 +76,7 @@ def _infer_roles(roles: Dict[str, Any]) -> Dict[str, Any]:
             "lagged_encoding_cols": lagged,
         }
 
-    ***REMOVED*** Standard PF schema fallback
+    # Standard PF schema fallback
     target = roles.get("target", "power_norm")
     time_col = roles.get("time_col", "timestamp_utc")
     time_idx_col = roles.get("time_idx", roles.get("time_idx_col", "time_idx"))
@@ -107,7 +107,7 @@ def _ensure_time_columns(df: pd.DataFrame, roles: Dict[str, Any]) -> pd.DataFram
     time_idx_col = roles["time_idx_col"]
     group_ids = roles["group_ids"]
 
-    ***REMOVED*** best-effort fallback if time_col isn't present
+    # best-effort fallback if time_col isn't present
     if time_col not in df.columns:
         for cand in ["timestamp_utc", "timestamp", "time", "datetime"]:
             if cand in df.columns:
@@ -118,14 +118,14 @@ def _ensure_time_columns(df: pd.DataFrame, roles: Dict[str, Any]) -> pd.DataFram
 
     df[time_col] = pd.to_datetime(df[time_col], utc=True)
 
-    ***REMOVED*** Ensure group columns exist
+    # Ensure group columns exist
     for g in group_ids:
         if g not in df.columns:
             df[g] = "plant_unk"
 
     df = df.sort_values(group_ids + [time_col]).reset_index(drop=True)
 
-    ***REMOVED*** Always recompute to guarantee step=1 per group
+    # Always recompute to guarantee step=1 per group
     df[time_idx_col] = df.groupby(group_ids).cumcount().astype("int64")
 
     return df
@@ -213,11 +213,11 @@ def main() -> None:
     run_cfg = _read_json(run_dir / "run_config.json")
     cfg = run_cfg.get("cfg", run_cfg)
     
-    ***REMOVED*** Support both config key styles: "cli_args" dict or top-level keys
+    # Support both config key styles: "cli_args" dict or top-level keys
     if "cli_args" in cfg:
         cfg = cfg["cli_args"]
 
-    ***REMOVED*** Support both naming conventions: max_encoder_length/encoder_len, max_prediction_length/pred_len
+    # Support both naming conventions: max_encoder_length/encoder_len, max_prediction_length/pred_len
     max_encoder_length = int(cfg.get("max_encoder_length", cfg.get("encoder_len", 96)))
     max_prediction_length = int(cfg.get("max_prediction_length", cfg.get("pred_len", 96)))
 
@@ -225,7 +225,7 @@ def main() -> None:
     lstm_layers = int(cfg.get("lstm_layers", 2))
     attention_head_size = int(cfg.get("attention_head_size", cfg.get("attn_heads", 4)))
     dropout = float(cfg.get("dropout", 0.1))
-    ***REMOVED*** Default to pytorch_forecasting.metrics.QuantileLoss default quantiles (7 quantiles)
+    # Default to pytorch_forecasting.metrics.QuantileLoss default quantiles (7 quantiles)
     quantiles = cfg.get("quantiles", [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98])
 
     train_df = _ensure_time_columns(pd.read_parquet(args.train_parquet), roles)
@@ -254,8 +254,8 @@ def main() -> None:
     test_ds = TimeSeriesDataSet.from_dataset(train_ds, test_df, predict=False, stop_randomization=True)
     test_dl = test_ds.to_dataloader(train=False, batch_size=args.batch_size, num_workers=args.num_workers)
 
-    ***REMOVED*** Build group ID decoder: encoded integer -> original value
-    ***REMOVED*** PyTorch Forecasting encodes group IDs as integers in sorted order
+    # Build group ID decoder: encoded integer -> original value
+    # PyTorch Forecasting encodes group IDs as integers in sorted order
     group_decoders = {}
     for g in roles["group_ids"]:
         unique_vals = sorted(train_df[g].unique())
@@ -283,7 +283,7 @@ def main() -> None:
 
     print(f"[INFO] Running inference on {device} with batch_size={args.batch_size}")
 
-    ***REMOVED*** Manual inference loop to avoid Lightning distributed issues
+    # Manual inference loop to avoid Lightning distributed issues
     all_preds = []
     all_targets = []
     all_group_ids = {g: [] for g in roles["group_ids"]}
@@ -291,26 +291,26 @@ def main() -> None:
     
     with torch.no_grad():
         for batch_idx, (x, y) in enumerate(test_dl):
-            ***REMOVED*** Move to device
+            # Move to device
             x = {k: v.to(device) if torch.is_tensor(v) else v for k, v in x.items()}
             if isinstance(y, (list, tuple)):
                 targets = y[0].to(device)
             else:
                 targets = y.to(device)
             
-            ***REMOVED*** Forward pass
+            # Forward pass
             output = model(x)
-            pred = output.prediction  ***REMOVED*** (B, T, Q) or (B, T)
+            pred = output.prediction  # (B, T, Q) or (B, T)
             
             all_preds.append(pred.cpu())
             all_targets.append(targets.cpu())
             
-            ***REMOVED*** Extract group IDs from 'groups' key and decode to original values
+            # Extract group IDs from 'groups' key and decode to original values
             if 'groups' in x:
-                groups_tensor = x['groups']  ***REMOVED*** (B, num_group_ids), encoded integers
+                groups_tensor = x['groups']  # (B, num_group_ids), encoded integers
                 if torch.is_tensor(groups_tensor):
                     groups_np = groups_tensor.cpu().numpy()
-                    ***REMOVED*** groups_np contains encoded integers; decode them
+                    # groups_np contains encoded integers; decode them
                     for idx, g in enumerate(roles["group_ids"]):
                         if groups_np.ndim == 2 and idx < groups_np.shape[1]:
                             encoded_vals = groups_np[:, idx].astype(int).tolist()
@@ -319,43 +319,43 @@ def main() -> None:
                         else:
                             encoded_vals = []
                         
-                        ***REMOVED*** Decode using the group_decoders mapping
+                        # Decode using the group_decoders mapping
                         if g in group_decoders:
                             decoded = [group_decoders[g].get(enc, enc) for enc in encoded_vals]
                             all_group_ids[g].extend(decoded)
                         else:
-                            ***REMOVED*** No decoder, use raw values
+                            # No decoder, use raw values
                             all_group_ids[g].extend(encoded_vals)
             else:
-                ***REMOVED*** Fallback to decoder_{group_id} keys
+                # Fallback to decoder_{group_id} keys
                 for g in roles["group_ids"]:
                     decoder_key = f"decoder_{g}"
                     if decoder_key in x and torch.is_tensor(x[decoder_key]):
                         vals = x[decoder_key][:, 0].cpu().numpy().tolist()
                         all_group_ids[g].extend(vals)
             
-            ***REMOVED*** Time idx: try decoder_time_idx first, then encoder_time_idx
+            # Time idx: try decoder_time_idx first, then encoder_time_idx
             time_idx_key = 'decoder_time_idx'
             if time_idx_key in x and torch.is_tensor(x[time_idx_key]):
-                ***REMOVED*** decoder_time_idx has shape (B, decoder_length)
-                ***REMOVED*** First timestep in decoder is the start of prediction
+                # decoder_time_idx has shape (B, decoder_length)
+                # First timestep in decoder is the start of prediction
                 start_idx = x[time_idx_key][:, 0].cpu().numpy()
                 all_time_idx.extend(start_idx.tolist())
             else:
                 encoder_time_key = f"encoder_{roles['time_idx_col']}"
                 if encoder_time_key in x and torch.is_tensor(x[encoder_time_key]):
-                    ***REMOVED*** Last encoder time_idx + 1 = first prediction time_idx
+                    # Last encoder time_idx + 1 = first prediction time_idx
                     start_idx = x[encoder_time_key][:, -1].cpu().numpy() + 1
                     all_time_idx.extend(start_idx.tolist())
             
             if (batch_idx + 1) % 10 == 0:
                 print(f"  Processed {batch_idx + 1}/{len(test_dl)} batches")
     
-    ***REMOVED*** Concatenate all batches
+    # Concatenate all batches
     y_hat = torch.cat(all_preds, dim=0)
     y_true = torch.cat(all_targets, dim=0)
     
-    ***REMOVED*** Build index dataframe
+    # Build index dataframe
     index_data = {**all_group_ids, roles["time_idx_col"]: all_time_idx}
     index_df = pd.DataFrame(index_data)
 

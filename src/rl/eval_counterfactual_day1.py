@@ -1,4 +1,4 @@
-***REMOVED*** src/rl/eval_counterfactual_day1.py
+# src/rl/eval_counterfactual_day1.py
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from src.rl.training import DQNNetwork  ***REMOVED*** same net used in training
+from src.rl.training import DQNNetwork  # same net used in training
 
 
 def main() -> None:
@@ -27,7 +27,7 @@ def main() -> None:
     df = df.dropna(subset=["forecast_start", "action", "reward"])
     df["forecast_start"] = pd.to_datetime(df["forecast_start"], utc=True)
 
-    ***REMOVED*** optional cap
+    # optional cap
     if args.n is not None:
         starts = sorted(df["forecast_start"].unique())[: args.n]
         df = df[df["forecast_start"].isin(starts)].copy()
@@ -36,7 +36,7 @@ def main() -> None:
     if len(state_cols) != args.state_dim:
         raise ValueError(f"state cols={len(state_cols)} but --state-dim={args.state_dim}")
 
-    ***REMOVED*** load model
+    # load model
     ckpt = torch.load(args.ckpt, map_location="cpu")
     net = DQNNetwork(args.state_dim, args.action_dim, ckpt["config"].hidden_sizes)
     net.load_state_dict(ckpt["q_net"])
@@ -45,11 +45,11 @@ def main() -> None:
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     net.to(device)
 
-    ***REMOVED*** evaluate per forecast_start
+    # evaluate per forecast_start
     out_rows: List[dict] = []
     for fs, g in df.groupby("forecast_start"):
         g = g.sort_values("action")
-        ***REMOVED*** state is same for all actions
+        # state is same for all actions
         st = g.iloc[0][state_cols].to_numpy(dtype=np.float32)
         st_t = torch.from_numpy(st).unsqueeze(0).to(device)
 
@@ -57,7 +57,7 @@ def main() -> None:
             q = net(st_t).squeeze(0).cpu().numpy()
         a_hat = int(np.argmax(q))
 
-        ***REMOVED*** realized rewards from counterfactual table
+        # realized rewards from counterfactual table
         r_bas = float(g.loc[g["action"] == args.baseline_action, "reward"].iloc[0])
         r_pol = float(g.loc[g["action"] == a_hat, "reward"].iloc[0])
 

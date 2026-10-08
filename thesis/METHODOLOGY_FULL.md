@@ -1,4 +1,4 @@
-***REMOVED*** MiRACLE — Comprehensive Methodology (Consolidated)
+# MiRACLE — Comprehensive Methodology (Consolidated)
 
 This document consolidates the full, step-by-step methodology used to develop, evaluate, and deploy the MiRACLE forecasting system. It is intended as a canonical reference that (i) lists each stage of the experimental workflow, (ii) documents the rationale and procedures used, (iii) cites repository artifacts and code that implement the stage, and (iv) records the design decisions and empirical outcomes that shaped the final MiRACLE v1.0 core.
 
@@ -18,7 +18,7 @@ For each stage below: Purpose, protocol, code/data artifacts, evaluation criteri
 
 ---
 
-***REMOVED******REMOVED*** Stage 1 — LSTM Farm2107 Pretrain (exploratory)
+## Stage 1 — LSTM Farm2107 Pretrain (exploratory)
 Purpose
 - Use a geographically distant, high-quality dataset (Farm2107) to explore representation learning via an LSTM encoder and to run large-scale encoder hyperparameter sweeps.
 Protocol and artifacts
@@ -31,7 +31,7 @@ Notes and outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 2 — Germany Regional Pretrain
+## Stage 2 — Germany Regional Pretrain
 Purpose
 - Pretrain encoder representations on regionally relevant plants to reduce domain gap and improve transfer to the target plant.
 Protocol and artifacts
@@ -45,7 +45,7 @@ Outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 3 — Plant Fine-Tune (target plant)
+## Stage 3 — Plant Fine-Tune (target plant)
 Purpose
 - Fine-tune pre-trained encoders and forecasters on plant-specific data (plant_03 target) using strictly temporal isolation.
 Protocol and artifacts
@@ -58,7 +58,7 @@ Outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 4 — Ablation Study (component isolation)
+## Stage 4 — Ablation Study (component isolation)
 Purpose
 - Attribute performance gains to specific components by isolating/removing them while holding the evaluation protocol fixed.
 Protocol and artifacts
@@ -71,7 +71,7 @@ Key decision and outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 5 — TFT+PVLib Selection (short-head model selection)
+## Stage 5 — TFT+PVLib Selection (short-head model selection)
 Purpose
 - Select the short-head (high-resolution) model configuration via rigorous hyperparameter sweeps and seed-based verification.
 Protocol and artifacts
@@ -84,7 +84,7 @@ Outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 6 — Global Pretrain Germany (no-leak validation)
+## Stage 6 — Global Pretrain Germany (no-leak validation)
 Purpose
 - Train global models and preprocessors on Germany regional data while strictly avoiding leakage to the target backtest year.
 Protocol and artifacts
@@ -97,7 +97,7 @@ Outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 7 — Long-Head Addition (hourly resolution)
+## Stage 7 — Long-Head Addition (hourly resolution)
 Purpose
 - Add a long-head forecasting component at hourly resolution to capture long-term structure (30-day horizon) with improved stability.
 Motivation
@@ -112,7 +112,7 @@ Outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 8 — Hierarchical Inference (physics-glue)
+## Stage 8 — Hierarchical Inference (physics-glue)
 Purpose
 - Reconcile multi-resolution outputs (short-head 15-min, long-head hourly) and a physics-based baseline (`pvlib`) into a single 15-minute operational forecast.
 Why hierarchical glue rather than one 2880-step model
@@ -127,7 +127,7 @@ Outcome
 
 ---
 
-***REMOVED******REMOVED*** Stage 9 — RL Meta-Controller (adaptive blending control)
+## Stage 9 — RL Meta-Controller (adaptive blending control)
 Purpose
 - Implement a discrete-action meta-controller (double DQN) that observes recent performance and data-quality signals and selects operational actions that modify blending/routing decisions.
 Protocol and artifacts
@@ -143,7 +143,7 @@ Recommendations to fix
 
 ---
 
-***REMOVED******REMOVED*** Stage 10 — Real-time inference and weather API router (deployment)
+## Stage 10 — Real-time inference and weather API router (deployment)
 Purpose
 - Provide a production-ready online inference layer that routes weather sources and serves the MiRACLE forecast outputs.
 Protocol and artifacts
@@ -153,20 +153,20 @@ Constraints and outcome
 
 ---
 
-***REMOVED******REMOVED*** Cross-stage notes: normalization, leakage prevention, and reproducibility
+## Cross-stage notes: normalization, leakage prevention, and reproducibility
 - Canonical capacity normalization: `power_norm = power_kw / installed_capacity_kw`. Implementations: `src/preprocessing/farm2107_preprocess.py` and `src/preprocessing/germany_pretrain_normalize_split.py`. Inference fallback synthesizes `power_norm` from `pvlib_ac_kw / capacity` (see `src/inference/phase1_inference_pipeline_v3.py`).
 - Leakage prevention: scalers/normalizers fitted on TRAIN only; `germany_pretrain_normalize_split.py` fits stats on train split and applies to val/test. Preprocessing fixes (unit rescale) are implemented in `src/data/fix_germany_pv_scaling.py`.
 - Reproducibility: experiments and canonical run artifacts are organized under `experiments/` and `freeze/` with manifests pointing to checkpoints used for thesis results. Figures and architecture diagrams are under `thesis/figures/` and `thesis/diagrams/`.
 
 ---
 
-***REMOVED******REMOVED*** Recommendation and action items for the thesis
+## Recommendation and action items for the thesis
 - This consolidated methodology file (`thesis/METHODOLOGY_FULL.md`) should be referenced from `thesis/chapters/CH03_Methodology_MiRACLE.md` and `PROGRESS_TRACKER.md` as the single canonical procedural source.
 - Required explicit statements to include in the thesis: (i) the Stage-4 empirical decision to drop the LSTM from the final forecasting ensemble and the supporting metrics, (ii) the honest RL assessment (near-neutral), and (iii) the exact preprocessing normalization rules with file references.
 
 ---
 
-***REMOVED******REMOVED*** Repository pointers (examples)
+## Repository pointers (examples)
 - Encoder & LSTM: `src/models/lstm_encoder.py`, `src/models/lstm_model.py`
 - TFT model and dataset: `src/models/tft_model.py`, `experiments/tft/` (sweeps and notes)
 - Physics-glue: `src/inference/physics_glue.py`, `src/inference/physics_aware_forecaster.py`

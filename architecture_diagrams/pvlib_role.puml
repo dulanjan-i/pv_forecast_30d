@@ -8,16 +8,16 @@ skinparam ArrowThickness 3
 title PVLib Physical Model, Role in MiRACLE
 
 ' Colors
-' Inputs:  ***REMOVED***D9EDF7
-' Model:   ***REMOVED***E6E6FA
-' Output:  ***REMOVED***DFF0D8
+' Inputs:  #D9EDF7
+' Model:   #E6E6FA
+' Output:  #DFF0D8
 
-rectangle "PV plant metadata\n(location, tilt, azimuth,\nmodule parameters)" as META ***REMOVED***D9EDF7
-rectangle "Weather time series\nor forecasts\n(GHI, DNI, temp, wind)" as WEA ***REMOVED***D9EDF7
+rectangle "PV plant metadata\n(location, tilt, azimuth,\nmodule parameters)" as META #D9EDF7
+rectangle "Weather time series\nor forecasts\n(GHI, DNI, temp, wind)" as WEA #D9EDF7
 
-rectangle "PVLib physical model\n(irradiance and temperature\nsimulation)" as PVLIB ***REMOVED***E6E6FA
+rectangle "PVLib physical model\n(irradiance and temperature\nsimulation)" as PVLIB #E6E6FA
 
-rectangle "Physical feature vector\n(clearsky, POA,\ncell temperature etc.)" as PHYS ***REMOVED***DFF0D8
+rectangle "Physical feature vector\n(clearsky, POA,\ncell temperature etc.)" as PHYS #DFF0D8
 
 META --> PVLIB
 WEA  --> PVLIB

@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -Eeuo pipefail
 
 trap 'echo "[ERROR] Failed at line $LINENO. Last command: $BASH_COMMAND"' ERR
@@ -13,7 +13,7 @@ What it does:
 4) Run the regional LSTM trainer to produce canonical encoder weights.
 '
 
-***REMOVED*** Robust repo-root discovery
+# Robust repo-root discovery
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 if [[ -z "$REPO_ROOT" ]]; then
   echo "[ERROR] Not inside a git repo. cd into pv_forecast_30d and rerun."
@@ -55,7 +55,7 @@ echo "[SUCCESS] regional split created:"
 ls -lh "$DATA_DIR/regional_train.parquet" "$DATA_DIR/regional_val.parquet" "$DATA_DIR/regional_scaler.json"
 
 echo "[INFO] 3) Activating venv..."
-***REMOVED*** shellcheck disable=SC1090
+# shellcheck disable=SC1090
 source "$VENV_ACT"
 
 echo "[INFO] 4) Training canonical regional encoder..."

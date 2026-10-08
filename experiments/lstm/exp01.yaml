@@ -1,4 +1,4 @@
-***REMOVED*** Experiment 01: Baseline LSTM
+# Experiment 01: Baseline LSTM
 model:
   input_size: 10
   hidden_size: 64

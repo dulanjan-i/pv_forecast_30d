@@ -1,6 +1,6 @@
-***REMOVED*** MiRACLE v1.0: Verification Summary and Documentation Index
+# MiRACLE v1.0: Verification Summary and Documentation Index
 
-***REMOVED******REMOVED*** Executive Summary
+## Executive Summary
 
 **Date**: January 1, 2026  
 **Status**: ✅ **VERIFIED** — All workflows validated, documentation complete
@@ -9,9 +9,9 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED*** Verification Checklist
+## Verification Checklist
 
-***REMOVED******REMOVED******REMOVED*** ✅ Phase 1: Ablation Study
+### ✅ Phase 1: Ablation Study
 **Status**: VERIFIED  
 **Evidence**:
 - Ablation summary CSV: [experiments/tft/runs/germany/ablations/ablation_summary_extended.csv](../experiments/tft/runs/germany/ablations/ablation_summary_extended.csv)
@@ -24,7 +24,7 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ✅ Phase 2: Global Pretraining (No-Leak)
+### ✅ Phase 2: Global Pretraining (No-Leak)
 **Status**: VERIFIED  
 **Evidence**:
 - Source script: [src/data/make_global_noleak_parquets.py](../src/data/make_global_noleak_parquets.py)
@@ -37,9 +37,9 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** ✅ Phase 3: Cold vs. Warm Start Comparison
+### ✅ Phase 3: Cold vs. Warm Start Comparison
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Short-Term Head (15-min, 24h horizon)
+#### Short-Term Head (15-min, 24h horizon)
 **Status**: VERIFIED  
 **Evidence**: [experiments/tft/runs/germany/plant_03/15min/finetune_summary.csv](../experiments/tft/runs/germany/plant_03/15min/finetune_summary.csv)
 
@@ -50,7 +50,7 @@ This document confirms the successful completion and verification of the MiRACLE
 
 **Relative Improvement**: **32.5%** (warm vs. cold mean)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Long-Term Head (1-hour, 30-day horizon)
+#### Long-Term Head (1-hour, 30-day horizon)
 **Status**: VERIFIED  
 **Evidence**: [experiments/tft/runs/germany/plant_03/longhead/hourly720/](../experiments/tft/runs/germany/plant_03/longhead/hourly720/)
 
@@ -65,11 +65,11 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED*** Production Model Selection
+## Production Model Selection
 
-***REMOVED******REMOVED******REMOVED*** Selected Configurations (Locked for v1.0)
+### Selected Configurations (Locked for v1.0)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Short-Term Operational Head
+#### Short-Term Operational Head
 - **Checkpoint**: `experiments/tft/runs/germany/plant_03/15min/pvlib_warmstart_from_global_noleak/20251229_151100/checkpoints/best.ckpt`
 - **Validation Loss**: 0.02666
 - **Configuration**: TFT+PVLib, warm-start seed 42
@@ -79,7 +79,7 @@ This document confirms the successful completion and verification of the MiRACLE
   - Batch size: 64, gradient accumulation: 8
   - Hidden size: 64, LSTM layers: 2, attention heads: 4
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Long-Term Strategic Head
+#### Long-Term Strategic Head
 - **Checkpoint**: `experiments/tft/runs/germany/plant_03/longhead/hourly720/warm/lr8e-4_do0.15_bs64_acc8_seed43/20251231_104405/checkpoints/best.ckpt`
 - **Validation Loss**: 0.02414
 - **Configuration**: TFT+PVLib, warm-start seed 43
@@ -87,9 +87,9 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED*** Documentation Deliverables
+## Documentation Deliverables
 
-***REMOVED******REMOVED******REMOVED*** 📄 Thesis-Ready Documents (NEW)
+### 📄 Thesis-Ready Documents (NEW)
 
 1. **Methodology Section**  
    - File: [reports/miracle_v1_methodology_CORRECTED.md](miracle_v1_methodology_CORRECTED.md)
@@ -130,90 +130,90 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED*** Key Experimental Findings
+## Key Experimental Findings
 
-***REMOVED******REMOVED******REMOVED*** Finding 1: Physics Features Provide Robust Improvement
+### Finding 1: Physics Features Provide Robust Improvement
 - **Evidence**: TFT+PVLib reduced RMSE by 5.36% vs. TFT-only baseline
 - **Mechanism**: Solar geometry (zenith/azimuth) and POA decomposition reduce model search space
 - **Implication**: Physics-informed ML superior to pure data-driven for domains with known first principles
 
-***REMOVED******REMOVED******REMOVED*** Finding 2: Transfer Learning Scales Across Horizons
+### Finding 2: Transfer Learning Scales Across Horizons
 - **Evidence**: Warm-start benefits persist at 15-min (32.5%) and 1-hour (5.3%) resolutions
 - **Mechanism**: Global pretraining learns site-agnostic attention patterns and weather correlations
 - **Implication**: Single global model can initialize multiple target-specific deployments
 
-***REMOVED******REMOVED******REMOVED*** Finding 3: Variance Reduction from Pretraining
+### Finding 3: Variance Reduction from Pretraining
 - **Evidence**: Warm-start std dev 98% lower than cold-start (0.0003 vs. 0.0145)
 - **Mechanism**: Pretrained weights land in smoother optimization basin
 - **Implication**: Production stability improved (less sensitivity to random initialization)
 
-***REMOVED******REMOVED******REMOVED*** Finding 4: Data Leakage Prevention Validated
+### Finding 4: Data Leakage Prevention Validated
 - **Evidence**: Global model excluded plant_03 entirely; no train/test overlap
 - **Mechanism**: Explicit plant ID filtering via `make_global_noleak_parquets.py`
 - **Implication**: Transfer learning results scientifically valid (no contamination)
 
 ---
 
-***REMOVED******REMOVED*** Workflow Validation Summary
+## Workflow Validation Summary
 
-***REMOVED******REMOVED******REMOVED*** Data Pipeline ✅
+### Data Pipeline ✅
 - PVLib feature generation: [src/features/germany_build_pvlib_for_tft.py](../src/features/germany_build_pvlib_for_tft.py)
 - Weather alignment: [src/features/germany_build_tft_weather.py](../src/features/germany_build_tft_weather.py)
 - Feature fusion: [src/features/germany_merge_tft_full.py](../src/features/germany_merge_tft_full.py)
 - Ablation parquet generation: [src/features/germany_make_tft_ablation_parquets.py](../src/features/germany_make_tft_ablation_parquets.py)
 - Temporal resampling (hourly): [src/data/make_hourly_from_15min_parquets.py](../src/data/make_hourly_from_15min_parquets.py)
 
-***REMOVED******REMOVED******REMOVED*** Training Scripts ✅
+### Training Scripts ✅
 - Short-term head: [src/training/train_tft_v1.py](../src/training/train_tft_v1.py)
 - Long-term head: [src/training/train_tft_longhead_v1.py](../src/training/train_tft_longhead_v1.py)
 - Evaluation: [src/validation/eval_short_head.py](../src/validation/eval_short_head.py)
 
-***REMOVED******REMOVED******REMOVED*** Model Architecture ✅
+### Model Architecture ✅
 - TFT wrapper: [src/models/tft_model.py](../src/models/tft_model.py)
 - Feature roles config: [src/configs/tft_v1.py](../src/configs/tft_v1.py)
 
-***REMOVED******REMOVED******REMOVED*** Experiment Tracking ✅
+### Experiment Tracking ✅
 - Ablation results: [experiments/tft/runs/germany/ablations/](../experiments/tft/runs/germany/ablations/)
 - Plant_03 fine-tuning: [experiments/tft/runs/germany/plant_03/](../experiments/tft/runs/germany/plant_03/)
 - Longhead experiments: [experiments/tft/runs/germany/plant_03/longhead/hourly720/](../experiments/tft/runs/germany/plant_03/longhead/hourly720/)
 
 ---
 
-***REMOVED******REMOVED*** Future Work Roadmap
+## Future Work Roadmap
 
-***REMOVED******REMOVED******REMOVED*** Immediate Next Steps (v1.1)
+### Immediate Next Steps (v1.1)
 1. **Cross-site validation**: Repeat transfer learning for plants {01, 02, 05, 06} as held-out targets
 2. **Seasonal analysis**: Stratify validation errors by month to quantify winter/summer performance
 3. **Probabilistic calibration**: Evaluate quantile coverage (P10, P90 reliability diagrams)
 
-***REMOVED******REMOVED******REMOVED*** Near-Term Research (v2.0)
+### Near-Term Research (v2.0)
 4. **Hierarchical fusion (Strategy A)**: Implement bias correction between short/long heads
    - See: [reports/miracle_v2_proposal_hierarchical_fusion.md](miracle_v2_proposal_hierarchical_fusion.md)
 5. **Attention interpretability**: Visualize temporal attention patterns for PVLib feature utilization
 6. **LSTM encoder integration**: Design safe rollout strategy for upstream embeddings
 
-***REMOVED******REMOVED******REMOVED*** Long-Term Extensions (v3.0+)
+### Long-Term Extensions (v3.0+)
 7. **Real-time deployment**: Integrate operational NWP forecasts (ECMWF/GFS) and measure degradation
 8. **Ensemble forecasting**: Propagate weather forecast uncertainty to PVLib constraints
 9. **Online learning**: Continual fine-tuning protocol as new site data accumulates
 
 ---
 
-***REMOVED******REMOVED*** Response to Original Question
+## Response to Original Question
 
-***REMOVED******REMOVED******REMOVED*** Question 1: "Verify if my workflow worked"
+### Question 1: "Verify if my workflow worked"
 **Answer**: ✅ **YES — Workflow fully validated**
 - Ablation study correctly identified TFT+PVLib as winner
 - Global pretraining successfully excluded target plant (no leakage)
 - Cold vs. warm comparison demonstrated 32.5% (short-term) and 5.3% (long-term) improvements
 - All experiments reproducible via SBATCH scripts and tracked via CSV logs
 
-***REMOVED******REMOVED******REMOVED*** Question 2: "Write methodology and results for thesis"
+### Question 2: "Write methodology and results for thesis"
 **Answer**: ✅ **COMPLETE — Two thesis-ready documents delivered**
 - [reports/miracle_v1_methodology_CORRECTED.md](miracle_v1_methodology_CORRECTED.md): 6,800 words, academic tone, LaTeX equations, fully verified
 - [reports/miracle_v1_results_CORRECTED.md](miracle_v1_results_CORRECTED.md): 7,200 words, tables, reproducible results with evidence paths
 
-***REMOVED******REMOVED******REMOVED*** Question 3: "Does the hierarchical fusion approach make sense?"
+### Question 3: "Does the hierarchical fusion approach make sense?"
 **Answer**: ✅ **YES — Strongly recommended**
 - Physics-guided constraint propagation from short to long term is scientifically sound
 - Aligns with hierarchical forecasting literature (Athanasopoulos et al., 2017)
@@ -225,7 +225,7 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED*** Citation Template (For Thesis)
+## Citation Template (For Thesis)
 
 ```bibtex
 @misc{miracle_v1_2026,
@@ -240,9 +240,9 @@ This document confirms the successful completion and verification of the MiRACLE
 
 ---
 
-***REMOVED******REMOVED*** Appendix A: Metric Computation Methods
+## Appendix A: Metric Computation Methods
 
-***REMOVED******REMOVED******REMOVED*** Evaluation Metrics
+### Evaluation Metrics
 
 All evaluation metrics are computed on flattened multi-horizon forecasts:
 
@@ -267,7 +267,7 @@ Where:
 - $y_{i,h}$ = ground truth at sample $i$, horizon step $h$
 - $\hat{y}_{i,h}$ = predicted value (median quantile from TFT output)
 
-***REMOVED******REMOVED******REMOVED*** Dataset Statistics Computation
+### Dataset Statistics Computation
 
 **Code to verify parquet row counts and date ranges:**
 ```python
@@ -293,13 +293,13 @@ train_tft_pvlib.parquet: n_rows=142,190, min=2023-01-01 23:00:00+00:00, max=2023
 val_tft_pvlib.parquet: n_rows=36,952, min=2023-12-02 00:00:00+00:00, max=2024-02-29 23:45:00+00:00
 ```
 
-***REMOVED******REMOVED******REMOVED*** GPU-Hour Computation
+### GPU-Hour Computation
 
 **Code to compute training time from metrics.csv:**
 ```python
 import pandas as pd
 
-***REMOVED*** Example: compute total GPU-hours for a run
+# Example: compute total GPU-hours for a run
 metrics_path = "experiments/tft/runs/germany/global_noleak/target03_excluded/20251229_134852/logs/metrics.csv"
 df = pd.read_csv(metrics_path)
 
@@ -322,7 +322,7 @@ if "epoch_sec" in df.columns:
 
 ---
 
-***REMOVED******REMOVED*** Acknowledgments
+## Acknowledgments
 
 **Hardware**: DBFZ HPC cluster (NVIDIA H100 PCIe)  
 **Software**: PyTorch 2.4, PyTorch Forecasting 1.0, PVLib-Python 0.10.3  

@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 : '
@@ -13,7 +13,7 @@ This is a safe step before PVLib integration.
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
-***REMOVED***source "$REPO_ROOT/.venvs/pvforecast/bin/activate"
+#source "$REPO_ROOT/.venvs/pvforecast/bin/activate"
 
 DATA_DIR="$REPO_ROOT/data/processed/pretraining/germany/global"
 ENC_DIR="$DATA_DIR/encodings"

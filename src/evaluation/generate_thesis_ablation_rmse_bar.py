@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """Generate a thesis-styled ablation RMSE bar chart from canonical freeze tables.
 
 Input (canonical):
@@ -10,8 +10,8 @@ Output:
 
 Styling:
 - Reuses the established thesis palette from `src/evaluation/run_benchmark_suite_v3_formatted.py`:
-  - MiRACLE highlighted: ***REMOVED***00AA00
-  - Comparisons: ***REMOVED***6BA3D8
+  - MiRACLE highlighted: #00AA00
+  - Comparisons: #6BA3D8
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-MIRACLE_COLOR = "***REMOVED***00AA00"
-COMPARISON_COLOR = "***REMOVED***6BA3D8"
+MIRACLE_COLOR = "#00AA00"
+COMPARISON_COLOR = "#6BA3D8"
 
 
 def main() -> int:
@@ -58,7 +58,7 @@ def main() -> int:
     df = df[["model", "RMSE"]].copy()
     df["RMSE"] = pd.to_numeric(df["RMSE"], errors="raise")
 
-    ***REMOVED*** Sort best->worst
+    # Sort best->worst
     df = df.sort_values("RMSE", ascending=True).reset_index(drop=True)
 
     labels = df["model"].tolist()
@@ -66,12 +66,12 @@ def main() -> int:
 
     colors = [MIRACLE_COLOR if "MiRACLE" in name else COMPARISON_COLOR for name in labels]
 
-    ***REMOVED*** Figure size tuned for thesis readability.
+    # Figure size tuned for thesis readability.
     fig, ax = plt.subplots(figsize=(9.5, 4.8))
 
     bars = ax.bar(labels, values, color=colors, alpha=0.9, edgecolor="black", linewidth=0.6)
 
-    ***REMOVED*** Annotate values.
+    # Annotate values.
     for bar, v in zip(bars, values):
         ax.text(
             bar.get_x() + bar.get_width() / 2,
@@ -90,7 +90,7 @@ def main() -> int:
     ax.grid(True, axis="y", alpha=0.3, linestyle=":")
     ax.set_axisbelow(True)
 
-    ***REMOVED*** Improve label readability
+    # Improve label readability
     ax.tick_params(axis="x", labelrotation=20)
 
     fig.tight_layout()

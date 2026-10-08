@@ -91,7 +91,7 @@ class GroupedWindowDataset(Dataset):
         if missing:
             raise ValueError(f"GroupedWindowDataset: missing required columns: {missing}")
 
-        ***REMOVED*** Hard fail on NaNs (model + loss assume none)
+        # Hard fail on NaNs (model + loss assume none)
         X_all = d[GLOBAL_LSTM_INPUT_FEATURES].to_numpy()
         y_all = d[TARGET_COL].to_numpy()
         if np.isnan(X_all).any() or np.isnan(y_all).any():
@@ -100,14 +100,14 @@ class GroupedWindowDataset(Dataset):
             )
 
         self._by_plant: Dict[str, Dict[str, np.ndarray]] = {}
-        self._index: List[Tuple[str, int]] = []  ***REMOVED*** (plant_id, start_idx)
+        self._index: List[Tuple[str, int]] = []  # (plant_id, start_idx)
 
         freq_s = int(TIME_STEP_MINUTES * 60)
 
         for plant_id, g in d.groupby(PLANT_ID_COL, sort=True):
             g = g.sort_values(TIME_COL).reset_index(drop=True)
 
-            times = g[TIME_COL].astype("int64").to_numpy() // 10**9  ***REMOVED*** seconds
+            times = g[TIME_COL].astype("int64").to_numpy() // 10**9  # seconds
             X = g[GLOBAL_LSTM_INPUT_FEATURES].to_numpy(dtype=np.float32)
             y = g[TARGET_COL].to_numpy(dtype=np.float32)
 
@@ -116,9 +116,9 @@ class GroupedWindowDataset(Dataset):
                 continue
 
             diffs = np.diff(times)
-            good_step = (diffs == freq_s)  ***REMOVED*** length n-1
+            good_step = (diffs == freq_s)  # length n-1
 
-            max_start = n - self.window_size - 1  ***REMOVED*** because y uses i+window_size
+            max_start = n - self.window_size - 1  # because y uses i+window_size
             valid_starts: List[int] = []
             for i in range(0, max_start + 1, self.stride):
                 if good_step[i : i + self.window_size].all():
@@ -249,7 +249,7 @@ def setup_trainer(
 ) -> pl.Trainer:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Keep metrics at: <output_dir>/logs/metrics.csv (avoid version_0 clutter)
+    # Keep metrics at: <output_dir>/logs/metrics.csv (avoid version_0 clutter)
     logger = CSVLogger(save_dir=str(output_dir), name="logs", version="")
 
     ckpt = ModelCheckpoint(
@@ -303,7 +303,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--gpus", type=int, default=1)
     p.add_argument("--num_workers", type=int, default=2)
     p.add_argument("--precision", type=str, default="16-mixed")
-    p.add_argument("--precision_override", type=str, default=None)  ***REMOVED*** backward compatible; ignored
+    p.add_argument("--precision_override", type=str, default=None)  # backward compatible; ignored
     return p.parse_args()
 
 
@@ -325,13 +325,13 @@ def main() -> None:
     out_encoder.parent.mkdir(parents=True, exist_ok=True)
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Reproducibility: persist the exact CLI config used for this run
+    # Reproducibility: persist the exact CLI config used for this run
     hparams = vars(args).copy()
     hparams["timestamp_utc"] = pd.Timestamp.now(tz='UTC').isoformat()
     hparams["script"] = str(Path(__file__).resolve())
     hparams["repo_root"] = str(REPO_ROOT)
 
-    ***REMOVED*** Log git commit + dirty status
+    # Log git commit + dirty status
     try:
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT).decode().strip()
         hparams["git_commit"] = commit
@@ -378,7 +378,7 @@ def main() -> None:
     print("=" * 80 + "\n")
     trainer.fit(model, train_loader, val_loader)
 
-    ***REMOVED*** Export BEST checkpoint weights (not last epoch)
+    # Export BEST checkpoint weights (not last epoch)
     best_path = ""
     if getattr(trainer, "checkpoint_callback", None) is not None:
         best_path = trainer.checkpoint_callback.best_model_path or ""

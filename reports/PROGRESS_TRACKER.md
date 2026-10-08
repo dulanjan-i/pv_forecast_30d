@@ -1,4 +1,4 @@
-***REMOVED*** Thesis Progress Tracker
+# Thesis Progress Tracker
 
 **Project**: Hybrid PV Power Forecasting (PVLib + LSTM + TFT + RL Meta Controller)  
 **Dataset**: PVDAQ System 2107 (Farm Solar Array, US) → German Transfer Learning  
@@ -6,7 +6,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Research Questions
+## Research Questions
 
 - **RQ1 (Design):** How can a hybrid framework combining PVLib, LSTM encoders, and a Temporal Fusion Transformer (TFT) be designed for 30-day forecasts?
 - **RQ2 (Performance):** How does this hybrid approach compare to purely physical (PVLib) and purely data-driven baselines?
@@ -15,7 +15,7 @@
 
 ---
 
-***REMOVED******REMOVED*** System Architecture Overview
+## System Architecture Overview
 
 - **Physical Layer (PVLib):** Simulates baseline power and physical features from weather inputs
 - **Feature Extraction (LSTM Encoder):** Captures temporal dynamics; pretrained on similar sites (PVDAQ)
@@ -24,9 +24,9 @@
 
 ---
 
-***REMOVED******REMOVED*** ✅ COMPLETED (Foundation Phase)
+## ✅ COMPLETED (Foundation Phase)
 
-***REMOVED******REMOVED******REMOVED*** 1. Data Infrastructure
+### 1. Data Infrastructure
 - [x] OpenMeteo API integration (`call_openmeteo_hist.py`)
 - [x] PVDAQ System 2107 (Farm Solar Array) preprocessing pipeline
 - [x] 15-minute temporal resolution alignment (weather + power)
@@ -34,7 +34,7 @@
 - [x] Train/val/test splits with normalization (scalers saved)
 - [x] 6 preprocessed parquet files ready for training
 
-***REMOVED******REMOVED******REMOVED*** 2. LSTM Encoder (Pretrain on US PVDAQ)
+### 2. LSTM Encoder (Pretrain on US PVDAQ)
 - [x] PyTorch LSTM baseline model (`lstm_model.py`)
 - [x] Lightning LSTM encoder with embeddings (`lstm_encoder.py`)
 - [x] Window-based dataset builder (96 timesteps = 24h)
@@ -45,7 +45,7 @@
 - [x] Comprehensive metrics + visualization notebook
 - [x] Results documented in `reports/lstm_results.md`
 
-***REMOVED******REMOVED******REMOVED*** 3. Experimental Infrastructure
+### 3. Experimental Infrastructure
 - [x] CALC02 VM environment (4× NVIDIA L4 GPUs, 32-core Xeon Platinum 8562Y+, 234GB RAM)
 - [x] PyTorch 2.5.1 + Lightning 2.4.0 stack
 - [x] Parallel training orchestration (4-GPU sweep)
@@ -57,9 +57,9 @@
 
 ---
 
-***REMOVED******REMOVED*** ⏳ IN PROGRESS
+## ⏳ IN PROGRESS
 
-***REMOVED******REMOVED******REMOVED*** 4. Visualization & Analysis
+### 4. Visualization & Analysis
 - [ ] Execute sweep visualization notebook
 - [ ] Generate training/validation curves
 - [ ] Generate hyperparameter heatmaps
@@ -67,11 +67,11 @@
 
 ---
 
-***REMOVED******REMOVED*** ❌ NOT STARTED (Core Research)
+## ❌ NOT STARTED (Core Research)
 
-***REMOVED******REMOVED******REMOVED*** RQ1: Hybrid Framework Design
+### RQ1: Hybrid Framework Design
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 5. PVLib Physical Layer
+#### 5. PVLib Physical Layer
 - [ ] Install and configure PVLib (`pvlib-python`)
 - [ ] Implement PVLib baseline for Farm 2107 (tilt, azimuth, capacity from metadata)
 - [ ] Generate physics-informed features (GHI, DNI, DHI → expected power)
@@ -79,7 +79,7 @@
 - [ ] Create reusable PVLib feature extractor module
 - [ ] PVLib parameter calibration for Farm 2107
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 6. TFT Forecasting Core **[CRITICAL PATH BLOCKER]**
+#### 6. TFT Forecasting Core **[CRITICAL PATH BLOCKER]**
 - [ ] Implement TFT architecture (PyTorch)
 - [ ] Multi-horizon architecture (30 days @ 15-min = 2880 timesteps)
 - [ ] Attention mechanism for feature fusion (LSTM + PVLib + weather)
@@ -88,7 +88,7 @@
 - [ ] Training loop with quantile loss (P10, P50, P90 predictions)
 - [ ] Validate on Farm 2107 test set
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 7. Hybrid Integration
+#### 7. Hybrid Integration
 - [ ] LSTM encoder → TFT pipeline (freeze LSTM, train TFT)
 - [ ] PVLib features → TFT augmentation
 - [ ] End-to-end training script
@@ -98,9 +98,9 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** RQ2: Performance Comparison
+### RQ2: Performance Comparison
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 8. Baseline Models
+#### 8. Baseline Models
 - [ ] Pure PVLib baseline (30-day forecast from weather)
 - [ ] Pure TFT baseline (no LSTM encoding, no PVLib features)
 - [ ] Pure LSTM baseline (autoregressive 30-day rollout)
@@ -111,9 +111,9 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** RQ3: Transfer Learning (US → Germany)
+### RQ3: Transfer Learning (US → Germany)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 9. German Data Acquisition
+#### 9. German Data Acquisition
 - [ ] Identify German PV dataset source:
   - Option 1: DWD (Deutscher Wetterdienst) + open PV data
   - Option 2: SMARD (grid data)
@@ -123,7 +123,7 @@
 - [ ] Create German train/val/test splits
 - [ ] Validate data quality and alignment
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 10. Transfer Learning Experiments
+#### 10. Transfer Learning Experiments
 - [ ] **Baseline**: Train hybrid model from scratch on German data
 - [ ] **Transfer**: Freeze LSTM encoder (US pretrained), fine-tune TFT on German data
 - [ ] **Micro-tuning**: Small LR adjustments for LSTM + TFT
@@ -134,9 +134,9 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** RQ4: RL Meta Controller
+### RQ4: RL Meta Controller
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 11. RL Infrastructure
+#### 11. RL Infrastructure
 - [ ] DQN agent implementation
 - [ ] **State space**: Error trends, data quality, weather variability, GHI deviation
 - [ ] **Action space**:
@@ -148,7 +148,7 @@
 - [ ] Adaptive HPT (Hyperparameter Tuning) logic
 - [ ] Training loop with experience replay
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** 12. Operational Simulation
+#### 12. Operational Simulation
 - [ ] Simulate 30-day rolling forecast scenario (continuous operation)
 - [ ] **Heuristic baselines**:
   - Fixed hyperparameters (no adaptation)
@@ -160,16 +160,16 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** 13. Evaluation & Documentation
+### 13. Evaluation & Documentation
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Final Experiments
+#### Final Experiments
 - [ ] All RQ1-RQ4 experiments complete
 - [ ] Ablation studies for each component
 - [ ] Cross-validation on multiple sites (if available)
 - [ ] Statistical significance tests
 - [ ] Robustness checks (missing data, weather extremes)
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Thesis Writing
+#### Thesis Writing
 - [ ] **Methodology chapter**: System design, implementation details
 - [ ] **Results chapter**: All experiments with plots/tables
 - [ ] **Discussion chapter**: Interpretation, limitations, contributions
@@ -181,7 +181,7 @@
 
 ---
 
-***REMOVED******REMOVED*** 📊 Progress Summary
+## 📊 Progress Summary
 
 | Component | Status | Progress | Critical Path? |
 |-----------|--------|----------|----------------|
@@ -202,7 +202,7 @@
 
 ---
 
-***REMOVED******REMOVED*** 🚨 Critical Dependencies
+## 🚨 Critical Dependencies
 
 **To answer RQ1 (Design):**
 1. ✅ LSTM Encoder pretrained ← **DONE**
@@ -225,11 +225,11 @@
 
 ---
 
-***REMOVED******REMOVED*** 🎯 Recommended Action Plan (Priority Order)
+## 🎯 Recommended Action Plan (Priority Order)
 
-***REMOVED******REMOVED******REMOVED*** Immediate Priority: Unblock Core Research
+### Immediate Priority: Unblock Core Research
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Phase 1: PVLib Integration
+#### Phase 1: PVLib Integration
 1. Install PVLib (`pip install pvlib-python`)
 2. Implement PVLib baseline for Farm 2107 (use metadata: tilt, azimuth, capacity)
 3. Generate physics-informed features (expected power from weather)
@@ -240,7 +240,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Phase 2: TFT Implementation **[CRITICAL]**
+#### Phase 2: TFT Implementation **[CRITICAL]**
 1. Implement TFT architecture (reference: PyTorch Forecasting or custom)
 2. Multi-horizon forecasting (30 days @ 15-min = 2880 timesteps)
 3. Integrate LSTM embeddings as input features
@@ -251,7 +251,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Phase 3: Hybrid System
+#### Phase 3: Hybrid System
 1. Fuse LSTM + PVLib + weather into TFT
 2. End-to-end training
 3. Ablation: TFT-only, TFT+LSTM, TFT+PVLib, Full Hybrid
@@ -261,7 +261,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Phase 4: Baselines & Comparison
+#### Phase 4: Baselines & Comparison
 1. Implement pure PVLib 30-day forecast
 2. Implement pure TFT baseline (no enhancements)
 3. Implement pure LSTM autoregressive baseline
@@ -273,7 +273,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Phase 5: German Transfer Learning
+#### Phase 5: German Transfer Learning
 1. **Start NOW**: Search for German dataset (DWD, SMARD, university sources)
 2. Preprocess to match US format
 3. Transfer experiments:
@@ -286,7 +286,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Phase 6: RL Meta Controller (Optional/Stretch)
+#### Phase 6: RL Meta Controller (Optional/Stretch)
 1. Implement DQN agent
 2. Operational simulation
 3. Compare vs. heuristics
@@ -296,7 +296,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Phase 7: Thesis Writing
+#### Phase 7: Thesis Writing
 1. All experiments complete
 2. Statistical analysis finalized
 3. Draft all chapters
@@ -307,23 +307,23 @@
 
 ---
 
-***REMOVED******REMOVED*** 💡 Key Insights
+## 💡 Key Insights
 
-***REMOVED******REMOVED******REMOVED*** Strengths
+### Strengths
 - ✅ Solid foundation: data pipeline + LSTM + infrastructure
 - ✅ Reproducible sweep methodology (12 configs, 2h runtime)
 - ✅ Clean codebase with good practices
 - ✅ Validated baseline (RMSE=0.0404)
 - ✅ GPU infrastructure (4× L4, 32-core Xeon, 234GB RAM)
 
-***REMOVED******REMOVED******REMOVED*** Risks
+### Risks
 - ⚠️ **TFT is the critical blocker** for all research questions
 - ⚠️ German data availability unknown (RQ3 at risk)
 - ⚠️ RL controller is ambitious (RQ4 may need scoping down)
 - ⚠️ 30-day horizon is challenging (2880 timesteps, long sequences)
 - ⚠️ Multi-task integration complexity (LSTM + PVLib + TFT)
 
-***REMOVED******REMOVED******REMOVED*** Recommendations
+### Recommendations
 1. **Focus immediately on TFT** (unblocks everything)
 2. **Start German data search NOW** (long lead time for acquisition)
 3. **Consider RQ4 as stretch goal** (defer if timeline tight)
@@ -332,7 +332,7 @@
 
 ---
 
-***REMOVED******REMOVED*** 📈 Commit History Summary
+## 📈 Commit History Summary
 
 **30 commits on `lstm-pretrain` branch:**
 
@@ -351,7 +351,7 @@
 
 ---
 
-***REMOVED******REMOVED*** 🔗 Next Steps Checklist
+## 🔗 Next Steps Checklist
 
 - [ ] Execute visualization notebook (`visualize_sweep_results.ipynb`)
 - [ ] Install PVLib and validate on Farm 2107

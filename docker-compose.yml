@@ -1,8 +1,8 @@
-***REMOVED*** MiRACLE v1.0 — Docker Compose
-***REMOVED*** Usage:
-***REMOVED***   docker-compose run --rm inference                        ***REMOVED*** today's forecast
-***REMOVED***   docker-compose run --rm inference --date 2026-01-02     ***REMOVED*** specific date
-***REMOVED***   docker-compose run --rm verify                          ***REMOVED*** integrity check only
+# MiRACLE v1.0 — Docker Compose
+# Usage:
+#   docker-compose run --rm inference                        # today's forecast
+#   docker-compose run --rm inference --date 2026-01-02     # specific date
+#   docker-compose run --rm verify                          # integrity check only
 
 services:
   inference:

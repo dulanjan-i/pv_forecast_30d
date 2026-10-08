@@ -1,38 +1,38 @@
-***REMOVED*** Thesis Color Scheme - Applied Across All Figures
+# Thesis Color Scheme - Applied Across All Figures
 
-***REMOVED******REMOVED*** Summary
+## Summary
 All evaluation figures have been regenerated with a **consistent, thesis-ready color scheme** emphasizing visual hierarchy:
 
-***REMOVED******REMOVED******REMOVED*** Color Mapping (Applied to ALL plots)
+### Color Mapping (Applied to ALL plots)
 
-1. **Ground Truth**: Light grey `***REMOVED***888888`
+1. **Ground Truth**: Light grey `#888888`
    - Linewidth: 1.5
    - Alpha: 0.7
    - Purpose: Subtle reference line, not the focal point
 
-2. **Model A / Baseline / MiRACLE v1.0 Core**: Bold green `***REMOVED***00AA00`
+2. **Model A / Baseline / MiRACLE v1.0 Core**: Bold green `#00AA00`
    - Linewidth: 2.5
    - Alpha: 1.0
    - Purpose: **HIGHLIGHTED** - stands out as the main result
 
-3. **Model B / Comparison Models**: Light blue `***REMOVED***6BA3D8`
+3. **Model B / Comparison Models**: Light blue `#6BA3D8`
    - Linewidth: 1.5 (time series) or 1.0 (facets)
    - Alpha: 0.9
    - Purpose: De-emphasized comparison
 
 4. **Multi-model monthly RMSE**: Separate colors per model
-   - MiRACLE Core: Bold green `***REMOVED***00AA00` (linewidth 2.5)
-   - Comparisons: Color palette [`***REMOVED***6BA3D8`, `***REMOVED***FAA43A`, `***REMOVED***B276B2`, `***REMOVED***F17CB0`, `***REMOVED***60BD68`] (linewidth 1.5)
+   - MiRACLE Core: Bold green `#00AA00` (linewidth 2.5)
+   - Comparisons: Color palette [`#6BA3D8`, `#FAA43A`, `#B276B2`, `#F17CB0`, `#60BD68`] (linewidth 1.5)
 
-***REMOVED******REMOVED******REMOVED*** Resolution & Quality
+### Resolution & Quality
 - **DPI**: 300 (up from 200) for thesis-quality printing
 - **Figure sizes**: Increased for better readability
 - **Grid lines**: Subtle dotted grid (alpha=0.3)
 - **Legends**: Improved with `framealpha=0.9`, better positioning
 
-***REMOVED******REMOVED*** Updated Files
+## Updated Files
 
-***REMOVED******REMOVED******REMOVED*** Scripts Updated
+### Scripts Updated
 1. **src/evaluation/run_benchmark_suite_v3_formatted.py**
    - Facet grid comparisons (summer/winter case studies)
    - Error histograms (comparison model behind, MiRACLE in front)
@@ -47,7 +47,7 @@ All evaluation figures have been regenerated with a **consistent, thesis-ready c
    - RQ4 baseline vs policy evaluation
    - Includes policy action distribution plot
 
-***REMOVED******REMOVED******REMOVED*** Evaluation Directories Regenerated
+### Evaluation Directories Regenerated
 All plots regenerated with consistent colors at 300 DPI:
 
 - **RQ1 (Ablation studies)**:
@@ -65,7 +65,7 @@ All plots regenerated with consistent colors at 300 DPI:
 - **Benchmark Suite**:
   - `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/` - Multi-model comparison
 
-***REMOVED******REMOVED*** Plot Types Covered
+## Plot Types Covered
 
 Each RQ directory contains the following plots (all with consistent colors):
 1. **case_summer_week.png** - Time series for summer week
@@ -85,7 +85,7 @@ Benchmark suite includes:
 4. **facets_leadtime_rmse_curve_0_24h.png** - RMSE vs lead time
 5. **monthly_rmse_all_models.png** - Monthly RMSE (all models, distinct colors)
 
-***REMOVED******REMOVED*** Visual Hierarchy Rationale
+## Visual Hierarchy Rationale
 
 The color scheme was designed to:
 1. **Highlight MiRACLE Core/Baseline** as the main contribution (bold green, thicker)
@@ -94,7 +94,7 @@ The color scheme was designed to:
 4. **Maintain consistency** across all thesis figures for professional appearance
 5. **Improve readability** with higher DPI and better styling
 
-***REMOVED******REMOVED*** Regeneration Commands
+## Regeneration Commands
 
 To regenerate all evaluations:
 ```bash
@@ -106,11 +106,11 @@ To regenerate benchmark suite only:
 bash scripts/run_benchmark_suite_v3_formatted.sh
 ```
 
-***REMOVED******REMOVED*** File Size Comparison
+## File Size Comparison
 - **Old (200 DPI)**: ~150-250KB per plot
 - **New (300 DPI)**: ~300-500KB per plot (2x larger, better quality)
 
-***REMOVED******REMOVED*** Next Steps
+## Next Steps
 All figures are now ready for:
 - ✅ Thesis document inclusion
 - ✅ Defense presentation slides

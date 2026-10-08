@@ -1,4 +1,4 @@
-***REMOVED*** src/validation/summarize_plant_finetune.py
+# src/validation/summarize_plant_finetune.py
 """
 Summarize plant-level fine-tuning jobs (warm vs cold) into one CSV.
 
@@ -38,18 +38,18 @@ from typing import Optional, Tuple, Dict, Any, List
 import pandas as pd
 
 
-***REMOVED*** ----------------------------
-***REMOVED*** helpers
-***REMOVED*** ----------------------------
+# ----------------------------
+# helpers
+# ----------------------------
 
 def _read_metrics_csv(p: Path) -> pd.DataFrame:
     df = pd.read_csv(p)
-    ***REMOVED*** Normalize epoch column
+    # Normalize epoch column
     if "epoch" not in df.columns:
         if "Epoch" in df.columns:
             df = df.rename(columns={"Epoch": "epoch"})
         elif "step" in df.columns:
-            ***REMOVED*** Some loggers only have step, epoch might be inferred badly, but keep step as epoch fallback
+            # Some loggers only have step, epoch might be inferred badly, but keep step as epoch fallback
             df["epoch"] = df["step"]
     return df
 
@@ -68,7 +68,7 @@ def _find_val_loss_col(df: pd.DataFrame) -> Optional[str]:
     for c in candidates:
         if c in df.columns:
             return c
-    ***REMOVED*** last resort: any column containing 'val' and 'loss'
+    # last resort: any column containing 'val' and 'loss'
     for c in df.columns:
         cl = c.lower()
         if "val" in cl and "loss" in cl:
@@ -89,17 +89,17 @@ def _best_from_metrics(metrics_csv: Path) -> Tuple[Optional[float], Optional[int
     if val_col is None:
         return None, None, None, None
 
-    ***REMOVED*** keep rows where val is present
+    # keep rows where val is present
     d = df.dropna(subset=[val_col]).copy()
     if d.empty:
         return None, None, None, None
 
-    ***REMOVED*** best
+    # best
     best_idx = d[val_col].astype(float).idxmin()
     best_val = float(d.loc[best_idx, val_col])
     best_epoch = int(d.loc[best_idx, "epoch"]) if "epoch" in d.columns else None
 
-    ***REMOVED*** last (by epoch then by file order)
+    # last (by epoch then by file order)
     if "epoch" in d.columns:
         d2 = d.sort_values(["epoch"])
         last_row = d2.iloc[-1]
@@ -123,7 +123,7 @@ def _sacct(jobid: str) -> Tuple[Optional[str], Optional[str], Optional[str], Opt
             text=True,
         ).strip().splitlines()
 
-        ***REMOVED*** take first non-empty row
+        # take first non-empty row
         for row in out:
             if row.strip():
                 job, elapsed, nodelist, state, exitcode = row.split("|")
@@ -164,16 +164,16 @@ def _guess_regime_from_run_dir(run_dir: Path) -> str:
 
 
 def _collect_run_dirs(run_base: Path) -> List[Path]:
-    ***REMOVED*** collect leaf run dirs that contain logs/metrics.csv
+    # collect leaf run dirs that contain logs/metrics.csv
     out = []
     for p in run_base.rglob("logs/metrics.csv"):
-        out.append(p.parent.parent)  ***REMOVED*** .../<run>/logs/metrics.csv -> .../<run>
+        out.append(p.parent.parent)  # .../<run>/logs/metrics.csv -> .../<run>
     return sorted(set(out))
 
 
-***REMOVED*** ----------------------------
-***REMOVED*** main
-***REMOVED*** ----------------------------
+# ----------------------------
+# main
+# ----------------------------
 
 def main() -> None:
     ap = argparse.ArgumentParser()
@@ -190,10 +190,10 @@ def main() -> None:
     out_csv = Path(args.out_csv)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Load job info from logs if provided
+    # Load job info from logs if provided
     jobinfo: Dict[str, Dict[str, Any]] = {}
     if args.log_glob:
-        ***REMOVED*** expand $USER
+        # expand $USER
         log_glob = os.path.expandvars(args.log_glob)
         for p in sorted(Path("/").glob(log_glob.lstrip("/")) if log_glob.startswith("/") else Path(".").glob(log_glob)):
             info = _parse_jobid_and_regime_from_logname(p)
@@ -215,7 +215,7 @@ def main() -> None:
         metrics_csv = run_dir / "logs" / "metrics.csv"
         best_val, best_epoch, last_val, last_epoch = _best_from_metrics(metrics_csv)
 
-        ***REMOVED*** try to infer jobid from run_dir path (some people embed jobXXXX), else keep None
+        # try to infer jobid from run_dir path (some people embed jobXXXX), else keep None
         mjob = re.search(r"(job\d+)", str(run_dir))
         jobtag = mjob.group(1) if mjob else None
 
@@ -234,19 +234,19 @@ def main() -> None:
 
     df = pd.DataFrame(rows)
 
-    ***REMOVED*** If we have slurm jobids from logs, attach them by regime (best-effort)
-    ***REMOVED*** We do not have a perfect mapping run_dir -> jobid, so we attach a "jobid_guess" using regime counts.
-    ***REMOVED*** If you want exact mapping, embed SLURM_JOB_ID into run_dir name in training later.
+    # If we have slurm jobids from logs, attach them by regime (best-effort)
+    # We do not have a perfect mapping run_dir -> jobid, so we attach a "jobid_guess" using regime counts.
+    # If you want exact mapping, embed SLURM_JOB_ID into run_dir name in training later.
     if jobinfo:
-        ***REMOVED*** make a small df from jobinfo
+        # make a small df from jobinfo
         jdf = pd.DataFrame(list(jobinfo.values()))
-        ***REMOVED*** keep only actual jobs
+        # keep only actual jobs
         jdf = jdf.dropna(subset=["jobid"])
-        ***REMOVED*** Attach job rows by matching regime and preserving order
+        # Attach job rows by matching regime and preserving order
         df = df.sort_values(["regime", "run_dir"]).reset_index(drop=True)
         jdf = jdf.sort_values(["regime_from_log", "jobid"]).reset_index(drop=True)
 
-        ***REMOVED*** assign sequentially per regime
+        # assign sequentially per regime
         df["jobid"] = None
         df["elapsed"] = None
         df["node"] = None
@@ -272,7 +272,7 @@ def main() -> None:
 
     df.to_csv(out_csv, index=False)
 
-    ***REMOVED*** Print compact view
+    # Print compact view
     show_cols = [c for c in [
         "regime", "best_val_loss", "best_epoch", "last_val_loss", "last_epoch",
         "jobid", "elapsed", "node", "state", "exitcode", "run_dir"

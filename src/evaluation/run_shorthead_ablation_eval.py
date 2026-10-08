@@ -41,7 +41,7 @@ def metrics_row(y: np.ndarray, yp: np.ndarray) -> Dict[str, float]:
     return {
         "MAE": mae(y, yp),
         "RMSE": rmse(y, yp),
-        "nRMSE": rmse(y, yp),  ***REMOVED*** power_norm already cap-normalized
+        "nRMSE": rmse(y, yp),  # power_norm already cap-normalized
         "MBE": mbe(y, yp),
         "R2": r2(y, yp),
         "N": int(len(y)),
@@ -58,7 +58,7 @@ def tail_row(abs_err: np.ndarray) -> Dict[str, float]:
 
 
 def stitched(df: pd.DataFrame) -> pd.DataFrame:
-    ***REMOVED*** Choose the smallest lead per timestamp (most recent forecast proxy)
+    # Choose the smallest lead per timestamp (most recent forecast proxy)
     df = df.sort_values(["timestamp_utc", "hours_ahead"])
     return df.groupby("timestamp_utc", as_index=False).first()
 
@@ -144,12 +144,12 @@ def main() -> None:
         df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
         df["forecast_start"] = pd.to_datetime(df["forecast_start"], utc=True)
 
-        ***REMOVED*** join with truth
+        # join with truth
         j = df.merge(truth, on="timestamp_utc", how="inner")
         if "predicted_power_norm" not in j.columns:
             raise ValueError(f"{name} missing predicted_power_norm")
 
-        ***REMOVED*** focus on 0-24h short head evaluation
+        # focus on 0-24h short head evaluation
         j = j[j["hours_ahead"] <= float(args.max_hours)].copy()
 
         if not args.include_night:
@@ -168,7 +168,7 @@ def main() -> None:
         tail = tail_row(st["abs_err"].values)
         tail_rows.append({"model": name, **tail})
 
-        ***REMOVED*** worst days by daily RMSE on stitched
+        # worst days by daily RMSE on stitched
         st2 = st.copy()
         st2["day"] = st2["timestamp_utc"].dt.date.astype(str)
         daily = st2.groupby("day").apply(lambda g: pd.Series({
@@ -188,7 +188,7 @@ def main() -> None:
     tail_tbl.to_csv(tables / "shorthead_ablation_tail_stitched.csv", index=False)
     worst_tbl.to_csv(tables / "shorthead_ablation_worst10_by_model.csv", index=False)
 
-    ***REMOVED*** 4x4 plot grid
+    # 4x4 plot grid
     fig, axes = plt.subplots(4, 4, figsize=(20, 14))
     col_names = list(models.keys())
 
@@ -209,14 +209,14 @@ def main() -> None:
     fig.savefig((figs / "shorthead_ablation_4x4.png").as_posix(), dpi=200)
     plt.close(fig)
 
-    ***REMOVED*** write a short markdown summary
+    # write a short markdown summary
     md = []
-    md.append("***REMOVED*** Short-head ablation evaluation (0–24h)\n")
+    md.append("# Short-head ablation evaluation (0–24h)\n")
     md.append(f"- max_hours: {args.max_hours}\n")
     md.append(f"- night filtering: {'OFF' if args.include_night else 'ON'} (y_true >= {args.daylight_threshold})\n\n")
-    md.append("***REMOVED******REMOVED*** Overall metrics (stitched)\n")
+    md.append("## Overall metrics (stitched)\n")
     md.append(overall_tbl.to_markdown(index=False))
-    md.append("\n\n***REMOVED******REMOVED*** Tail abs error (stitched)\n")
+    md.append("\n\n## Tail abs error (stitched)\n")
     md.append(tail_tbl.to_markdown(index=False))
     (text / "shorthead_ablation_results.md").write_text("\n".join(md))
 

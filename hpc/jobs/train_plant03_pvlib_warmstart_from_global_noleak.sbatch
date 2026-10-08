@@ -1,14 +1,14 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH -J plant03_pvlib_warm
-***REMOVED***SBATCH -p gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH -c 16
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH -o /shared/%u/miracle/logs/%x_%j.out
-***REMOVED***SBATCH -e /shared/%u/miracle/logs/%x_%j.err
-***REMOVED*** Optional pin:
-***REMOVED***SBATC H --nodelist=dbfz-hpc23-gnode4
+#!/bin/bash
+#SBATCH -J plant03_pvlib_warm
+#SBATCH -p gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH -c 16
+#SBATCH --mem=64G
+#SBATCH --time=04:00:00
+#SBATCH -o /shared/%u/miracle/logs/%x_%j.out
+#SBATCH -e /shared/%u/miracle/logs/%x_%j.err
+# Optional pin:
+#SBATC H --nodelist=dbfz-hpc23-gnode4
 
 set -euo pipefail
 export OMP_NUM_THREADS=1
@@ -21,7 +21,7 @@ PLANT_DIR="$REPO/data/processed/plant_level/plant_03/15min_pca32"
 TRAIN="$PLANT_DIR/train.parquet"
 VAL="$PLANT_DIR/val.parquet"
 
-***REMOVED*** TODO: fill this after global job ends
+# TODO: fill this after global job ends
 GLOBAL_CKPT="$REPO/experiments/tft/runs/germany/global_noleak/target03_excluded/20251229_134852/checkpoints/best.ckpt"
 GLOBAL_DIR="$REPO/experiments/tft/runs/germany/global_noleak/target03_excluded/20251229_134852"
 STATE_DICT="$GLOBAL_DIR/checkpoints/best_state_dict.pt"

@@ -1,4 +1,4 @@
-***REMOVED***!/bin/bash
+#!/bin/bash
 
 USER_NAME="dbfz018"
 OUTPUT_FILE="my_hpc_job_history.txt"
@@ -6,7 +6,7 @@ START_DATE="1201-00:00"
 
 echo "Generating audit for $USER_NAME starting from December..."
 
-***REMOVED*** Note: Using % scaling to prevent text cutting off in the WorkDir and NodeList
+# Note: Using % scaling to prevent text cutting off in the WorkDir and NodeList
 sacct -u $USER_NAME \
       -S $START_DATE \
       --allclusters \

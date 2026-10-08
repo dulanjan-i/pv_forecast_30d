@@ -21,16 +21,16 @@ import torch
 import torch.nn as nn
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Helpers mirrored from src/rl/test_checkpoint.py (now tested properly)
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Helpers mirrored from src/rl/test_checkpoint.py (now tested properly)
+# ---------------------------------------------------------------------------
 
 def _extract_qnet_state_dict(ckpt: dict) -> dict:
     """Extract Q-network state dict from a checkpoint dict."""
     for k in ["q_net", "policy_net", "state_dict", "model_state_dict", "net"]:
         if k in ckpt and isinstance(ckpt[k], dict):
             return ckpt[k]
-    ***REMOVED*** If checkpoint IS the state dict (all tensors)
+    # If checkpoint IS the state dict (all tensors)
     if all(isinstance(v, torch.Tensor) for v in ckpt.values()):
         return ckpt
     raise KeyError(f"No q-network state dict found. Keys: {list(ckpt.keys())}")
@@ -74,13 +74,13 @@ def _make_synthetic_checkpoint(
             "eps": 0.05,
         }
     else:
-        ckpt = dict(sd)  ***REMOVED*** raw state dict as checkpoint
+        ckpt = dict(sd)  # raw state dict as checkpoint
     return ckpt, net
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Tests: _extract_qnet_state_dict
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Tests: _extract_qnet_state_dict
+# ---------------------------------------------------------------------------
 
 class TestExtractQnetStateDict:
 
@@ -98,7 +98,7 @@ class TestExtractQnetStateDict:
 
     def test_falls_back_to_raw_state_dict(self):
         net = _build_mlp(35, [64], 8)
-        ***REMOVED*** Checkpoint IS the state dict (no wrapper key)
+        # Checkpoint IS the state dict (no wrapper key)
         raw_sd = {k: v for k, v in net.state_dict().items()}
         sd = _extract_qnet_state_dict(raw_sd)
         assert sd is raw_sd
@@ -117,16 +117,16 @@ class TestExtractQnetStateDict:
         assert len(sd) > 0
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Tests: _infer_dims_from_state_dict
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Tests: _infer_dims_from_state_dict
+# ---------------------------------------------------------------------------
 
 class TestInferDimsFromStateDict:
 
     @pytest.mark.parametrize("state_dim,hidden,action_dim", [
-        (35, [64, 64], 8),    ***REMOVED*** MiRACLE v1 canonical config
-        (10, [32], 4),        ***REMOVED*** Small test network
-        (128, [256, 128, 64], 16),  ***REMOVED*** Larger network
+        (35, [64, 64], 8),    # MiRACLE v1 canonical config
+        (10, [32], 4),        # Small test network
+        (128, [256, 128, 64], 16),  # Larger network
     ])
     def test_infers_correct_dims(self, state_dim, hidden, action_dim):
         net = _build_mlp(state_dim, hidden, action_dim)
@@ -145,9 +145,9 @@ class TestInferDimsFromStateDict:
             _infer_dims_from_state_dict(sd)
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Tests: checkpoint round-trip (save → load → forward)
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Tests: checkpoint round-trip (save → load → forward)
+# ---------------------------------------------------------------------------
 
 class TestCheckpointRoundTrip:
 
@@ -164,16 +164,16 @@ class TestCheckpointRoundTrip:
         ckpt_path = tmp_path / "test_ckpt.pt"
         torch.save(ckpt, ckpt_path)
 
-        ***REMOVED*** Reload
+        # Reload
         loaded_ckpt = torch.load(ckpt_path, map_location="cpu")
         sd = _extract_qnet_state_dict(loaded_ckpt)
 
-        ***REMOVED*** Reconstruct network from state dict alone
+        # Reconstruct network from state dict alone
         inferred_state_dim, inferred_action_dim = _infer_dims_from_state_dict(sd)
         assert inferred_state_dim == state_dim
         assert inferred_action_dim == action_dim
 
-        ***REMOVED*** Verify all original weights are recovered exactly
+        # Verify all original weights are recovered exactly
         original_sd = original_net.state_dict()
         for k in original_sd:
             assert k in sd, f"Key {k} missing after reload"
@@ -190,7 +190,7 @@ class TestCheckpointRoundTrip:
         sd = _extract_qnet_state_dict(loaded)
         inferred_state, inferred_action = _infer_dims_from_state_dict(sd)
 
-        ***REMOVED*** Rebuild MLP from inferred dims
+        # Rebuild MLP from inferred dims
         weight_keys = sorted([k for k in sd if k.endswith(".weight")])
         shapes = [sd[k].shape for k in weight_keys]
         hidden = [int(s[0]) for s in shapes[:-1]]
@@ -221,7 +221,7 @@ class TestCheckpointRoundTrip:
         net.load_state_dict(sd, strict=False)
         net.eval()
 
-        x = torch.randn(4, state_dim)  ***REMOVED*** batch of 4 states
+        x = torch.randn(4, state_dim)  # batch of 4 states
         with torch.no_grad():
             q_values = net(x)
         actions = torch.argmax(q_values, dim=1).numpy()
@@ -229,9 +229,9 @@ class TestCheckpointRoundTrip:
         assert all(0 <= a < action_dim for a in actions), f"Out-of-range actions: {actions}"
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Tests: blend weight mechanics (from test_direct_blend.py logic)
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Tests: blend weight mechanics (from test_direct_blend.py logic)
+# ---------------------------------------------------------------------------
 
 class TestBlendWeights:
     """
@@ -243,7 +243,7 @@ class TestBlendWeights:
     def mock_component_forecasts(self) -> Dict[str, np.ndarray]:
         """Synthetic Day-1 forecasts from three component models."""
         rng = np.random.default_rng(42)
-        n = 96  ***REMOVED*** Day 1: 96 × 15-min steps
+        n = 96  # Day 1: 96 × 15-min steps
         return {
             "short":   rng.uniform(0.1, 0.9, size=n).astype(np.float32),
             "long":    rng.uniform(0.0, 0.8, size=n).astype(np.float32),
@@ -274,7 +274,7 @@ class TestBlendWeights:
         for name, weights in self.BLEND_PRESETS.items():
             results[name] = self._blend(mock_component_forecasts, weights)
 
-        ***REMOVED*** All blend outputs must be mutually different (not identical)
+        # All blend outputs must be mutually different (not identical)
         names = list(results.keys())
         for i in range(len(names)):
             for j in range(i + 1, len(names)):
@@ -322,9 +322,9 @@ class TestBlendWeights:
         np.testing.assert_array_almost_equal(blended, expected, decimal=6)
 
 
-***REMOVED*** ---------------------------------------------------------------------------
-***REMOVED*** Tests: RL agent API (data-free, pure logic)
-***REMOVED*** ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Tests: RL agent API (data-free, pure logic)
+# ---------------------------------------------------------------------------
 
 class TestRLMetaControllerSystem:
     """
@@ -344,7 +344,7 @@ class TestRLMetaControllerSystem:
         assert rl_system.meta_controller.action_dim == 8
 
     def test_build_meta_state_shape(self, rl_system):
-        metrics = {}  ***REMOVED*** All defaults → zeros
+        metrics = {}  # All defaults → zeros
         state = rl_system.build_meta_state(metrics)
         assert state.shape == (35,), f"Expected (35,), got {state.shape}"
         assert np.isfinite(state).all(), "State contains NaN/Inf"
@@ -374,7 +374,7 @@ class TestRLMetaControllerSystem:
     def test_blend_weights_change_on_blend_actions(self, rl_system):
         """Actions A4-A6 must change the current blend weights."""
         initial_weights = rl_system.meta_controller.current_weights.copy()
-        rl_system.meta_controller.execute_action(4)  ***REMOVED*** BLEND_HIGH_SHORT
+        rl_system.meta_controller.execute_action(4)  # BLEND_HIGH_SHORT
         assert rl_system.meta_controller.current_weights != initial_weights
 
     def test_status_dict_has_expected_structure(self, rl_system):
@@ -387,7 +387,7 @@ class TestRLMetaControllerSystem:
     def test_reward_is_finite(self, rl_system):
         metrics_a = {"ensemble_rmse": 0.05, "data_drift_score": 0.1}
         metrics_b = {"ensemble_rmse": 0.04, "data_drift_score": 0.08}
-        ***REMOVED*** Trigger step so current_action is set
+        # Trigger step so current_action is set
         rl_system.step(metrics_a)
         reward = rl_system.compute_reward(metrics_a, metrics_b)
         assert np.isfinite(reward), f"Reward is not finite: {reward}"

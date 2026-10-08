@@ -21,23 +21,23 @@ Outputs:
 import os
 import pandas as pd
 
-***REMOVED*** ---------- CONFIG ----------
+# ---------- CONFIG ----------
 
 RAW_DIR = "data/raw/farm_2107"
 INTERIM_DIR = "data/interim/farm_2107"
 PROCESSED_DIR = "data/processed/farm_2107"
 
-***REMOVED*** DC capacity from metadata (kW)
+# DC capacity from metadata (kW)
 DC_CAPACITY_KW = 893.0
 
-***REMOVED*** Canonical time resolution for pretraining
-RESAMPLE_FREQ = "15T"  ***REMOVED*** 15 minutes
+# Canonical time resolution for pretraining
+RESAMPLE_FREQ = "15T"  # 15 minutes
 
 os.makedirs(INTERIM_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
 
-***REMOVED*** ---------- ELECTRICAL (AC POWER) ----------
+# ---------- ELECTRICAL (AC POWER) ----------
 
 def load_and_merge_electrical() -> pd.DataFrame:
     """
@@ -61,7 +61,7 @@ def load_and_merge_electrical() -> pd.DataFrame:
     for fname in files:
         path = os.path.join(RAW_DIR, fname)
         if not os.path.exists(path):
-            ***REMOVED*** If a file is missing, just skip it (but warn via print)
+            # If a file is missing, just skip it (but warn via print)
             print(f"[WARN] Electrical file not found, skipping: {path}")
             continue
 
@@ -71,7 +71,7 @@ def load_and_merge_electrical() -> pd.DataFrame:
         if "measured_on" not in df.columns:
             raise ValueError(f"'measured_on' column missing in {path}")
 
-        ***REMOVED*** Parse timestamps
+        # Parse timestamps
         df["measured_on"] = pd.to_datetime(df["measured_on"])
 
         dfs.append(df)
@@ -79,19 +79,19 @@ def load_and_merge_electrical() -> pd.DataFrame:
     if not dfs:
         raise RuntimeError("No electrical data files loaded. Check paths/names.")
 
-    ***REMOVED*** Vertical concat: stack all time rows
+    # Vertical concat: stack all time rows
     df = pd.concat(dfs, axis=0, ignore_index=True)
 
-    ***REMOVED*** Sort by time to get a proper chronological series
+    # Sort by time to get a proper chronological series
     df = df.sort_values("measured_on")
 
-    ***REMOVED*** Identify AC power columns (per inverter)
+    # Identify AC power columns (per inverter)
     ac_cols = [c for c in df.columns if "ac_power" in c.lower()]
 
     if not ac_cols:
         raise RuntimeError("No AC power columns found in electrical data.")
 
-    ***REMOVED*** Drop rows where all AC power values are NaN
+    # Drop rows where all AC power values are NaN
     df = df.dropna(subset=ac_cols, how="all")
 
     print(f"[INFO] Electrical data rows after cleaning: {len(df)}")
@@ -123,16 +123,16 @@ def build_plant_level_power(df: pd.DataFrame) -> pd.DataFrame:
     """
     ac_cols = [c for c in df.columns if "ac_power" in c.lower()]
 
-    ***REMOVED*** Sum AC power across all inverters to get plant-level AC power (kW)
+    # Sum AC power across all inverters to get plant-level AC power (kW)
     df["p_ac_plant_kw"] = df[ac_cols].sum(axis=1)
 
-    ***REMOVED*** Normalize by DC capacity to get a [~0, 1+epsilon] target
+    # Normalize by DC capacity to get a [~0, 1+epsilon] target
     df["pv_power_norm"] = df["p_ac_plant_kw"] / DC_CAPACITY_KW
 
-    ***REMOVED*** Keep only the core columns for now
+    # Keep only the core columns for now
     df_out = df[["measured_on", "p_ac_plant_kw", "pv_power_norm"]].copy()
 
-    ***REMOVED*** Sort just in case
+    # Sort just in case
     df_out = df_out.sort_values("measured_on")
 
     print("[INFO] Example rows of plant-level AC power:")
@@ -163,7 +163,7 @@ def resample_to_15min(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.set_index("measured_on").sort_index()
 
-    ***REMOVED*** Resample to canonical 15-min grid
+    # Resample to canonical 15-min grid
     df_15 = df.resample(RESAMPLE_FREQ).mean()
 
     df_15 = df_15.reset_index()
@@ -174,7 +174,7 @@ def resample_to_15min(df: pd.DataFrame) -> pd.DataFrame:
     return df_15
 
 
-***REMOVED*** ---------- IRRADIANCE (POA) ----------
+# ---------- IRRADIANCE (POA) ----------
 
 def load_and_merge_irradiance() -> pd.DataFrame:
     """
@@ -207,15 +207,15 @@ def load_and_merge_irradiance() -> pd.DataFrame:
 
         df["measured_on"] = pd.to_datetime(df["measured_on"])
 
-        ***REMOVED*** Find POA irradiance column (name may have ID suffix)
+        # Find POA irradiance column (name may have ID suffix)
         poa_cols = [c for c in df.columns if "poa_irradiance" in c.lower()]
         if not poa_cols:
             raise RuntimeError(f"No POA irradiance column found in {path}")
 
-        ***REMOVED*** For now assume a single POA column
+        # For now assume a single POA column
         poa_col = poa_cols[0]
 
-        ***REMOVED*** Rename to a clean standard name
+        # Rename to a clean standard name
         df = df[["measured_on", poa_col]].rename(columns={poa_col: "poa_irradiance"})
 
         dfs.append(df)
@@ -263,7 +263,7 @@ def resample_irradiance_to_15min(df: pd.DataFrame) -> pd.DataFrame:
     return df_15
 
 
-***REMOVED*** ---------- MERGE ELECTRICAL + IRRADIANCE ----------
+# ---------- MERGE ELECTRICAL + IRRADIANCE ----------
 
 def merge_elec_and_irradiance(
     df_elec_15: pd.DataFrame, df_irr_15: pd.DataFrame
@@ -297,7 +297,7 @@ def merge_elec_and_irradiance(
         df_elec_15,
         df_irr_15,
         on="measured_on",
-        how="inner",  ***REMOVED*** only keep timestamps where both exist
+        how="inner",  # only keep timestamps where both exist
     )
 
     print("[INFO] Merged electrical + irradiance (15-min):")
@@ -306,29 +306,29 @@ def merge_elec_and_irradiance(
     return df_merged
 
 
-***REMOVED*** ---------- MAIN PIPELINE ----------
+# ---------- MAIN PIPELINE ----------
 
 def main():
-    ***REMOVED*** 1) Electrical: load, merge, build plant-level AC, normalize, resample to 15-min
+    # 1) Electrical: load, merge, build plant-level AC, normalize, resample to 15-min
     df_elec_raw = load_and_merge_electrical()
     df_elec_core = build_plant_level_power(df_elec_raw)
     df_elec_15 = resample_to_15min(df_elec_core)
 
-    ***REMOVED*** Save intermediate electrical-only 15-min dataset
+    # Save intermediate electrical-only 15-min dataset
     elec_out_path = os.path.join(
         INTERIM_DIR, "farm2107_electrical_15min.parquet"
     )
     df_elec_15.to_parquet(elec_out_path, index=False)
     print(f"[INFO] Saved electrical 15-min data to: {elec_out_path}")
 
-    ***REMOVED*** 2) Irradiance: load, merge, resample to 15-min
+    # 2) Irradiance: load, merge, resample to 15-min
     df_irr_raw = load_and_merge_irradiance()
     df_irr_15 = resample_irradiance_to_15min(df_irr_raw)
 
-    ***REMOVED*** 3) Merge electrical + irradiance on 15-min timestamps
+    # 3) Merge electrical + irradiance on 15-min timestamps
     df_core = merge_elec_and_irradiance(df_elec_15, df_irr_15)
 
-    ***REMOVED*** Save core interim dataset (this will be the base for LSTM pretraining table)
+    # Save core interim dataset (this will be the base for LSTM pretraining table)
     core_out_path = os.path.join(
         INTERIM_DIR, "farm2107_elec_irradiance_15min.parquet"
     )

@@ -58,7 +58,7 @@ def load_json(path: Path) -> Dict:
 
 
 def build_datasets(train_df: pd.DataFrame, val_df: pd.DataFrame, roles: Dict, enc_len: int, pred_len: int):
-    ***REMOVED*** Validate required cols
+    # Validate required cols
     required = {KEY_GROUP, KEY_TARGET, KEY_TIME_IDX}
     missing_train = sorted([c for c in required if c not in train_df.columns])
     missing_val = sorted([c for c in required if c not in val_df.columns])
@@ -70,7 +70,7 @@ def build_datasets(train_df: pd.DataFrame, val_df: pd.DataFrame, roles: Dict, en
     known_time_reals = roles.get("known_time_reals", [])
     unknown_time_reals = roles.get("unknown_time_reals", [KEY_TARGET])
 
-    ***REMOVED*** Ensure feature columns exist
+    # Ensure feature columns exist
     feat_missing = [c for c in known_time_reals if c not in train_df.columns]
     if feat_missing:
         raise KeyError(f"Train parquet missing known_time_reals columns (from column_roles.json): {feat_missing[:20]}")
@@ -155,7 +155,7 @@ def eval_one(mode: str, run_dir: Path, train_parquet: Path, val_parquet: Path, b
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    ***REMOVED*** Rebuild model exactly like training, then load state_dict
+    # Rebuild model exactly like training, then load state_dict
     model = TemporalFusionTransformer.from_dataset(
         train_ds,
         hidden_size=hidden_size,
@@ -175,7 +175,7 @@ def eval_one(mode: str, run_dir: Path, train_parquet: Path, val_parquet: Path, b
     sum_abs, sum_sq, n = 0.0, 0.0, 0
     with torch.no_grad():
         for x, y in val_dl:
-            ***REMOVED*** Move batch to device
+            # Move batch to device
             x = {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in x.items()}
             if isinstance(y, (list, tuple)):
                 targets = y[0]
@@ -216,7 +216,7 @@ def write_markdown(df: pd.DataFrame, out_md: Path) -> None:
     winner = df2.iloc[0]
 
     lines = []
-    lines.append("***REMOVED*** Long-head (1-hour, 720-step = 30 days) evaluation\n\n")
+    lines.append("# Long-head (1-hour, 720-step = 30 days) evaluation\n\n")
     lines.append("Metrics are computed on validation as RMSE/MAE over all horizons (flattened).\n\n")
     lines.append("| mode | rmse | mae | enc_len | pred_len | hidden | lstm_layers | attn_heads | dropout | lr |\n")
     lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
@@ -226,7 +226,7 @@ def write_markdown(df: pd.DataFrame, out_md: Path) -> None:
             f"{int(r['hidden_size'])} | {int(r['lstm_layers'])} | {int(r['attn_heads'])} | {float(r['dropout']):.3f} | {float(r['lr']):.2e} |\n"
         )
 
-    lines.append("\n***REMOVED******REMOVED*** Selected model\n")
+    lines.append("\n## Selected model\n")
     lines.append(f"**Mode:** {winner['mode']}\n")
     lines.append(f"**RMSE:** {winner['rmse']:.6f}\n")
     lines.append(f"**MAE:** {winner['mae']:.6f}\n")

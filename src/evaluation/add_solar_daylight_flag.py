@@ -1,4 +1,4 @@
-***REMOVED*** src/evaluation/add_solar_daylight_flag.py
+# src/evaluation/add_solar_daylight_flag.py
 from __future__ import annotations
 
 import argparse
@@ -19,27 +19,27 @@ def compute_solar_elevation_deg(times_utc: pd.DatetimeIndex, lat: float, lon: fl
     if times_utc.tz is None:
         raise ValueError("times_utc must be timezone-aware (UTC).")
 
-    ***REMOVED*** Compute only for unique timestamps (fast)
+    # Compute only for unique timestamps (fast)
     uniq = pd.DatetimeIndex(pd.unique(times_utc)).sort_values()
 
     try:
-        import pvlib  ***REMOVED*** type: ignore
+        import pvlib  # type: ignore
 
         solpos = pvlib.solarposition.get_solarposition(
             time=uniq,
             latitude=lat,
             longitude=lon,
         )
-        ***REMOVED*** Prefer apparent_elevation when present
+        # Prefer apparent_elevation when present
         col = "apparent_elevation" if "apparent_elevation" in solpos.columns else "elevation"
         elev = solpos[col].astype("float32")
         return pd.Series(elev.values, index=uniq, name="solar_elevation_deg")
 
     except Exception as e:
-        ***REMOVED*** Fallback: astral (slower, but works)
+        # Fallback: astral (slower, but works)
         try:
-            from astral import Observer  ***REMOVED*** type: ignore
-            from astral.sun import elevation as astral_elevation  ***REMOVED*** type: ignore
+            from astral import Observer  # type: ignore
+            from astral.sun import elevation as astral_elevation  # type: ignore
         except Exception:
             raise RuntimeError(
                 "Could not compute solar position. Install pvlib (preferred) or astral.\n"
@@ -49,7 +49,7 @@ def compute_solar_elevation_deg(times_utc: pd.DatetimeIndex, lat: float, lon: fl
         obs = Observer(latitude=lat, longitude=lon)
         vals = np.empty(len(uniq), dtype=np.float32)
         for i, t in enumerate(uniq):
-            ***REMOVED*** astral expects a python datetime; keep tz info
+            # astral expects a python datetime; keep tz info
             vals[i] = float(astral_elevation(observer=obs, dateandtime=t.to_pydatetime()))
         return pd.Series(vals, index=uniq, name="solar_elevation_deg")
 
@@ -73,7 +73,7 @@ def main() -> None:
     out_path = Path(args.out_parquet)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Read via pyarrow, convert to pandas (keeps it simple and reliable)
+    # Read via pyarrow, convert to pandas (keeps it simple and reliable)
     table = pq.read_table(in_path)
     df = table.to_pandas()
 
@@ -83,16 +83,16 @@ def main() -> None:
 
     ts = pd.to_datetime(df[ts_col], utc=True)
     if ts.dt.tz is None:
-        ***REMOVED*** force UTC tz-aware
+        # force UTC tz-aware
         ts = ts.dt.tz_localize("UTC")
 
     elev_map = compute_solar_elevation_deg(pd.DatetimeIndex(ts), lat=args.lat, lon=args.lon)
 
-    ***REMOVED*** Map back to all rows
+    # Map back to all rows
     df["solar_elevation_deg"] = ts.map(elev_map).astype("float32")
     df["is_daylight"] = (df["solar_elevation_deg"] > float(args.elev_threshold_deg))
 
-    ***REMOVED*** Quick sanity prints
+    # Quick sanity prints
     daylight_frac = float(df["is_daylight"].mean()) if len(df) else 0.0
     print(f"[OK] Wrote solar elevation, daylight fraction = {daylight_frac:.4f}")
     print(

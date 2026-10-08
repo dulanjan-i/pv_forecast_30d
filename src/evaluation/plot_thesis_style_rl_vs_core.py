@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Generate thesis-style RL vs MiRACLE Core vs Ground Truth plots
 WITHOUT touching the existing figure generators.
@@ -30,10 +30,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-***REMOVED*** Match your thesis style
-COL_TRUTH = "***REMOVED***888888"   ***REMOVED*** grey
-COL_CORE  = "***REMOVED***00AA00"   ***REMOVED*** green (MiRACLE Core)
-COL_RL    = "***REMOVED***6BA3D8"   ***REMOVED*** same light-blue family you used in other comparisons
+# Match your thesis style
+COL_TRUTH = "#888888"   # grey
+COL_CORE  = "#00AA00"   # green (MiRACLE Core)
+COL_RL    = "#6BA3D8"   # same light-blue family you used in other comparisons
 
 DPI = 300
 
@@ -61,7 +61,7 @@ def _ensure_hours_ahead(df: pd.DataFrame) -> pd.DataFrame:
     if "step_ahead" in df.columns:
         d = df.copy()
         d["step_ahead"] = pd.to_numeric(d["step_ahead"], errors="coerce")
-        ***REMOVED*** assume 15-min steps for step_ahead in phase1 outputs
+        # assume 15-min steps for step_ahead in phase1 outputs
         d["hours_ahead"] = d["step_ahead"] * 0.25
         return d
     return df
@@ -226,14 +226,14 @@ def plot_leadtime_rmse(outpath: Path, truth_with_sun: pd.DataFrame,
 
 def plot_tails(outdir: Path, truth: pd.DataFrame, core_st: pd.DataFrame, rl_st: pd.DataFrame,
               truth_with_sun: Optional[pd.DataFrame] = None, clip_max: float = 1.0) -> None:
-    ***REMOVED*** Full-sample tails
+    # Full-sample tails
     core_j = _align(core_st, truth)
     rl_j   = _align(rl_st, truth)
 
     core_abs = np.abs(core_j["y_true"].values - core_j["predicted_power_norm"].values)
     rl_abs   = np.abs(rl_j["y_true"].values - rl_j["predicted_power_norm"].values)
 
-    ***REMOVED*** Histogram
+    # Histogram
     fig = plt.figure(figsize=(14, 6), dpi=DPI)
     ax = fig.add_subplot(1, 1, 1)
     bins = np.linspace(0, clip_max, 80)
@@ -252,7 +252,7 @@ def plot_tails(outdir: Path, truth: pd.DataFrame, core_st: pd.DataFrame, rl_st: 
     plt.savefig(outdir / "tails_abs_error_hist_core_vs_rl.png", dpi=DPI)
     plt.close()
 
-    ***REMOVED*** Quantiles (optionally daylight only)
+    # Quantiles (optionally daylight only)
     def qstats(abs_err: np.ndarray) -> Tuple[float, float, float]:
         return (float(np.quantile(abs_err, 0.90)),
                 float(np.quantile(abs_err, 0.95)),
@@ -261,7 +261,7 @@ def plot_tails(outdir: Path, truth: pd.DataFrame, core_st: pd.DataFrame, rl_st: 
     core_q_all = qstats(core_abs)
     rl_q_all   = qstats(rl_abs)
 
-    ***REMOVED*** daylight quantiles if available
+    # daylight quantiles if available
     core_q_day = None
     rl_q_day = None
     if truth_with_sun is not None and "is_daylight" in truth_with_sun.columns:
@@ -281,7 +281,7 @@ def plot_tails(outdir: Path, truth: pd.DataFrame, core_st: pd.DataFrame, rl_st: 
             core_q_day = qstats(core_abs_day)
             rl_q_day   = qstats(rl_abs_day)
 
-    ***REMOVED*** Bar plot quantiles
+    # Bar plot quantiles
     fig = plt.figure(figsize=(14, 6), dpi=DPI)
     ax = fig.add_subplot(1, 1, 1)
 
@@ -293,7 +293,7 @@ def plot_tails(outdir: Path, truth: pd.DataFrame, core_st: pd.DataFrame, rl_st: 
     ax.bar(x + w/2, rl_q_all, width=w, color=COL_RL, alpha=0.85, label="RL (all)")
 
     if core_q_day is not None and rl_q_day is not None:
-        ***REMOVED*** overlay as points so we do not clutter
+        # overlay as points so we do not clutter
         ax.scatter(x - w/2, core_q_day, marker="o", s=60, color="black", label="Core (daylight)")
         ax.scatter(x + w/2, rl_q_day, marker="s", s=60, color="black", label="RL (daylight)")
 
@@ -317,7 +317,7 @@ def main() -> None:
     ap.add_argument("--rl", required=True)
     ap.add_argument("--outdir", required=True)
 
-    ***REMOVED*** Lock the same weeks you already used
+    # Lock the same weeks you already used
     ap.add_argument("--winter-start", default="2024-01-10T00:00:00Z")
     ap.add_argument("--winter-end",   default="2024-01-17T00:00:00Z")
     ap.add_argument("--summer-start", default="2024-07-01T00:00:00Z")
@@ -385,7 +385,7 @@ def main() -> None:
             daylight_only=True,
         )
     else:
-        ***REMOVED*** Still try without daylight filter
+        # Still try without daylight filter
         truth_sun_fallback = truth.copy()
         plot_leadtime_rmse(
             outpath=out / "leadtime_rmse_curve_core_vs_rl_0_24h.png",

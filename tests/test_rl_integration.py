@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Test RLIntegratedForecaster with real models and dual-GPU setup.
 
@@ -13,7 +13,7 @@ Date: 2026-01-02
 import sys
 from pathlib import Path
 
-***REMOVED*** Add repo root to path
+# Add repo root to path
 repo_root = Path(__file__).parent.parent
 sys.path.insert(0, str(repo_root))
 
@@ -46,9 +46,9 @@ def check_gpu_availability():
         props = torch.cuda.get_device_properties(i)
         logger.info(f"  GPU {i}: {props.name} ({props.total_memory / 1e9:.1f} GB)")
     
-    ***REMOVED*** Assign GPUs
-    gpu_short = 0  ***REMOVED*** Short-head TFT on GPU 0
-    gpu_long = 1 if n_gpus > 1 else 0  ***REMOVED*** Long-head on GPU 1 (if available)
+    # Assign GPUs
+    gpu_short = 0  # Short-head TFT on GPU 0
+    gpu_long = 1 if n_gpus > 1 else 0  # Long-head on GPU 1 (if available)
     
     return gpu_short, gpu_long
 
@@ -65,35 +65,35 @@ def create_mock_weather_data(duration_days: int = 30) -> pd.DataFrame:
     """
     logger.info(f"Creating mock weather data for {duration_days} days...")
     
-    ***REMOVED*** Generate timestamps (15-min resolution)
+    # Generate timestamps (15-min resolution)
     start = pd.Timestamp.now(tz='UTC').floor('15min')
-    n_steps = duration_days * 96  ***REMOVED*** 96 steps per day @ 15-min
+    n_steps = duration_days * 96  # 96 steps per day @ 15-min
     timestamps = pd.date_range(start, periods=n_steps, freq='15min')
     
-    ***REMOVED*** Solar geometry (simplified sinusoidal patterns)
+    # Solar geometry (simplified sinusoidal patterns)
     hour_of_day = timestamps.hour + timestamps.minute / 60.0
     
-    ***REMOVED*** GHI: daytime pattern (0 at night, peak at noon)
+    # GHI: daytime pattern (0 at night, peak at noon)
     ghi = np.maximum(0, 800 * np.sin(np.pi * (hour_of_day - 6) / 12))
     
-    ***REMOVED*** DNI: slightly higher peak
+    # DNI: slightly higher peak
     dni = np.maximum(0, 900 * np.sin(np.pi * (hour_of_day - 6) / 12))
     
-    ***REMOVED*** DHI: diffuse component
+    # DHI: diffuse component
     dhi = ghi * 0.15
     
-    ***REMOVED*** Cloud cover: random variation
+    # Cloud cover: random variation
     cloud_cover = np.random.rand(n_steps) * 0.3
     
-    ***REMOVED*** Temperature: daily cycle + random noise
+    # Temperature: daily cycle + random noise
     temp_base = 15 + 10 * np.sin(np.pi * (hour_of_day - 6) / 12)
     temperature = temp_base + np.random.randn(n_steps) * 2
     
-    ***REMOVED*** Wind speed: random walk
+    # Wind speed: random walk
     wind_speed = 5 + np.cumsum(np.random.randn(n_steps) * 0.1)
     wind_speed = np.clip(wind_speed, 0, 20)
     
-    ***REMOVED*** Humidity
+    # Humidity
     humidity = 60 + np.random.randn(n_steps) * 10
     humidity = np.clip(humidity, 20, 100)
     
@@ -123,17 +123,17 @@ def test_rl_integration_basic():
     logger.info("="*80)
     
     try:
-        ***REMOVED*** Check GPUs
+        # Check GPUs
         gpu_short, gpu_long = check_gpu_availability()
         
-        ***REMOVED*** Paths to V1.0 FINAL TFT checkpoints
+        # Paths to V1.0 FINAL TFT checkpoints
         SHORT_CKPT = Path("/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt")
         LONG_CKPT = Path("/home/dwijenayake/pv_forecast_30d/V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt")
         PLANT_META = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
         SHORT_TRAIN = Path("data/processed/plant_level/plant_03/15min_pca32/train.parquet")
         LONG_TRAIN = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
         
-        ***REMOVED*** Check if files exist
+        # Check if files exist
         missing = []
         for path in [SHORT_CKPT, LONG_CKPT, PLANT_META, SHORT_TRAIN, LONG_TRAIN]:
             if not path.exists():
@@ -144,9 +144,9 @@ def test_rl_integration_basic():
             for m in missing:
                 logger.warning(f"  - {m}")
             
-            ***REMOVED*** Use mock forecaster for testing
+            # Use mock forecaster for testing
             logger.info("Creating mock PhysicsAwareForecaster...")
-            forecaster = None  ***REMOVED*** We'll handle this in RLIntegratedForecaster
+            forecaster = None  # We'll handle this in RLIntegratedForecaster
         else:
             logger.info("All checkpoint files found, initializing PhysicsAwareForecaster...")
             forecaster = PhysicsAwareForecaster(
@@ -158,7 +158,7 @@ def test_rl_integration_basic():
                 device='cuda:0' if gpu_short is not None else 'cpu'
             )
         
-        ***REMOVED*** Initialize RL-integrated forecaster
+        # Initialize RL-integrated forecaster
         logger.info("Initializing RLIntegratedForecaster in heuristic mode...")
         rl_forecaster = RLIntegratedForecaster(
             forecaster=forecaster,
@@ -168,14 +168,14 @@ def test_rl_integration_basic():
         
         logger.info("✅ Initialization successful!")
         
-        ***REMOVED*** Get status
+        # Get status
         status = rl_forecaster.get_status()
         logger.info(f"Status: {status}")
         
-        ***REMOVED*** Generate mock weather data
+        # Generate mock weather data
         weather_df = create_mock_weather_data(duration_days=30)
         
-        ***REMOVED*** Generate forecast
+        # Generate forecast
         logger.info("Running forecast_with_rl()...")
         forecast_start = pd.Timestamp.now(tz='UTC').floor('15min')
         
@@ -187,17 +187,17 @@ def test_rl_integration_basic():
         forecast, info = rl_forecaster.forecast_with_rl(
             weather_data=weather_df,
             forecast_start=forecast_start,
-            historical_data=None,  ***REMOVED*** Not required for this test
+            historical_data=None,  # Not required for this test
             ground_truth=None
         )
         
-        ***REMOVED*** Validate output
+        # Validate output
         logger.info(f"Forecast shape: {forecast.shape}")
         logger.info(f"Forecast range: [{forecast.min():.3f}, {forecast.max():.3f}]")
         logger.info(f"Action taken: {info['action_name']}")
         logger.info(f"Blend weights: {info['blend_weights']}")
         
-        ***REMOVED*** Assertions
+        # Assertions
         assert forecast.shape == (2880,), f"Expected shape (2880,), got {forecast.shape}"
         assert not np.any(np.isnan(forecast)), "Forecast contains NaN values"
         assert info['action_index'] in range(8), f"Invalid action index: {info['action_index']}"
@@ -219,23 +219,23 @@ def test_rl_metrics_collection():
     logger.info("="*80)
     
     try:
-        ***REMOVED*** Initialize without actual forecaster (just test RL system)
+        # Initialize without actual forecaster (just test RL system)
         rl_forecaster = RLIntegratedForecaster(
             forecaster=None,
             rl_mode="heuristic",
             checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
         )
         
-        ***REMOVED*** Create mock predictions
+        # Create mock predictions
         forecast_short = np.random.rand(96) * 0.5
         forecast_long = np.random.rand(2784) * 0.5
         forecast_physics = np.random.rand(96) * 0.4
         ground_truth = np.random.rand(96) * 0.5
         
-        ***REMOVED*** Create mock weather
+        # Create mock weather
         weather_df = create_mock_weather_data(duration_days=1)
         
-        ***REMOVED*** Collect metrics
+        # Collect metrics
         logger.info("Collecting metrics...")
         metrics = rl_forecaster.collect_metrics(
             forecast_short=forecast_short,
@@ -245,13 +245,13 @@ def test_rl_metrics_collection():
             weather_data=weather_df
         )
         
-        ***REMOVED*** Validate metrics
+        # Validate metrics
         logger.info(f"Collected {len(metrics)} metrics:")
         for key, value in list(metrics.items())[:10]:
             logger.info(f"  {key}: {value}")
         logger.info("  ...")
         
-        ***REMOVED*** Check required metrics
+        # Check required metrics
         required = [
             'short_rmse_1h', 'long_rmse_30d', 'physics_residual',
             'data_drift_score', 'is_night', 'ensemble_rmse'
@@ -283,7 +283,7 @@ def test_rl_action_execution():
             checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
         )
         
-        ***REMOVED*** Test all 8 actions
+        # Test all 8 actions
         action_names = [
             "MAINTAIN", "FINE_TUNE_SHORT", "FINE_TUNE_LONG", "RECALIBRATE_PVLIB",
             "BLEND_HIGH_SHORT", "BLEND_HIGH_LONG", "BLEND_HIGH_PHYSICS", "SUGGEST_RETRAIN"
@@ -294,7 +294,7 @@ def test_rl_action_execution():
             success = rl_forecaster.execute_action(action_idx)
             assert success, f"Action {action_idx} failed"
         
-        ***REMOVED*** Verify blend weights changed for actions 4-6
+        # Verify blend weights changed for actions 4-6
         logger.info(f"Final blend weights: {rl_forecaster.blend_weights}")
         
         logger.info("TEST 3: ✅ PASSED")
@@ -316,21 +316,21 @@ def test_rl_online_learning():
     try:
         rl_forecaster = RLIntegratedForecaster(
             forecaster=None,
-            rl_mode="rl",  ***REMOVED*** Use RL mode
+            rl_mode="rl",  # Use RL mode
             checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
         )
         
         weather_df = create_mock_weather_data(duration_days=1)
         
-        ***REMOVED*** Run multiple steps
+        # Run multiple steps
         for step in range(5):
             logger.info(f"Step {step+1}/5")
             
-            ***REMOVED*** Mock ground truth
+            # Mock ground truth
             ground_truth = np.random.rand(96) * 0.5
             
-            ***REMOVED*** Skip actual forecast (no forecaster loaded)
-            ***REMOVED*** Just test reward computation
+            # Skip actual forecast (no forecaster loaded)
+            # Just test reward computation
             forecast_short = np.random.rand(96) * 0.5
             forecast_long = np.random.rand(2784) * 0.5
             forecast_physics = np.random.rand(96) * 0.4
@@ -343,16 +343,16 @@ def test_rl_online_learning():
                 weather_data=weather_df
             )
             
-            ***REMOVED*** Store for reward computation
+            # Store for reward computation
             rl_forecaster.metrics_history.append(metrics)
             
             if len(rl_forecaster.metrics_history) > 1:
-                ***REMOVED*** Compute reward
+                # Compute reward
                 metrics_prev = rl_forecaster.metrics_history[-2]
                 reward = rl_forecaster.rl_system.compute_reward(metrics_prev, metrics)
                 logger.info(f"  Reward: {reward:.3f}")
         
-        ***REMOVED*** Check RL diagnostics
+        # Check RL diagnostics
         status = rl_forecaster.get_status()
         logger.info(f"RL diagnostics: {status['rl_status']['meta_controller']}")
         

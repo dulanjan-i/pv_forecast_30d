@@ -1,8 +1,8 @@
-***REMOVED*** Evaluation summary
+# Evaluation summary
 
 - Night filtering: ON (threshold y_true >= 0.01)
 
-***REMOVED******REMOVED*** Overall
+## Overall
 
 | model               |       MAE |     RMSE |    nRMSE |         MBE |       R2 |      N |
 |:--------------------|----------:|---------:|---------:|------------:|---------:|-------:|
@@ -10,7 +10,7 @@
 | Short-TFT-Only      | 0.118174  | 0.167144 | 0.167144 |  0.0592412  | 0.270175 | 394008 |
 
 
-***REMOVED******REMOVED*** Stitched overall (most recent forecast per timestamp)
+## Stitched overall (most recent forecast per timestamp)
 
 | model               |       MAE |     RMSE |    nRMSE |        MBE |       R2 |     N |
 |:--------------------|----------:|---------:|---------:|-----------:|---------:|------:|
@@ -18,7 +18,7 @@
 | Short-TFT-Only      | 0.113051  | 0.161461 | 0.161461 | 0.0462743  | 0.309722 | 13869 |
 
 
-***REMOVED******REMOVED*** Lead buckets
+## Lead buckets
 
 | lead_bucket   |     MAE_A |    MAE_B |   RMSE_A |   RMSE_B |   delta_RMSE_(B-A) |   delta_MAE_(B-A) |      N |
 |:--------------|----------:|---------:|---------:|---------:|-------------------:|------------------:|-------:|
@@ -27,7 +27,7 @@
 | 8-30d         | 0.0841024 | 0.117854 | 0.116504 | 0.166748 |          0.0502436 |         0.033752  | 301590 |
 
 
-***REMOVED******REMOVED*** Monthly
+## Monthly
 
 | month   |     MAE_A |     MAE_B |    RMSE_A |    RMSE_B |   delta_RMSE_(B-A) |   delta_MAE_(B-A) |     N |
 |:--------|----------:|----------:|----------:|----------:|-------------------:|------------------:|------:|
@@ -45,7 +45,7 @@
 | 2024-12 | 0.0568446 | 0.0577305 | 0.0912351 | 0.0870967 |        -0.00413838 |       0.000885879 | 10320 |
 
 
-***REMOVED******REMOVED*** Paired daily comparison
+## Paired daily comparison
 
 - Mean daily delta MAE (B-A): 0.026038
 
@@ -55,7 +55,7 @@
 
 
 
-***REMOVED******REMOVED*** Tail absolute error
+## Tail absolute error
 
 | model               |       P50 |      P90 |      P95 |      P99 |      mean |
 |:--------------------|----------:|---------:|---------:|---------:|----------:|

@@ -1,4 +1,4 @@
-***REMOVED*** src/models/lstm_encoder.py
+# src/models/lstm_encoder.py
 """
 References:
 - Hochreiter & Schmidhuber (1997) Long Short-Term Memory. Neural Computation.
@@ -7,20 +7,20 @@ References:
 - PyTorch Lightning LightningModule: https://lightning.ai/docs/pytorch/stable/common/lightning_module.html
 """
 
-from __future__ import annotations              ***REMOVED*** postpone type-hint evaluation (cleaner imports)
+from __future__ import annotations              # postpone type-hint evaluation (cleaner imports)
 
-from dataclasses import dataclass               ***REMOVED*** structured config (YAML -> dataclass)
+from dataclasses import dataclass               # structured config (YAML -> dataclass)
 from typing import Optional, Tuple, Dict, Any   
 
 import torch
 from torch import nn
 from torch.utils.data import Dataset
-import pytorch_lightning as pl                   ***REMOVED*** Lightning for training loops, logging, checkpoints
+import pytorch_lightning as pl                   # Lightning for training loops, logging, checkpoints
 
 
-***REMOVED*** =========================
-***REMOVED*** 1) Configuration dataclass
-***REMOVED*** =========================
+# =========================
+# 1) Configuration dataclass
+# =========================
 
 @dataclass
 class LSTMEncoderConfig:
@@ -52,9 +52,9 @@ class LSTMEncoderConfig:
     loss_reduction: str = "mean"
 
 
-***REMOVED*** =========================
-***REMOVED*** 2) LightningModule: LSTM Encoder
-***REMOVED*** =========================
+# =========================
+# 2) LightningModule: LSTM Encoder
+# =========================
 
 class LSTMEncoder(pl.LightningModule):
     """
@@ -80,20 +80,20 @@ class LSTMEncoder(pl.LightningModule):
 
     def __init__(self, cfg: LSTMEncoderConfig):
         super().__init__()
-        self.save_hyperparameters()  ***REMOVED*** Logs config to the checkpoint
+        self.save_hyperparameters()  # Logs config to the checkpoint
         self.cfg = cfg
 
-        ***REMOVED*** Core LSTM
+        # Core LSTM
         self.lstm = nn.LSTM(
             input_size=cfg.input_size,
             hidden_size=cfg.hidden_size,
             num_layers=cfg.num_layers,
             batch_first=True,
             dropout=cfg.dropout if cfg.num_layers > 1 else 0.0,
-            bidirectional=False,  ***REMOVED*** keep simple; can turn this on later if i need bi-directional LSTMs
+            bidirectional=False,  # keep simple; can turn this on later if i need bi-directional LSTMs
         )
 
-        ***REMOVED*** Projection to embedding space (optional)
+        # Projection to embedding space (optional)
         emb_in = cfg.hidden_size
         emb_out = cfg.embedding_dim if cfg.embedding_dim is not None else cfg.hidden_size
         self.proj = nn.Sequential(
@@ -101,7 +101,7 @@ class LSTMEncoder(pl.LightningModule):
             nn.Linear(emb_in, emb_out),
         )
 
-        ***REMOVED*** Auxiliary "next step" regression head (optional)
+        # Auxiliary "next step" regression head (optional)
         if cfg.aux_predict:
             self.next_head = nn.Sequential(
                 nn.Dropout(cfg.dropout),
@@ -112,9 +112,9 @@ class LSTMEncoder(pl.LightningModule):
 
         self.loss_fn = nn.MSELoss(reduction=cfg.loss_reduction)
 
-    ***REMOVED*** -------------
-    ***REMOVED*** Core forward
-    ***REMOVED*** -------------
+    # -------------
+    # Core forward
+    # -------------
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
         Forward pass through LSTM -> embedding (-> optional next-step head).
@@ -127,34 +127,34 @@ class LSTMEncoder(pl.LightningModule):
                 "embedding": (B, D)
                 "next_pred": (B,) or None
         """
-        ***REMOVED*** LSTM returns (output, (h_n, c_n))
-        ***REMOVED*** - output: (B, T, H) all timesteps
-        ***REMOVED*** - h_n:    (num_layers, B, H) last hidden state per layer
+        # LSTM returns (output, (h_n, c_n))
+        # - output: (B, T, H) all timesteps
+        # - h_n:    (num_layers, B, H) last hidden state per layer
         out, (h_n, c_n) = self.lstm(x)
-        ***REMOVED*** Take the final layer's hidden state → (B, H)
-        last_h = h_n[-1]  ***REMOVED*** (B, hidden_size)
+        # Take the final layer's hidden state → (B, H)
+        last_h = h_n[-1]  # (B, hidden_size)
 
-        ***REMOVED*** Project to embedding
-        embedding = self.proj(last_h)  ***REMOVED*** (B, D)
+        # Project to embedding
+        embedding = self.proj(last_h)  # (B, D)
 
-        ***REMOVED*** Optional next-step head
+        # Optional next-step head
         next_pred = None
         if self.next_head is not None:
-            next_pred = self.next_head(embedding).squeeze(-1)  ***REMOVED*** (B,)
+            next_pred = self.next_head(embedding).squeeze(-1)  # (B,)
 
         return {"embedding": embedding, "next_pred": next_pred}
 
-    ***REMOVED*** ----------------
-    ***REMOVED*** Training/val/test
-    ***REMOVED*** ----------------
+    # ----------------
+    # Training/val/test
+    # ----------------
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         """
         One training step using the auxiliary regression loss if enabled.
         """
-        x, y = batch  ***REMOVED*** x: (B, T, F), y: (B,)
+        x, y = batch  # x: (B, T, F), y: (B,)
         out = self.forward(x)
         if self.next_head is None:
-            ***REMOVED*** If no aux head, define a dummy loss (not recommended for training).
+            # If no aux head, define a dummy loss (not recommended for training).
             loss = torch.tensor(0.0, device=self.device, requires_grad=True)
         else:
             loss = self.loss_fn(out["next_pred"], y)
@@ -189,9 +189,9 @@ class LSTMEncoder(pl.LightningModule):
         self.log("test_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         return loss
 
-    ***REMOVED*** -------------------
-    ***REMOVED*** Optimizer / sched
-    ***REMOVED*** -------------------
+    # -------------------
+    # Optimizer / sched
+    # -------------------
     def configure_optimizers(self):
         """
         AdamW optimizer; you can add LR schedulers later.
@@ -203,9 +203,9 @@ class LSTMEncoder(pl.LightningModule):
         )
         return opt
 
-    ***REMOVED*** ---------------
-    ***REMOVED*** Convenience API
-    ***REMOVED*** ---------------
+    # ---------------
+    # Convenience API
+    # ---------------
     @torch.no_grad()
     def encode(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -222,9 +222,9 @@ class LSTMEncoder(pl.LightningModule):
         return out["embedding"]
     
 
-***REMOVED*** =========================
-***REMOVED*** 3) Minimal Dataset for windows
-***REMOVED*** =========================
+# =========================
+# 3) Minimal Dataset for windows
+# =========================
 
 class SimpleWindowDataset(Dataset):
     """
@@ -256,9 +256,9 @@ class SimpleWindowDataset(Dataset):
         return x, y
 
 
-***REMOVED*** =========================
-***REMOVED*** 4) Trainer factory (Lightning)
-***REMOVED*** =========================
+# =========================
+# 4) Trainer factory (Lightning)
+# =========================
 
 def make_trainer(
     max_epochs: int = 10,
@@ -295,6 +295,6 @@ def make_trainer(
         precision=precision,
         log_every_n_steps=10,
         enable_checkpointing=True,
-        ***REMOVED*** You can add callbacks/early stopping later.
+        # You can add callbacks/early stopping later.
     )
     return trainer

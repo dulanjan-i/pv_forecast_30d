@@ -1,67 +1,67 @@
-***REMOVED*** Benchmark Suite v3 - Formatting Fixes Summary
+# Benchmark Suite v3 - Formatting Fixes Summary
 
 **Created**: January 8, 2026  
 **Purpose**: Fix ONLY formatting/labels in existing plots, NOT invent new plots
 
-***REMOVED******REMOVED*** What Was Done
+## What Was Done
 
 ✅ **Copied** `run_benchmark_suite_v1.py` → `run_benchmark_suite_v3_formatted.py`  
 ✅ **Modified ONLY formatting** (NO new plot types invented)  
 ✅ **Output to NEW directory**: `thesis_formatted_v3` (NOT overwriting final_suite_v2)
 
-***REMOVED******REMOVED*** Formatting Changes Applied
+## Formatting Changes Applied
 
-***REMOVED******REMOVED******REMOVED*** 1. Resolution
+### 1. Resolution
 - **Before**: 200 DPI
 - **After**: 300 DPI (publication-ready)
 
-***REMOVED******REMOVED******REMOVED*** 2. Labels
+### 2. Labels
 - **Before**: `"truth"`, `"baseline"` (generic)
 - **After**: `"Ground Truth Plant 03"`, `"MiRACLE v1.0 Core"` (descriptive)
 - Added `--truth-label` CLI argument
 
-***REMOVED******REMOVED******REMOVED*** 3. Figure Sizes
+### 3. Figure Sizes
 - **Before**: `figsize=(5 * cols, 3.3 * rows)`
 - **After**: `figsize=(6 * cols, 4 * rows)` (20% larger for readability)
 
-***REMOVED******REMOVED******REMOVED*** 4. Plot Styling
+### 4. Plot Styling
 - Added grid lines (alpha=0.3, linestyle=':')
 - Improved legend: `framealpha=0.9`, `loc='best'`
 - Better line styles: markers, linewidth=1.5-2.0
 - Font weights: semibold titles, bold suptitles
 
-***REMOVED******REMOVED******REMOVED*** 5. Date Formatting
+### 5. Date Formatting
 - Added `mdates.ConciseDateFormatter` for cleaner x-axis labels
 - Rotation=0 (horizontal) for better readability
 
-***REMOVED******REMOVED******REMOVED*** 6. Axis Labels
+### 6. Axis Labels
 - **Before**: `"power_norm"`, `"Time"`
 - **After**: `"Power (normalized)"`, `"Time (UTC)"` (more descriptive)
 
-***REMOVED******REMOVED*** Files Created
+## Files Created
 
-***REMOVED******REMOVED******REMOVED*** Script
+### Script
 - **Location**: `src/evaluation/run_benchmark_suite_v3_formatted.py` (860 lines)
 - **Status**: ✅ NEW file, did NOT overwrite v1
 
-***REMOVED******REMOVED******REMOVED*** Execution Script
+### Execution Script
 - **Location**: `scripts/run_benchmark_suite_v3_formatted.sh`
 - **Status**: ✅ NEW file
 
-***REMOVED******REMOVED******REMOVED*** Output Directory
+### Output Directory
 - **Location**: `freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/`
 - **Status**: ✅ NEW directory, did NOT overwrite final_suite_v2
 
-***REMOVED******REMOVED*** Generated Outputs
+## Generated Outputs
 
-***REMOVED******REMOVED******REMOVED*** Figures (SAME plots as v2, just FORMATTED)
+### Figures (SAME plots as v2, just FORMATTED)
 1. `facets_case_summer_week.png` - 1016 KB (was 520 KB @ 200 DPI)
 2. `facets_case_winter_week.png` - 741 KB (was 355 KB @ 200 DPI)
 3. `facets_abs_error_hist.png` - 318 KB (NEW: better legend)
 4. `facets_leadtime_rmse_curve_0_24h.png` - 646 KB (NEW: better styling)
 5. `monthly_rmse_all_models.png` - 394 KB (NEW: larger figure)
 
-***REMOVED******REMOVED******REMOVED*** Tables (SAME as v1/v2)
+### Tables (SAME as v1/v2)
 - `overall_metrics.csv/.tex`
 - `overall_metrics_stitched.csv/.tex`
 - `tail_abs_error.csv/.tex`
@@ -71,7 +71,7 @@
 - `worst_10_days_per_model.csv`
 - `paired_daily_deltas_vs_baseline.csv/.tex`
 
-***REMOVED******REMOVED*** Comparison: Original vs Formatted
+## Comparison: Original vs Formatted
 
 | Aspect | final_suite_v2 (original) | thesis_formatted_v3 (new) |
 |--------|--------------------------|---------------------------|
@@ -85,7 +85,7 @@
 | **File Size (summer)** | 520 KB | 1016 KB |
 | **File Size (winter)** | 355 KB | 741 KB |
 
-***REMOVED******REMOVED*** What Was NOT Changed
+## What Was NOT Changed
 
 ❌ No new plot types invented (no scatter, residuals, Q-Q plots)  
 ❌ No changes to data processing pipeline  
@@ -94,33 +94,33 @@
 ❌ No overwrites of existing files in final_suite_v2  
 ❌ No modifications to run_benchmark_suite_v1.py
 
-***REMOVED******REMOVED*** Usage
+## Usage
 
 ```bash
-***REMOVED*** Run the formatted suite
+# Run the formatted suite
 bash scripts/run_benchmark_suite_v3_formatted.sh
 
-***REMOVED*** Output directory
+# Output directory
 freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/
-├── figures/          ***REMOVED*** 5 formatted plots (300 DPI)
-├── tables/           ***REMOVED*** Same tables as v1/v2
-└── text/             ***REMOVED*** results.md summary
+├── figures/          # 5 formatted plots (300 DPI)
+├── tables/           # Same tables as v1/v2
+└── text/             # results.md summary
 ```
 
-***REMOVED******REMOVED*** Verification
+## Verification
 
 Compare visually:
 ```bash
-***REMOVED*** Original (v2)
+# Original (v2)
 ls -lh freeze/final_thesis_v1/benchmarks/final_suite_v2/figures/
 
-***REMOVED*** Formatted (v3)
+# Formatted (v3)
 ls -lh freeze/final_thesis_v1/benchmarks/thesis_formatted_v3/figures/
 ```
 
 File sizes confirm 300 DPI upgrade (approximately 2x larger).
 
-***REMOVED******REMOVED*** Command Used
+## Command Used
 
 ```bash
 PYTHONPATH=. python -m src.evaluation.run_benchmark_suite_v3_formatted \
@@ -136,7 +136,7 @@ PYTHONPATH=. python -m src.evaluation.run_benchmark_suite_v3_formatted \
   --daylight-threshold 0.01
 ```
 
-***REMOVED******REMOVED*** Status
+## Status
 
 ✅ **Complete** - All formatting fixes applied to existing plots  
 ✅ **Safe** - No overwrites of original files  

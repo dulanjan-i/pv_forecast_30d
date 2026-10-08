@@ -1,19 +1,19 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --job-name=tft_v1_manual
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --cpus-per-task=16
-***REMOVED***SBATCH --mem=250G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
-***REMOVED***SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
+#!/bin/bash
+#SBATCH --job-name=tft_v1_manual
+#SBATCH --partition=gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=250G
+#SBATCH --time=04:00:00
+#SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
+#SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
 
-***REMOVED*** Version: v1.1.1
-***REMOVED*** Date: 2025-12-26
-***REMOVED*** Changes from v1.1:
-***REMOVED***   - Fixed ENABLE_AMP bug (was not passing --enable_amp flag correctly)
-***REMOVED***   - Hardcoded --enable_amp for reliability
-***REMOVED***   - Added nvidia-smi power diagnostics
+# Version: v1.1.1
+# Date: 2025-12-26
+# Changes from v1.1:
+#   - Fixed ENABLE_AMP bug (was not passing --enable_amp flag correctly)
+#   - Hardcoded --enable_amp for reliability
+#   - Added nvidia-smi power diagnostics
 
 set -euo pipefail
 
@@ -29,7 +29,7 @@ RUN_ROOT="/shared/$USER/miracle/experiments/tft/runs/germany/v1_0"
 mkdir -p "$LOCAL_DIR"
 trap 'echo "=== CLEANUP ==="; rm -rf "$LOCAL_DIR"' EXIT
 
-***REMOVED*** --- GPU selection ---
+# --- GPU selection ---
 ALL_GPUS="${SLURM_JOB_GPUS:-${CUDA_VISIBLE_DEVICES:-}}"
 echo "Slurm assigned GPUs: ${ALL_GPUS}"
 
@@ -41,7 +41,7 @@ fi
 
 echo "Using GPU: ${TARGET_GPU}"
 
-***REMOVED*** --- Copy parquet locally ---
+# --- Copy parquet locally ---
 echo "=== COPYING DATA ==="
 SRC_TRAIN="$REPO/data/processed/pretraining/germany/global/tft_inputs/regional_train_tft_full.parquet"
 SRC_VAL="$REPO/data/processed/pretraining/germany/global/tft_inputs/regional_val_tft_full.parquet"
@@ -74,7 +74,7 @@ singularity exec -C --nv --bind "$BIND_PATHS" "$IMG" bash -lc "
   nvidia-smi -q -d POWER,CLOCK | grep -E 'Power Limit|Power Draw|Graphics|SM'
   echo '==================================='
 
-  ***REMOVED*** Hardcode precision and enable_amp for reliability
+  # Hardcode precision and enable_amp for reliability
   PREC='${PRECISION:-bf16-mixed}'
   
   echo \"Running with precision=\$PREC, enable_amp=TRUE\"

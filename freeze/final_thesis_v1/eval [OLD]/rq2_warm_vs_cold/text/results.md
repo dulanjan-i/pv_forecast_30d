@@ -1,8 +1,8 @@
-***REMOVED*** Evaluation summary
+# Evaluation summary
 
 - Night filtering: ON (threshold y_true >= 0.01)
 
-***REMOVED******REMOVED*** Overall
+## Overall
 
 | model                           |       MAE |     RMSE |    nRMSE |         MBE |       R2 |      N |
 |:--------------------------------|----------:|---------:|---------:|------------:|---------:|-------:|
@@ -10,7 +10,7 @@
 | MiRACLE v1.0 (Core, cold-start) | 0.0875937 | 0.119183 | 0.119183 | -0.00429974 | 0.628923 | 394008 |
 
 
-***REMOVED******REMOVED*** Stitched overall (most recent forecast per timestamp)
+## Stitched overall (most recent forecast per timestamp)
 
 | model                           |       MAE |     RMSE |    nRMSE |        MBE |       R2 |     N |
 |:--------------------------------|----------:|---------:|---------:|-----------:|---------:|------:|
@@ -18,7 +18,7 @@
 | MiRACLE v1.0 (Core, cold-start) | 0.089059  | 0.121771 | 0.121771 | 0.0131805  | 0.607375 | 13869 |
 
 
-***REMOVED******REMOVED*** Lead buckets
+## Lead buckets
 
 | lead_bucket   |     MAE_A |     MAE_B |   RMSE_A |   RMSE_B |   delta_RMSE_(B-A) |   delta_MAE_(B-A) |      N |
 |:--------------|----------:|----------:|---------:|---------:|-------------------:|------------------:|-------:|
@@ -27,7 +27,7 @@
 | 8-30d         | 0.0841024 | 0.0868975 | 0.116504 | 0.118084 |         0.00157966 |        0.00279509 | 301590 |
 
 
-***REMOVED******REMOVED*** Monthly
+## Monthly
 
 | month   |     MAE_A |     MAE_B |    RMSE_A |    RMSE_B |   delta_RMSE_(B-A) |   delta_MAE_(B-A) |     N |
 |:--------|----------:|----------:|----------:|----------:|-------------------:|------------------:|------:|
@@ -45,7 +45,7 @@
 | 2024-12 | 0.0568446 | 0.056385  | 0.0912351 | 0.0879044 |        -0.00333069 |      -0.000459621 | 10320 |
 
 
-***REMOVED******REMOVED*** Paired daily comparison
+## Paired daily comparison
 
 - Mean daily delta MAE (B-A): 0.003149
 
@@ -55,7 +55,7 @@
 
 
 
-***REMOVED******REMOVED*** Tail absolute error
+## Tail absolute error
 
 | model                           |       P50 |      P90 |      P95 |      P99 |      mean |
 |:--------------------------------|----------:|---------:|---------:|---------:|----------:|

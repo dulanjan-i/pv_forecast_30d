@@ -1,4 +1,4 @@
-***REMOVED*** Offline Validation Metrics - Dual-Head TFT Models
+# Offline Validation Metrics - Dual-Head TFT Models
 
 **Plant:** plant_03  
 **Test Period:** October - November 2023  
@@ -7,9 +7,9 @@
 
 ---
 
-***REMOVED******REMOVED*** Model Performance Summary
+## Model Performance Summary
 
-***REMOVED******REMOVED******REMOVED*** Short Head (15-min resolution, 24h horizon)
+### Short Head (15-min resolution, 24h horizon)
 
 | Metric | Value | Notes |
 |--------|-------|-------|
@@ -26,7 +26,7 @@
 
 ---
 
-***REMOVED******REMOVED******REMOVED*** Long Head (1-hour resolution, 720h = 30-day horizon)
+### Long Head (1-hour resolution, 720h = 30-day horizon)
 
 | Metric | Value | Notes |
 |--------|-------|-------|
@@ -45,14 +45,14 @@
 
 ---
 
-***REMOVED******REMOVED*** Comparative Analysis
+## Comparative Analysis
 
-***REMOVED******REMOVED******REMOVED*** Performance Comparison
+### Performance Comparison
 - Long head RMSE: **12.8% better** than short head (0.076 vs 0.087)
 - Long head MAE: **12.7% better** than short head (0.029 vs 0.034)
 - Short head R²: **0.110 points higher** (0.486 vs 0.376)
 
-***REMOVED******REMOVED******REMOVED*** Long-Head RMSE by Forecast Day
+### Long-Head RMSE by Forecast Day
 
 Breakdown of 30-day forecast accuracy (RMSE on normalized scale):
 
@@ -72,7 +72,7 @@ Breakdown of 30-day forecast accuracy (RMSE on normalized scale):
 - Less sensitivity to local weather noise
 - Model learning stable seasonal patterns
 
-***REMOVED******REMOVED******REMOVED*** Key Observations
+### Key Observations
 1. **Single-Call 30-Day Model:** Long head trained for 720-step horizon eliminates need for rolling windows
 2. **Comparable Accuracy:** Long head RMSE (0.076) competitive with short head (0.087) despite 30× longer horizon
 3. **R² Lower for Long Head:** Expected due to increasing uncertainty at longer horizons (0.376 vs 0.486)
@@ -80,9 +80,9 @@ Breakdown of 30-day forecast accuracy (RMSE on normalized scale):
 
 ---
 
-***REMOVED******REMOVED*** Assessment for Thesis
+## Assessment for Thesis
 
-***REMOVED******REMOVED******REMOVED*** ✅ Strengths
+### ✅ Strengths
 - **Low Error Rates**: Both RMSE values well below 0.10 threshold
 - **True 30-Day Model**: Long head covers full month in single inference (no rolling windows!)
 - **Stable Long-Term**: Long head error remains under 0.10 even at Day 30
@@ -90,14 +90,14 @@ Breakdown of 30-day forecast accuracy (RMSE on normalized scale):
 - **Production Ready**: Metrics validated on held-out test set with proper sliding windows
 - **Encoder Length**: 168-hour (7-day) encoder captures weekly patterns effectively
 
-***REMOVED******REMOVED******REMOVED*** ⚠️ Considerations
+### ⚠️ Considerations
 - **R² Moderate**: 0.38-0.49 indicates room for improvement (PV forecasting inherently noisy)
 - **MAPE Invalid**: Extreme values due to division by near-zero at night (ignore this metric)
 - **Test Period Limited**: Oct-Nov 2023 only (2 months, autumn season)
 - **Single Plant**: Metrics specific to plant_03 in Germany
 - **Horizon Penalty**: Long head R² lower than short head (expected for 30-day vs 1-day)
 
-***REMOVED******REMOVED******REMOVED*** 📊 Benchmark Context
+### 📊 Benchmark Context
 Typical PV forecasting literature (day-ahead, normalized):
 - **Excellent**: RMSE < 0.05
 - **Good**: RMSE 0.05 - 0.10 ✅ **(both models here)**
@@ -108,7 +108,7 @@ Typical PV forecasting literature (day-ahead, normalized):
 
 ---
 
-***REMOVED******REMOVED*** Next Steps for Production
+## Next Steps for Production
 
 1. **Implement Physics-Aware Gluing** (Day 2)
    - Day 1: Short head (96 @ 15-min = 24h)
@@ -130,7 +130,7 @@ Typical PV forecasting literature (day-ahead, normalized):
 
 ---
 
-***REMOVED******REMOVED*** Citation for Thesis
+## Citation for Thesis
 
 ```
 Dual-head Temporal Fusion Transformer models achieved test set RMSE of 0.087 

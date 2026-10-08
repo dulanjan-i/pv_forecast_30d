@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 RL Meta-Controller for MiRACLE PV Forecasting System
 
@@ -29,53 +29,53 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-***REMOVED*** ============================================================================
-***REMOVED*** Configuration
-***REMOVED*** ============================================================================
+# ============================================================================
+# Configuration
+# ============================================================================
 
 @dataclass
 class RLConfig:
     """RL Meta-Controller hyperparameters (from paper)."""
     
-    ***REMOVED*** DQN hyperparameters
+    # DQN hyperparameters
     learning_rate: float = 1e-4
-    gamma: float = 0.95  ***REMOVED*** Discount factor
+    gamma: float = 0.95  # Discount factor
     epsilon_start: float = 1.0
     epsilon_end: float = 0.1
     epsilon_decay: int = 10000
     batch_size: int = 64
-    target_update_freq: int = 1  ***REMOVED*** Soft target update frequency (every step for smooth weather)
-    tau: float = 0.005  ***REMOVED*** Soft update coefficient (0.5% per step)
+    target_update_freq: int = 1  # Soft target update frequency (every step for smooth weather)
+    tau: float = 0.005  # Soft update coefficient (0.5% per step)
     
-    ***REMOVED*** Regularization (anti-overfitting)
-    dropout_rate: float = 0.4  ***REMOVED*** Dropout probability (aggressive to prevent memorization)
-    weight_decay: float = 1e-3  ***REMOVED*** L2 regularization (strong penalty)
+    # Regularization (anti-overfitting)
+    dropout_rate: float = 0.4  # Dropout probability (aggressive to prevent memorization)
+    weight_decay: float = 1e-3  # L2 regularization (strong penalty)
     
-    ***REMOVED*** Replay buffer
+    # Replay buffer
     buffer_capacity: int = 10000
     prioritized_replay: bool = True
-    alpha: float = 0.6  ***REMOVED*** Prioritization exponent
+    alpha: float = 0.6  # Prioritization exponent
     beta_start: float = 0.4
     beta_frames: int = 100000
     
-    ***REMOVED*** Reward function weights (from paper)
-    w_accuracy: float = 1.0     ***REMOVED*** Primary: RMSE
-    w_consistency: float = 0.3  ***REMOVED*** Short-long alignment
-    w_stability: float = 0.2    ***REMOVED*** Drift penalty
-    w_efficiency: float = 0.1   ***REMOVED*** Compute cost
+    # Reward function weights (from paper)
+    w_accuracy: float = 1.0     # Primary: RMSE
+    w_consistency: float = 0.3  # Short-long alignment
+    w_stability: float = 0.2    # Drift penalty
+    w_efficiency: float = 0.1   # Compute cost
     
-    ***REMOVED*** Convergence criteria (from paper)
+    # Convergence criteria (from paper)
     convergence_threshold: float = 1e-3
     convergence_episodes: int = 50
     
-    ***REMOVED*** Operating mode
-    mode: str = "heuristic"  ***REMOVED*** "heuristic" or "rl" or "hybrid"
-    human_confirm_retrain: bool = True  ***REMOVED*** Human-in-the-loop for retraining
+    # Operating mode
+    mode: str = "heuristic"  # "heuristic" or "rl" or "hybrid"
+    human_confirm_retrain: bool = True  # Human-in-the-loop for retraining
 
 
-***REMOVED*** ============================================================================
-***REMOVED*** Experience Replay
-***REMOVED*** ============================================================================
+# ============================================================================
+# Experience Replay
+# ============================================================================
 
 Transition = namedtuple('Transition', 
                         ('state', 'action', 'reward', 'next_state', 'done'))
@@ -115,15 +115,15 @@ class PrioritizedReplayBuffer:
         else:
             priorities = self.priorities[:self.position]
         
-        ***REMOVED*** Compute sampling probabilities
+        # Compute sampling probabilities
         probs = priorities ** self.alpha
         probs /= probs.sum()
         
-        ***REMOVED*** Sample indices
+        # Sample indices
         indices = np.random.choice(len(self.buffer), batch_size, p=probs, replace=False)
         samples = [self.buffer[idx] for idx in indices]
         
-        ***REMOVED*** Importance sampling weights
+        # Importance sampling weights
         total = len(self.buffer)
         weights = (total * probs[indices]) ** (-beta)
         weights /= weights.max()
@@ -139,9 +139,9 @@ class PrioritizedReplayBuffer:
         return len(self.buffer)
 
 
-***REMOVED*** ============================================================================
-***REMOVED*** DQN Network
-***REMOVED*** ============================================================================
+# ============================================================================
+# DQN Network
+# ============================================================================
 
 class DQN(nn.Module):
     """
@@ -169,9 +169,9 @@ class DQN(nn.Module):
         return self.network(state)
 
 
-***REMOVED*** ============================================================================
-***REMOVED*** Local Advisor (Rule-Based Monitoring)
-***REMOVED*** ============================================================================
+# ============================================================================
+# Local Advisor (Rule-Based Monitoring)
+# ============================================================================
 
 class LocalAdvisor:
     """
@@ -193,7 +193,7 @@ class LocalAdvisor:
         self.state_dim = state_dim
         self.steps = 0
         
-        ***REMOVED*** History tracking for trend analysis
+        # History tracking for trend analysis
         self.rmse_history = deque(maxlen=100)
         self.drift_history = deque(maxlen=100)
         
@@ -228,12 +228,12 @@ class LocalAdvisor:
         
         self.rmse_history.append(rmse_1h)
         
-        ***REMOVED*** Compute trend (slope of last 20 samples)
+        # Compute trend (slope of last 20 samples)
         rmse_trend = 0.0
         if len(self.rmse_history) >= 20:
             recent = list(self.rmse_history)[-20:]
             x = np.arange(len(recent))
-            rmse_trend = np.polyfit(x, recent, 1)[0]  ***REMOVED*** Slope
+            rmse_trend = np.polyfit(x, recent, 1)[0]  # Slope
         
         return np.array([
             rmse_1h,
@@ -254,7 +254,7 @@ class LocalAdvisor:
         rmse_7d = metrics.get('long_rmse_7d', 0.0)
         rmse_30d = metrics.get('long_rmse_30d', 0.0)
         
-        ***REMOVED*** Horizon degradation: how much worse is 30d vs 24h?
+        # Horizon degradation: how much worse is 30d vs 24h?
         horizon_rmse_trend = (rmse_30d - rmse_24h) if rmse_24h > 0 else 0.0
         
         return np.array([
@@ -277,7 +277,7 @@ class LocalAdvisor:
             metrics.get('ghi', 0.0) / 1500.0,
             metrics.get('dni', 0.0) / 1200.0,
             metrics.get('temperature', 20.0) / 60.0,
-            metrics.get('last_calibration_hours', 0) / 168.0,  ***REMOVED*** Normalize by 1 week
+            metrics.get('last_calibration_hours', 0) / 168.0,  # Normalize by 1 week
             metrics.get('calibration_drift', 0.0),
             1.0 if metrics.get('is_night', False) else 0.0,
             metrics.get('cloud_cover', 0.0) / 100.0
@@ -313,7 +313,7 @@ class LocalAdvisor:
         elif self.name == "pvlib":
             physics_residual = state[0]
             calibration_drift = state[5]
-            last_cal = state[4] * 168  ***REMOVED*** Convert back to hours
+            last_cal = state[4] * 168  # Convert back to hours
             
             if physics_residual > 0.30:
                 return "severe_physics_mismatch"
@@ -332,9 +332,9 @@ class LocalAdvisor:
         }
 
 
-***REMOVED*** ============================================================================
-***REMOVED*** Meta-Controller (Global DDQN Agent)
-***REMOVED*** ============================================================================
+# ============================================================================
+# Meta-Controller (Global DDQN Agent)
+# ============================================================================
 
 class MetaController:
     """
@@ -353,7 +353,7 @@ class MetaController:
     - A7: SUGGEST_RETRAIN (request full retrain - human approval)
     """
     
-    ***REMOVED*** Action constants
+    # Action constants
     ACTION_MAINTAIN = 0
     ACTION_FINE_TUNE_SHORT = 1
     ACTION_FINE_TUNE_LONG = 2
@@ -363,23 +363,23 @@ class MetaController:
     ACTION_BLEND_HIGH_PHYSICS = 6
     ACTION_SUGGEST_RETRAIN = 7
     
-    ***REMOVED*** Action costs (for reward computation)
+    # Action costs (for reward computation)
     ACTION_COSTS = {
-        0: 0.0,    ***REMOVED*** maintain (free)
-        1: 0.1,    ***REMOVED*** fine_tune_short
-        2: 0.15,   ***REMOVED*** fine_tune_long
-        3: 0.05,   ***REMOVED*** recalibrate_pvlib
-        4: 0.0,    ***REMOVED*** blend adjustments (free)
+        0: 0.0,    # maintain (free)
+        1: 0.1,    # fine_tune_short
+        2: 0.15,   # fine_tune_long
+        3: 0.05,   # recalibrate_pvlib
+        4: 0.0,    # blend adjustments (free)
         5: 0.0,
         6: 0.0,
-        7: 1.0     ***REMOVED*** suggest_retrain (expensive)
+        7: 1.0     # suggest_retrain (expensive)
     }
     
-    ***REMOVED*** Blend weight presets
+    # Blend weight presets
     BLEND_PRESETS = {
-        4: {'short': 0.7, 'long': 0.2, 'physics': 0.1},  ***REMOVED*** High short
-        5: {'short': 0.2, 'long': 0.7, 'physics': 0.1},  ***REMOVED*** High long
-        6: {'short': 0.2, 'long': 0.2, 'physics': 0.6},  ***REMOVED*** High physics
+        4: {'short': 0.7, 'long': 0.2, 'physics': 0.1},  # High short
+        5: {'short': 0.2, 'long': 0.7, 'physics': 0.1},  # High long
+        6: {'short': 0.2, 'long': 0.2, 'physics': 0.6},  # High physics
     }
     
     def __init__(
@@ -389,14 +389,14 @@ class MetaController:
     ):
         self.config = config or RLConfig()
         
-        ***REMOVED*** DDQN with 8 discrete actions
+        # DDQN with 8 discrete actions
         self.action_dim = 8
         self.config = config or RLConfig()
         
-        ***REMOVED*** DDQN with 8 discrete actions
+        # DDQN with 8 discrete actions
         self.action_dim = 8
         
-        ***REMOVED*** Q-networks (policy + target for DDQN) - reduced capacity (64) with dropout (0.4)
+        # Q-networks (policy + target for DDQN) - reduced capacity (64) with dropout (0.4)
         self.policy_net = DQN(state_dim, self.action_dim, 
                              hidden_dim=64, dropout=self.config.dropout_rate)
         self.target_net = DQN(state_dim, self.action_dim, 
@@ -404,26 +404,26 @@ class MetaController:
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
         
-        ***REMOVED*** Optimizer with weight decay (L2 regularization)
+        # Optimizer with weight decay (L2 regularization)
         self.optimizer = optim.Adam(self.policy_net.parameters(),
                                      lr=self.config.learning_rate,
                                      weight_decay=self.config.weight_decay)
         
-        ***REMOVED*** Replay buffer
+        # Replay buffer
         self.replay_buffer = PrioritizedReplayBuffer(
-            capacity=20000,  ***REMOVED*** Larger for meta-controller
+            capacity=20000,  # Larger for meta-controller
             alpha=self.config.alpha
         )
         
-        ***REMOVED*** Exploration
+        # Exploration
         self.epsilon = self.config.epsilon_start
         self.steps = 0
         
-        ***REMOVED*** Tracking
+        # Tracking
         self.q_values_history = deque(maxlen=1000)
         self.loss_history = deque(maxlen=1000)
         
-        ***REMOVED*** Current blend weights (managed by actions A4-A6)
+        # Current blend weights (managed by actions A4-A6)
         self.current_weights = {'short': 0.33, 'long': 0.33, 'physics': 0.34}
         
         logger.info("[MetaController] Initialized with 8 system actions (DDQN)")
@@ -456,11 +456,11 @@ class MetaController:
         if mode == "heuristic":
             return self._heuristic_action(state)
         
-        ***REMOVED*** ε-greedy exploration
+        # ε-greedy exploration
         if np.random.random() < self.epsilon:
             return np.random.randint(0, self.action_dim)
         
-        ***REMOVED*** Exploitation: argmax Q(s,a)
+        # Exploitation: argmax Q(s,a)
         with torch.no_grad():
             state_t = torch.FloatTensor(state).unsqueeze(0)
             q_values = self.policy_net(state_t)
@@ -478,7 +478,7 @@ class MetaController:
         - Night → adjust blend to physics
         - Otherwise → maintain
         """
-        ***REMOVED*** State layout: [short_advisory(10), long_advisory(10), pvlib_advisory(8), context(7)]
+        # State layout: [short_advisory(10), long_advisory(10), pvlib_advisory(8), context(7)]
         short_rmse_1h = state[0] if len(state) > 0 else 0.0
         short_drift = state[3] if len(state) > 3 else 0.0
         long_rmse_30d = state[12] if len(state) > 12 else 0.0
@@ -488,34 +488,34 @@ class MetaController:
         data_drift_global = state[30] if len(state) > 30 else 0.0
         total_retrain_count = state[34] if len(state) > 34 else 0.0
         
-        ***REMOVED*** Priority-based decision tree
+        # Priority-based decision tree
         
-        ***REMOVED*** 1. Check if night → favor physics
+        # 1. Check if night → favor physics
         if is_night > 0.5 and physics_residual < 0.15:
             return self.ACTION_BLEND_HIGH_PHYSICS
         
-        ***REMOVED*** 2. Check physics calibration drift
+        # 2. Check physics calibration drift
         if physics_residual > 0.25:
             return self.ACTION_RECALIBRATE_PVLIB
         
-        ***REMOVED*** 3. Check for severe performance collapse
+        # 3. Check for severe performance collapse
         if short_rmse_1h > 0.15 and total_retrain_count < 2:
             return self.ACTION_SUGGEST_RETRAIN
         
-        ***REMOVED*** 4. Check short-term degradation
+        # 4. Check short-term degradation
         if short_rmse_1h > 0.10 and short_drift > 0.5:
             return self.ACTION_FINE_TUNE_SHORT
         
-        ***REMOVED*** 5. Check long-term horizon degradation
+        # 5. Check long-term horizon degradation
         if horizon_degradation > 0.05 or long_rmse_30d > 0.12:
             return self.ACTION_FINE_TUNE_LONG
         
-        ***REMOVED*** 6. Check global drift
+        # 6. Check global drift
         if data_drift_global > 0.6:
-            ***REMOVED*** Favor short-term if drift detected (more adaptive)
+            # Favor short-term if drift detected (more adaptive)
             return self.ACTION_BLEND_HIGH_SHORT
         
-        ***REMOVED*** 7. Default: maintain
+        # 7. Default: maintain
         return self.ACTION_MAINTAIN
     
     def execute_action(self, action: int) -> Dict:
@@ -532,7 +532,7 @@ class MetaController:
             'requires_human_approval': (action == self.ACTION_SUGGEST_RETRAIN)
         }
         
-        ***REMOVED*** Update blend weights if action is A4-A6
+        # Update blend weights if action is A4-A6
         if action in self.BLEND_PRESETS:
             self.current_weights = self.BLEND_PRESETS[action].copy()
             result['blend_weights'] = self.current_weights
@@ -555,7 +555,7 @@ class MetaController:
         if len(self.replay_buffer) < self.config.batch_size:
             return None
         
-        ***REMOVED*** Sample batch with prioritization
+        # Sample batch with prioritization
         beta = min(1.0, self.config.beta_start + self.steps * 
                    (1.0 - self.config.beta_start) / self.config.beta_frames)
         
@@ -565,7 +565,7 @@ class MetaController:
         
         batch = Transition(*zip(*transitions))
         
-        ***REMOVED*** Convert to tensors
+        # Convert to tensors
         state_batch = torch.FloatTensor(np.array(batch.state))
         action_batch = torch.LongTensor(batch.action).unsqueeze(1)
         reward_batch = torch.FloatTensor(batch.reward)
@@ -573,32 +573,32 @@ class MetaController:
         done_batch = torch.FloatTensor(batch.done)
         weights_batch = torch.FloatTensor(weights)
         
-        ***REMOVED*** Compute Q(s,a)
+        # Compute Q(s,a)
         q_values = self.policy_net(state_batch).gather(1, action_batch).squeeze(1)
         
-        ***REMOVED*** Compute target: r + γ * max_a' Q_target(s', a')
+        # Compute target: r + γ * max_a' Q_target(s', a')
         with torch.no_grad():
             next_q_values = self.target_net(next_state_batch).max(1)[0]
             target_q_values = reward_batch + (1 - done_batch) * self.config.gamma * next_q_values
         
-        ***REMOVED*** Compute TD-errors for priority update
+        # Compute TD-errors for priority update
         td_errors = torch.abs(q_values - target_q_values).detach().numpy()
         self.replay_buffer.update_priorities(indices, td_errors + 1e-6)
         
-        ***REMOVED*** Weighted loss (importance sampling)
+        # Weighted loss (importance sampling)
         loss = (weights_batch * (q_values - target_q_values) ** 2).mean()
         
-        ***REMOVED*** Optimize
+        # Optimize
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
         self.optimizer.step()
         
-        ***REMOVED*** Soft target update (every step for smooth weather tracking)
+        # Soft target update (every step for smooth weather tracking)
         if self.steps % self.config.target_update_freq == 0:
             self._soft_update_target()
         
-        ***REMOVED*** Decay epsilon
+        # Decay epsilon
         self.epsilon = max(
             self.config.epsilon_end,
             self.config.epsilon_start - self.steps / self.config.epsilon_decay
@@ -636,9 +636,9 @@ class MetaController:
             )
 
 
-***REMOVED*** ============================================================================
-***REMOVED*** Main RL System (1 DDQN Meta-Controller + 3 Rule-Based Advisors)
-***REMOVED*** ============================================================================
+# ============================================================================
+# Main RL System (1 DDQN Meta-Controller + 3 Rule-Based Advisors)
+# ============================================================================
 
 class RLMetaControllerSystem:
     """
@@ -677,14 +677,14 @@ class RLMetaControllerSystem:
         self.checkpoint_dir = checkpoint_dir or Path("checkpoints/rl")
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
         
-        ***REMOVED*** State dimensions
+        # State dimensions
         self.short_tft_state_dim = 10
         self.long_tft_state_dim = 10
         self.pvlib_state_dim = 8
         self.meta_context_dim = 7
-        self.total_state_dim = 35  ***REMOVED*** Sum of all advisors + context
+        self.total_state_dim = 35  # Sum of all advisors + context
         
-        ***REMOVED*** Initialize rule-based advisors (NO learning)
+        # Initialize rule-based advisors (NO learning)
         self.advisor_short_tft = LocalAdvisor(
             name="short_tft",
             state_dim=self.short_tft_state_dim
@@ -700,20 +700,20 @@ class RLMetaControllerSystem:
             state_dim=self.pvlib_state_dim
         )
         
-        ***REMOVED*** Initialize DDQN meta-controller (ONLY learning agent)
+        # Initialize DDQN meta-controller (ONLY learning agent)
         self.meta_controller = MetaController(
             state_dim=self.total_state_dim,
             config=self.config
         )
         
-        ***REMOVED*** Human confirmation queue for retrain suggestions
+        # Human confirmation queue for retrain suggestions
         self.retrain_queue = {
             'short_tft': [],
             'long_tft': [],
             'pvlib': []
         }
         
-        ***REMOVED*** Performance tracking
+        # Performance tracking
         self.episode_rewards = deque(maxlen=100)
         self.episode_count = 0
         self.prev_rmse = None
@@ -729,12 +729,12 @@ class RLMetaControllerSystem:
         
         Layout: [short_advisory(10), long_advisory(10), pvlib_advisory(8), context(7)]
         """
-        ***REMOVED*** Get advisor states
+        # Get advisor states
         short_state = self.advisor_short_tft.get_advisory_state(metrics)
         long_state = self.advisor_long_tft.get_advisory_state(metrics)
         pvlib_state = self.advisor_pvlib.get_advisory_state(metrics)
         
-        ***REMOVED*** Build meta-context (7 dims)
+        # Build meta-context (7 dims)
         meta_context = np.array([
             metrics.get('ensemble_rmse', 0.0),
             metrics.get('short_long_mismatch', 0.0),
@@ -745,7 +745,7 @@ class RLMetaControllerSystem:
             metrics.get('total_retrain_count_7d', 0) / 10.0
         ])
         
-        ***REMOVED*** Concatenate all: 10 + 10 + 8 + 7 = 35 dims
+        # Concatenate all: 10 + 10 + 8 + 7 = 35 dims
         state = np.concatenate([short_state, long_state, pvlib_state, meta_context])
         
         return state
@@ -765,31 +765,31 @@ class RLMetaControllerSystem:
         Returns:
             actions: Dict with meta action and execution info
         """
-        ***REMOVED*** Build state
+        # Build state
         state = self.build_meta_state(metrics)
         
-        ***REMOVED*** Check advisor alerts
+        # Check advisor alerts
         short_alert = self.advisor_short_tft.check_alert(state[:10])
         long_alert = self.advisor_long_tft.check_alert(state[10:20])
         pvlib_alert = self.advisor_pvlib.check_alert(state[20:28])
         
-        ***REMOVED*** Meta-controller selects action
+        # Meta-controller selects action
         action = self.meta_controller.select_action(state, mode=self.config.mode)
         
-        ***REMOVED*** Execute action
+        # Execute action
         action_info = self.meta_controller.execute_action(action)
         
-        ***REMOVED*** Add action index to response
+        # Add action index to response
         action_info['action_index'] = action
         
-        ***REMOVED*** Add advisor alerts to response
+        # Add advisor alerts to response
         action_info['advisor_alerts'] = {
             'short_tft': short_alert,
             'long_tft': long_alert,
             'pvlib': pvlib_alert
         }
         
-        ***REMOVED*** Store state for learning
+        # Store state for learning
         self.current_state = state
         self.current_action = action
         
@@ -808,33 +808,33 @@ class RLMetaControllerSystem:
         Returns:
             reward: Scalar reward signal
         """
-        ***REMOVED*** Component weights
-        w1 = 1.0   ***REMOVED*** Accuracy
-        w2 = 0.5   ***REMOVED*** Drift control
-        w3 = 0.2   ***REMOVED*** Cost
-        w4 = 0.3   ***REMOVED*** Retrain frequency
+        # Component weights
+        w1 = 1.0   # Accuracy
+        w2 = 0.5   # Drift control
+        w3 = 0.2   # Cost
+        w4 = 0.3   # Retrain frequency
         
-        ***REMOVED*** 1. Accuracy: reward RMSE improvement
+        # 1. Accuracy: reward RMSE improvement
         rmse_prev = metrics.get('ensemble_rmse', 0.0)
         rmse_next = metrics_next.get('ensemble_rmse', 0.0)
-        r_accuracy = w1 * (rmse_prev - rmse_next) / 0.01  ***REMOVED*** Normalize by 10W
+        r_accuracy = w1 * (rmse_prev - rmse_next) / 0.01  # Normalize by 10W
         
-        ***REMOVED*** 2. Drift: penalize distribution shift
+        # 2. Drift: penalize distribution shift
         drift_score = metrics_next.get('data_drift_score', 0.0)
         short_long_mismatch = metrics_next.get('short_long_mismatch', 0.0)
         r_drift = -w2 * (drift_score + short_long_mismatch) / 2.0
         
-        ***REMOVED*** 3. Cost: penalize expensive actions
+        # 3. Cost: penalize expensive actions
         action_cost = self.meta_controller.ACTION_COSTS.get(
             getattr(self, 'current_action', 0), 0.0
         )
         r_cost = -w3 * action_cost
         
-        ***REMOVED*** 4. Retrain frequency: penalize excessive retraining
+        # 4. Retrain frequency: penalize excessive retraining
         retrain_count = metrics_next.get('total_retrain_count_7d', 0)
         r_retrain = -w4 * retrain_count / 10.0
         
-        ***REMOVED*** Bonus: reward high API agreement
+        # Bonus: reward high API agreement
         api_agreement = metrics_next.get('api_agreement', 1.0)
         bonus = 0.1 if api_agreement > 0.9 else 0.0
         
@@ -850,19 +850,19 @@ class RLMetaControllerSystem:
             metrics_next: Metrics after action execution
             done: Episode termination flag
         """
-        ***REMOVED*** Build next state
+        # Build next state
         next_state = self.build_meta_state(metrics_next)
         
-        ***REMOVED*** Compute reward (requires previous metrics, stored in self)
+        # Compute reward (requires previous metrics, stored in self)
         if not hasattr(self, 'current_state'):
             logger.warning("No previous state for reward computation, skipping update")
             return
         
-        ***REMOVED*** For reward, we need metrics from both steps
-        ***REMOVED*** In practice, RLIntegratedForecaster will call update with both metrics
-        reward = 0.0  ***REMOVED*** Placeholder - actual reward computed in RLIntegratedForecaster
+        # For reward, we need metrics from both steps
+        # In practice, RLIntegratedForecaster will call update with both metrics
+        reward = 0.0  # Placeholder - actual reward computed in RLIntegratedForecaster
         
-        ***REMOVED*** Store transition in meta-controller
+        # Store transition in meta-controller
         self.meta_controller.store_transition(
             self.current_state,
             self.current_action,
@@ -871,7 +871,7 @@ class RLMetaControllerSystem:
             done
         )
         
-        ***REMOVED*** Update meta-controller (DDQN learning)
+        # Update meta-controller (DDQN learning)
         if self.config.mode == "rl":
             loss = self.meta_controller.update()
             if loss is not None:

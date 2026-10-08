@@ -30,10 +30,10 @@ def main() -> None:
     pca_cols = [c for c in df.columns if c.startswith(args.pca_prefix) and ("_lag" not in c)]
     if not pca_cols:
         raise RuntimeError(
-            f"No {args.pca_prefix}***REMOVED******REMOVED******REMOVED*** columns found in {inp}. Found {len(df.columns)} cols total."
+            f"No {args.pca_prefix}### columns found in {inp}. Found {len(df.columns)} cols total."
         )
 
-    ***REMOVED*** Make sure time is sorted within group
+    # Make sure time is sorted within group
     df[args.time_col] = pd.to_datetime(df[args.time_col], utc=True)
 
     if args.group_col in df.columns:
@@ -42,7 +42,7 @@ def main() -> None:
         for c in pca_cols:
             df[f"{c}_lag{lag}"] = g[c].shift(lag)
     else:
-        ***REMOVED*** Single-series fallback
+        # Single-series fallback
         df = df.sort_values([args.time_col]).copy()
         for c in pca_cols:
             df[f"{c}_lag{lag}"] = df[c].shift(lag)
@@ -56,7 +56,7 @@ def main() -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out, index=False)
 
-    ***REMOVED*** quick sanity
+    # quick sanity
     nn = float(df[lag_cols[0]].notna().mean()) if len(df) else 0.0
     print(f"[OK] wrote {out}")
     print(f"[INFO] pca cols={len(pca_cols)} lag cols={len(lag_cols)} example={pca_cols[:3]}")

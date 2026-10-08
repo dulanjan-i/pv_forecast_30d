@@ -1,24 +1,24 @@
-***REMOVED***!/bin/bash
-***REMOVED***
-***REMOVED*** Stage 2: Transfer Learning - Run all 6 Germany plants in parallel batches
-***REMOVED*** Usage: bash run_stage2_transfer_learning.sh
-***REMOVED***
-***REMOVED*** Hardware: calc02 with 4x NVIDIA L4 GPUs (24GB each)
-***REMOVED*** Strategy: Wave 1 (4 plants on GPU 0-3), Wave 2 (2 plants on GPU 0-1)
+#!/bin/bash
+#
+# Stage 2: Transfer Learning - Run all 6 Germany plants in parallel batches
+# Usage: bash run_stage2_transfer_learning.sh
+#
+# Hardware: calc02 with 4x NVIDIA L4 GPUs (24GB each)
+# Strategy: Wave 1 (4 plants on GPU 0-3), Wave 2 (2 plants on GPU 0-1)
 
-set -e  ***REMOVED*** Exit on error
+set -e  # Exit on error
 
-***REMOVED*** Activate virtual environment
+# Activate virtual environment
 source ~/.venvs/pvforecast/bin/activate
 
-***REMOVED*** Set working directory
+# Set working directory
 cd ~/pv_forecast_30d
 
-***REMOVED*** Colors for output
+# Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' ***REMOVED*** No Color
+NC='\033[0m' # No Color
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Stage 2: Transfer Learning from Farm2107${NC}"
@@ -29,14 +29,14 @@ echo "Target: 6 Germany plants (plant_01 through plant_06)"
 echo "Hardware: 2x NVIDIA L4 GPUs (3 waves)"
 echo ""
 
-***REMOVED*** Verify pretrained weights exist
+# Verify pretrained weights exist
 if [ ! -f "experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt" ]; then
     echo -e "${RED}ERROR: Pretrained weights not found!${NC}"
     echo "Expected: experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"
     exit 1
 fi
 
-***REMOVED*** Verify all YAML configs exist
+# Verify all YAML configs exist
 for plant_id in 01 02 03 04 05 06; do
     yaml_path="experiments/lstm/germany/pretrain_plant_${plant_id}.yaml"
     if [ ! -f "$yaml_path" ]; then
@@ -48,19 +48,19 @@ done
 echo -e "${GREEN}✓ All configs and pretrained weights verified${NC}"
 echo ""
 
-***REMOVED*** Create log directory
+# Create log directory
 LOG_DIR="experiments/lstm/runs/germany/logs"
 mkdir -p "$LOG_DIR"
 
-***REMOVED*** Launch monitoring terminals
+# Launch monitoring terminals
 echo -e "${YELLOW}Launching monitoring windows...${NC}"
 
-***REMOVED*** Try to detect terminal emulator and launch monitors
+# Try to detect terminal emulator and launch monitors
 if command -v gnome-terminal &> /dev/null; then
-    ***REMOVED*** CPU monitoring
+    # CPU monitoring
     gnome-terminal --title="CPU Monitor" -- bash -c "htop; exec bash" &
     
-    ***REMOVED*** GPU monitoring (all 4 GPUs)
+    # GPU monitoring (all 4 GPUs)
     gnome-terminal --title="GPU Monitor" -- bash -c "watch -n 1 'nvidia-smi --query-gpu=index,name,temperature.gpu,utilization.gpu,utilization.memory,memory.used,memory.total --format=csv,noheader,nounits | column -t -s,'; exec bash" &
     
     echo "  ✓ Opened CPU monitor (htop)"
@@ -80,7 +80,7 @@ else
     echo "    Terminal 2: watch -n 1 nvidia-smi"
 fi
 
-sleep 2  ***REMOVED*** Give terminals time to open
+sleep 2  # Give terminals time to open
 echo ""
 
 echo -e "${YELLOW}========================================${NC}"
@@ -88,7 +88,7 @@ echo -e "${YELLOW}WAVE 1: Plants 01-02 (Parallel on 2 GPUs)${NC}"
 echo -e "${YELLOW}========================================${NC}"
 echo ""
 
-***REMOVED*** Wave 1: 2 plants in parallel
+# Wave 1: 2 plants in parallel
 CUDA_VISIBLE_DEVICES=0 python3 src/training/pretrain_lstm.py \
     --config experiments/lstm/germany/pretrain_plant_01.yaml \
     > "$LOG_DIR/plant_01.log" 2>&1 &
@@ -107,13 +107,13 @@ echo "  → Logs: $LOG_DIR/plant_0{1,2}.log"
 echo "  → Monitor: tail -f $LOG_DIR/plant_01.log"
 echo ""
 
-***REMOVED*** Wait for all Wave 1 jobs
+# Wait for all Wave 1 jobs
 wait $PID1
 EXIT1=$?
 wait $PID2
 EXIT2=$?
 
-***REMOVED*** Check Wave 1 results
+# Check Wave 1 results
 WAVE1_FAILED=0
 [ $EXIT1 -ne 0 ] && echo -e "${RED}✗ Plant 01 FAILED (exit code: $EXIT1)${NC}" && WAVE1_FAILED=1 || echo -e "${GREEN}✓ Plant 01 completed${NC}"
 [ $EXIT2 -ne 0 ] && echo -e "${RED}✗ Plant 02 FAILED (exit code: $EXIT2)${NC}" && WAVE1_FAILED=1 || echo -e "${GREEN}✓ Plant 02 completed${NC}"
@@ -130,7 +130,7 @@ echo -e "${YELLOW}WAVE 2: Plants 03-04 (Parallel on 2 GPUs)${NC}"
 echo -e "${YELLOW}========================================${NC}"
 echo ""
 
-***REMOVED*** Wave 2: 2 plants in parallel
+# Wave 2: 2 plants in parallel
 CUDA_VISIBLE_DEVICES=0 python3 src/training/pretrain_lstm.py \
     --config experiments/lstm/germany/pretrain_plant_03.yaml \
     > "$LOG_DIR/plant_03.log" 2>&1 &
@@ -148,13 +148,13 @@ echo "Waiting for Wave 2 to complete..."
 echo "  → Logs: $LOG_DIR/plant_0{3,4}.log"
 echo ""
 
-***REMOVED*** Wait for all Wave 2 jobs
+# Wait for all Wave 2 jobs
 wait $PID3
 EXIT3=$?
 wait $PID4
 EXIT4=$?
 
-***REMOVED*** Check Wave 2 results
+# Check Wave 2 results
 WAVE2_FAILED=0
 [ $EXIT3 -ne 0 ] && echo -e "${RED}✗ Plant 03 FAILED (exit code: $EXIT3)${NC}" && WAVE2_FAILED=1 || echo -e "${GREEN}✓ Plant 03 completed${NC}"
 [ $EXIT4 -ne 0 ] && echo -e "${RED}✗ Plant 04 FAILED (exit code: $EXIT4)${NC}" && WAVE2_FAILED=1 || echo -e "${GREEN}✓ Plant 04 completed${NC}"
@@ -171,7 +171,7 @@ echo -e "${YELLOW}WAVE 3: Plants 05-06 (Parallel on 2 GPUs)${NC}"
 echo -e "${YELLOW}========================================${NC}"
 echo ""
 
-***REMOVED*** Wave 3: 2 plants in parallel
+# Wave 3: 2 plants in parallel
 CUDA_VISIBLE_DEVICES=0 python3 src/training/pretrain_lstm.py \
     --config experiments/lstm/germany/pretrain_plant_05.yaml \
     > "$LOG_DIR/plant_05.log" 2>&1 &
@@ -189,13 +189,13 @@ echo "Waiting for Wave 3 to complete..."
 echo "  → Logs: $LOG_DIR/plant_0{5,6}.log"
 echo ""
 
-***REMOVED*** Wait for all Wave 3 jobs
+# Wait for all Wave 3 jobs
 wait $PID5
 EXIT5=$?
 wait $PID6
 EXIT6=$?
 
-***REMOVED*** Check Wave 3 results
+# Check Wave 3 results
 WAVE3_FAILED=0
 [ $EXIT5 -ne 0 ] && echo -e "${RED}✗ Plant 05 FAILED (exit code: $EXIT5)${NC}" && WAVE3_FAILED=1 || echo -e "${GREEN}✓ Plant 05 completed${NC}"
 [ $EXIT6 -ne 0 ] && echo -e "${RED}✗ Plant 06 FAILED (exit code: $EXIT6)${NC}" && WAVE3_FAILED=1 || echo -e "${GREEN}✓ Plant 06 completed${NC}"
@@ -206,7 +206,7 @@ echo -e "${GREEN}Stage 2 Transfer Learning COMPLETE${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
-***REMOVED*** Summary
+# Summary
 TOTAL_FAILED=$(($WAVE1_FAILED + $WAVE2_FAILED))
 if [ $TOTAL_FAILED -eq 0 ]; then
     echo -e "${GREEN}✓ All 6 plants completed successfully!${NC}"

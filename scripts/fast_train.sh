@@ -1,23 +1,23 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH --job-name=tft_fast
-***REMOVED***SBATCH --partition=gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH --cpus-per-task=8
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
-***REMOVED***SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
+#!/bin/bash
+#SBATCH --job-name=tft_fast
+#SBATCH --partition=gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
+#SBATCH --time=04:00:00
+#SBATCH --output=/shared/%u/miracle/logs/%x_%j.out
+#SBATCH --error=/shared/%u/miracle/logs/%x_%j.err
 
 set -euo pipefail
 
-***REMOVED*** --- 1. DETECT ASSIGNED GPU (CRITICAL FIX) ---
-***REMOVED*** If SLURM_JOB_GPUS is set, use it. Otherwise default to 0.
+# --- 1. DETECT ASSIGNED GPU (CRITICAL FIX) ---
+# If SLURM_JOB_GPUS is set, use it. Otherwise default to 0.
 ALLOCATED_GPU="${SLURM_JOB_GPUS:-0}"
 echo "------------------------------------------------"
 echo "SLURM Assigned GPU ID: $ALLOCATED_GPU"
 echo "------------------------------------------------"
 
-***REMOVED*** --- 2. SETUP LOCAL SCRATCH ---
+# --- 2. SETUP LOCAL SCRATCH ---
 SOURCE_REPO="/shared/$USER/miracle/pv_forecast_30d"
 CONTAINER="/shared/$USER/miracle/containers/tft_env_v1.sif"
 LOCAL_DIR="/tmp/$USER/$SLURM_JOB_ID"
@@ -30,17 +30,17 @@ SRC_VAL="$SOURCE_REPO/data/processed/pretraining/germany/global/tft_inputs/regio
 DEST_TRAIN="$LOCAL_DIR/train.parquet"
 DEST_VAL="$LOCAL_DIR/val.parquet"
 
-***REMOVED*** --- 3. COPY DATA ---
+# --- 3. COPY DATA ---
 echo "Copying data to local SSD..."
 cp "$SRC_TRAIN" "$DEST_TRAIN"
 cp "$SRC_VAL" "$DEST_VAL"
 echo "Data copy finished."
 
-***REMOVED*** --- 4. RUN TRAINING ---
+# --- 4. RUN TRAINING ---
 echo "Starting training on H100..."
 
-***REMOVED*** We pass the ALLOCATED_GPU to the container explicitly.
-***REMOVED*** We also reduce num_workers to 4 to be safe.
+# We pass the ALLOCATED_GPU to the container explicitly.
+# We also reduce num_workers to 4 to be safe.
 singularity exec -C --nv \
   --env CUDA_VISIBLE_DEVICES=$ALLOCATED_GPU \
   --bind /shared/$USER:/shared/$USER,/home/$USER:/home/$USER,/tmp:/tmp \
@@ -62,6 +62,6 @@ singularity exec -C --nv \
       --precision 32-true
 "
 
-***REMOVED*** --- 5. CLEANUP ---
+# --- 5. CLEANUP ---
 rm -rf "$LOCAL_DIR"
 echo "Done."

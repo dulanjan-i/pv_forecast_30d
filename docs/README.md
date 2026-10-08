@@ -1,10 +1,10 @@
-***REMOVED*** MiRACLE Documentation
+# MiRACLE Documentation
 
 This folder contains technical documentation, setup guides, and archived audit reports.
 
-***REMOVED******REMOVED*** Structure
+## Structure
 
-***REMOVED******REMOVED******REMOVED*** `/technical/` - Core Technical Documentation
+### `/technical/` - Core Technical Documentation
 - **MIRACLE_SCIENTIFIC_WORKFLOW.md** - Academic thesis-ready workflow (1300+ lines)
 - **MIRACLE_SAR_SPACE_CLEAN.md** - RL State-Action-Reward space technical spec
 - **SAR_SPACE_COMPARISON.md** - Before/after refactor comparison (4 DDQN → 1+3)
@@ -13,7 +13,7 @@ This folder contains technical documentation, setup guides, and archived audit r
 - **PHYSICS_CONSTRAINED_INFERENCE_DETAILED.md** - Physics-aware forecasting
 - **PHYSICS_GLUE_IMPLEMENTATION.md** - PVLib integration details
 
-***REMOVED******REMOVED******REMOVED*** `/archive/` - Completed Audits & Status Reports
+### `/archive/` - Completed Audits & Status Reports
 - AUDIT_LSTM_PRETRAIN.md
 - CHECKPOINT_VERIFICATION_REPORT.md
 - HIERARCHICAL_ARCHITECTURE_AUDIT.md
@@ -22,7 +22,7 @@ This folder contains technical documentation, setup guides, and archived audit r
 - WEATHER_API_*.md
 - V1.0_FINAL_TFT_MIGRATION_COMPLETE.md
 
-***REMOVED******REMOVED******REMOVED*** `/` (root) - Setup & Configuration
+### `/` (root) - Setup & Configuration
 - **DBFZ_HPC_README.md** - HPC cluster setup guide
 - **INSTALL_CALC02.md** - Calc02 server installation
 - **README_CALC02.md** - Calc02 usage instructions
@@ -32,7 +32,7 @@ This folder contains technical documentation, setup guides, and archived audit r
 - **TODO_TFT_pipeline.md** - TFT pipeline tasks
 - **PIPELINE_LOCK_STATUS.md** - Pipeline component locks
 
-***REMOVED******REMOVED*** Quick Links
+## Quick Links
 
 **For Thesis/Publication:**
 - [Scientific Workflow](technical/MIRACLE_SCIENTIFIC_WORKFLOW.md) - Complete academic documentation

@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Practical Integration of RL Meta-Controller with PhysicsAwareForecaster
 
@@ -53,7 +53,7 @@ class RLIntegratedForecaster:
         """
         self.forecaster = forecaster
         
-        ***REMOVED*** Initialize RL meta-controller
+        # Initialize RL meta-controller
         if rl_config is None:
             rl_config = RLConfig(mode=rl_mode)
         else:
@@ -64,23 +64,23 @@ class RLIntegratedForecaster:
             checkpoint_dir=checkpoint_dir
         )
         
-        ***REMOVED*** Current blend weights (managed by RL)
+        # Current blend weights (managed by RL)
         self.blend_weights = {'short': 0.33, 'long': 0.33, 'physics': 0.34}
         
-        ***REMOVED*** Metrics tracking
+        # Metrics tracking
         self.metrics_history = deque(maxlen=1000)
         self.forecast_history = deque(maxlen=100)
         self.action_history = deque(maxlen=100)
         
-        ***REMOVED*** Performance baselines (for normalization)
-        self.baseline_rmse = 0.05  ***REMOVED*** 50W baseline
+        # Performance baselines (for normalization)
+        self.baseline_rmse = 0.05  # 50W baseline
         self.baseline_drift = 0.1
         
-        ***REMOVED*** Ground truth buffer (for computing actual RMSE)
-        self.ground_truth_buffer = deque(maxlen=2880)  ***REMOVED*** 30 days @ 15-min
+        # Ground truth buffer (for computing actual RMSE)
+        self.ground_truth_buffer = deque(maxlen=2880)  # 30 days @ 15-min
         self.prediction_buffer = deque(maxlen=2880)
         
-        ***REMOVED*** Logging for dashboard
+        # Logging for dashboard
         self.log_dir = checkpoint_dir / "logs" if checkpoint_dir else Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl/logs")
         self.log_dir.mkdir(parents=True, exist_ok=True)
         self.metrics_log_file = self.log_dir / "metrics.jsonl"
@@ -112,26 +112,26 @@ class RLIntegratedForecaster:
         """
         metrics = {}
         
-        ***REMOVED*** Timestamp
+        # Timestamp
         metrics['timestamp'] = pd.Timestamp.now(tz='UTC')
         
-        ***REMOVED*** Performance metrics (if ground truth available)
-        ***REMOVED*** CRITICAL: Only use Day 1 (first 96 steps) for RMSE computation
-        ***REMOVED*** because blend weights only affect Day 1, not Days 2-30
+        # Performance metrics (if ground truth available)
+        # CRITICAL: Only use Day 1 (first 96 steps) for RMSE computation
+        # because blend weights only affect Day 1, not Days 2-30
         if ground_truth is not None:
-            ***REMOVED*** Focus on Day 1 only (96 steps @ 15-min = 24 hours)
+            # Focus on Day 1 only (96 steps @ 15-min = 24 hours)
             day1_length = min(96, len(ground_truth))
             gt_day1 = ground_truth[:day1_length]
             
             if forecast_short is not None:
-                ***REMOVED*** Day 1 RMSE (where blend matters)
+                # Day 1 RMSE (where blend matters)
                 forecast_short_day1 = forecast_short[:day1_length]
                 rmse_short = np.sqrt(np.mean((forecast_short_day1 - gt_day1) ** 2))
                 metrics['short_rmse_1h'] = rmse_short
                 metrics['short_rmse_24h'] = rmse_short
             
             if forecast_long is not None:
-                ***REMOVED*** Day 1 RMSE (where blend matters)
+                # Day 1 RMSE (where blend matters)
                 forecast_long_day1 = forecast_long[:day1_length]
                 rmse_long = np.sqrt(np.mean((forecast_long_day1 - gt_day1) ** 2))
                 metrics['long_rmse_24h'] = rmse_long
@@ -139,12 +139,12 @@ class RLIntegratedForecaster:
                 metrics['long_rmse_30d'] = rmse_long
             
             if forecast_physics is not None:
-                ***REMOVED*** Day 1 RMSE (where blend matters)
+                # Day 1 RMSE (where blend matters)
                 forecast_physics_day1 = forecast_physics[:day1_length]
                 rmse_physics = np.sqrt(np.mean((forecast_physics_day1 - gt_day1) ** 2))
                 metrics['physics_residual'] = rmse_physics
         else:
-            ***REMOVED*** No ground truth: use previous metrics or defaults
+            # No ground truth: use previous metrics or defaults
             metrics['short_rmse_1h'] = self.metrics_history[-1].get('short_rmse_1h', 0.05) if self.metrics_history else 0.05
             metrics['short_rmse_24h'] = self.metrics_history[-1].get('short_rmse_24h', 0.05) if self.metrics_history else 0.05
             metrics['long_rmse_24h'] = self.metrics_history[-1].get('long_rmse_24h', 0.05) if self.metrics_history else 0.05
@@ -152,20 +152,20 @@ class RLIntegratedForecaster:
             metrics['long_rmse_30d'] = self.metrics_history[-1].get('long_rmse_30d', 0.05) if self.metrics_history else 0.05
             metrics['physics_residual'] = self.metrics_history[-1].get('physics_residual', 0.05) if self.metrics_history else 0.05
         
-        ***REMOVED*** Consistency: Short-long mismatch in first 24h
+        # Consistency: Short-long mismatch in first 24h
         if forecast_short is not None and forecast_long is not None:
-            ***REMOVED*** Align resolutions (short is 15-min, long is 1-hour)
-            short_24h = forecast_short[:96]  ***REMOVED*** 24h @ 15-min
-            long_24h = forecast_long[:24]    ***REMOVED*** 24h @ 1-hour
+            # Align resolutions (short is 15-min, long is 1-hour)
+            short_24h = forecast_short[:96]  # 24h @ 15-min
+            long_24h = forecast_long[:24]    # 24h @ 1-hour
             
-            ***REMOVED*** Resample short to hourly for comparison
+            # Resample short to hourly for comparison
             short_hourly = short_24h.reshape(24, 4).mean(axis=1)
             mismatch = np.abs(short_hourly - long_24h).mean()
             metrics['short_long_mismatch'] = mismatch
         else:
             metrics['short_long_mismatch'] = 0.0
         
-        ***REMOVED*** Drift (simplified: use input distribution shift)
+        # Drift (simplified: use input distribution shift)
         if weather_data is not None and len(self.metrics_history) > 0:
             prev_weather = self.metrics_history[-1].get('weather_mean', 0.0)
             curr_weather = weather_data['ghi'].mean() if 'ghi' in weather_data else 0.0
@@ -176,7 +176,7 @@ class RLIntegratedForecaster:
             metrics['data_drift_score'] = 0.0
             metrics['weather_mean'] = 0.0
         
-        ***REMOVED*** Confidence (simplified: use prediction variance as proxy)
+        # Confidence (simplified: use prediction variance as proxy)
         if forecast_short is not None:
             metrics['short_confidence'] = 1.0 - min(forecast_short.std() / 0.1, 1.0)
         else:
@@ -187,26 +187,26 @@ class RLIntegratedForecaster:
         else:
             metrics['long_confidence'] = 0.5
         
-        ***REMOVED*** Context
+        # Context
         now = pd.Timestamp.now(tz='UTC')
         metrics['hour_of_day'] = now.hour
         metrics['is_night'] = 1.0 if (now.hour < 6 or now.hour > 20) else 0.0
-        metrics['season'] = (now.month - 1) // 3  ***REMOVED*** 0-3
+        metrics['season'] = (now.month - 1) // 3  # 0-3
         
-        ***REMOVED*** Weather API info
+        # Weather API info
         if weather_data is not None:
-            metrics['weather_api_used'] = 1  ***REMOVED*** Assume ECMWF (from current system)
-            metrics['api_agreement'] = 0.95  ***REMOVED*** Simplified
+            metrics['weather_api_used'] = 1  # Assume ECMWF (from current system)
+            metrics['api_agreement'] = 0.95  # Simplified
             
-            ***REMOVED*** Handle both dict and DataFrame inputs
+            # Handle both dict and DataFrame inputs
             if isinstance(weather_data, pd.DataFrame):
                 metrics['cloud_cover'] = float(weather_data['cloud_cover'].iloc[0]) if 'cloud_cover' in weather_data else 0.0
-                ***REMOVED*** Use available irradiance columns: poa_irradiance, global_tilted_irradiance_instant, direct_normal_irradiance_instant
+                # Use available irradiance columns: poa_irradiance, global_tilted_irradiance_instant, direct_normal_irradiance_instant
                 metrics['ghi'] = float(weather_data['global_tilted_irradiance_instant'].iloc[0]) if 'global_tilted_irradiance_instant' in weather_data else 0.0
                 metrics['dni'] = float(weather_data['direct_normal_irradiance_instant'].iloc[0]) if 'direct_normal_irradiance_instant' in weather_data else 0.0
                 metrics['temperature'] = float(weather_data['temperature_2m'].iloc[0]) if 'temperature_2m' in weather_data else 20.0
             else:
-                ***REMOVED*** Dict-like access (backward compatibility)
+                # Dict-like access (backward compatibility)
                 metrics['cloud_cover'] = weather_data.get('cloud_cover', [0.0])[0] if 'cloud_cover' in weather_data else 0.0
                 metrics['ghi'] = weather_data.get('ghi', [0.0])[0] if 'ghi' in weather_data else 0.0
                 metrics['dni'] = weather_data.get('dni', [0.0])[0] if 'dni' in weather_data else 0.0
@@ -222,33 +222,33 @@ class RLIntegratedForecaster:
             metrics['temperature'] = 20.0
             metrics['weather_quality'] = 1.0
         
-        ***REMOVED*** Cost metrics
-        metrics['compute_budget'] = 1.0  ***REMOVED*** Simplified
-        metrics['retrain_count_24h'] = 0  ***REMOVED*** Track from action history
+        # Cost metrics
+        metrics['compute_budget'] = 1.0  # Simplified
+        metrics['retrain_count_24h'] = 0  # Track from action history
         metrics['retrain_count_short_24h'] = 0
         metrics['retrain_count_long_24h'] = 0
         
-        ***REMOVED*** Current blend weights (from forecaster)
+        # Current blend weights (from forecaster)
         metrics['current_weight_short'] = 0.33
         metrics['current_weight_long'] = 0.33
         metrics['current_weight_physics'] = 0.33
         
-        ***REMOVED*** Previous actions
+        # Previous actions
         if self.action_history:
             last_action = self.action_history[-1]
             metrics['last_action'] = last_action.get('short_tft', 0)
             metrics['last_meta_action'] = last_action.get('meta_action', 13)
         else:
             metrics['last_action'] = 0
-            metrics['last_meta_action'] = 13  ***REMOVED*** Default (balanced)
+            metrics['last_meta_action'] = 13  # Default (balanced)
         
-        ***REMOVED*** Additional
-        metrics['forecast_age_hours'] = 0  ***REMOVED*** Time since last retrain
-        metrics['forecast_horizon'] = 24.0  ***REMOVED*** Typical horizon
+        # Additional
+        metrics['forecast_age_hours'] = 0  # Time since last retrain
+        metrics['forecast_horizon'] = 24.0  # Typical horizon
         
-        ***REMOVED*** Ensemble RMSE (weighted combination) - Day 1 only
+        # Ensemble RMSE (weighted combination) - Day 1 only
         if ground_truth is not None and all(f is not None for f in [forecast_short, forecast_long, forecast_physics]):
-            ***REMOVED*** Day 1 only (where blend matters)
+            # Day 1 only (where blend matters)
             day1_length = min(96, len(ground_truth), len(forecast_short), len(forecast_long), len(forecast_physics))
             gt_ensemble = ground_truth[:day1_length]
             w_s, w_l, w_p = 0.33, 0.33, 0.34
@@ -261,12 +261,12 @@ class RLIntegratedForecaster:
         else:
             metrics['ensemble_rmse'] = 0.05
         
-        ***REMOVED*** PVLib specific
+        # PVLib specific
         metrics['tilt_angle'] = 25.0
         metrics['azimuth'] = 180.0
-        metrics['last_calibration_hours'] = 168.0  ***REMOVED*** 1 week default
+        metrics['last_calibration_hours'] = 168.0  # 1 week default
         
-        ***REMOVED*** Drift for sub-models
+        # Drift for sub-models
         metrics['short_drift'] = metrics['data_drift_score']
         metrics['long_drift'] = metrics['data_drift_score']
         
@@ -287,7 +287,7 @@ class RLIntegratedForecaster:
         """
         updated = dict(context) if context is not None else {}
 
-        ***REMOVED*** ---- Phase1 blend-action mapping ----
+        # ---- Phase1 blend-action mapping ----
         phase1_to_preset = {0: 5, 3: 4, 2: 6}
 
         if action in phase1_to_preset:
@@ -305,17 +305,17 @@ class RLIntegratedForecaster:
             updated["action_type"] = "blend_weights_phase1"
             return updated
 
-        ***REMOVED*** ---- Original behavior for the rest (keep your existing action meanings) ----
-        ***REMOVED*** If you had actions like "switch weather source", "retrain", etc,
-        ***REMOVED*** keep them below exactly as you already implemented.
+        # ---- Original behavior for the rest (keep your existing action meanings) ----
+        # If you had actions like "switch weather source", "retrain", etc,
+        # keep them below exactly as you already implemented.
 
         if action == 0:
             updated["action_applied"] = int(action)
             updated["action_type"] = "noop"
             return updated
 
-        ***REMOVED*** If your old code handled 1,2,3 as non-blend actions, keep it here.
-        ***REMOVED*** If not, default to noop to be safe.
+        # If your old code handled 1,2,3 as non-blend actions, keep it here.
+        # If not, default to noop to be safe.
         updated["action_applied"] = int(action)
         updated["action_type"] = "noop_unknown"
         return updated
@@ -341,7 +341,7 @@ class RLIntegratedForecaster:
             forecast: Final blended prediction (2880 steps @ 15-min)
             info: Dict with diagnostics
         """
-        ***REMOVED*** Collect preliminary metrics from weather data (for RL state)
+        # Collect preliminary metrics from weather data (for RL state)
         preliminary_metrics = {
             'timestamp': pd.Timestamp.now(tz='UTC'),
             'hour_of_day': pd.Timestamp.now(tz='UTC').hour,
@@ -349,40 +349,40 @@ class RLIntegratedForecaster:
             'season': (pd.Timestamp.now(tz='UTC').month - 1) // 3,
         }
         
-        ***REMOVED*** RL meta-controller: decide action BEFORE forecast (so blend_weights are set)
+        # RL meta-controller: decide action BEFORE forecast (so blend_weights are set)
         action_info = self.rl_system.step(preliminary_metrics)
         action_index = action_info.get('action_index', 0)
         
-        ***REMOVED*** Execute action (with safety bounds) - THIS UPDATES blend_weights
+        # Execute action (with safety bounds) - THIS UPDATES blend_weights
         action_success = self.execute_action(action_index)
         
-        ***REMOVED*** Get individual model predictions from PhysicsAwareForecaster
-        ***REMOVED*** NOW forecast uses the UPDATED blend_weights from execute_action
+        # Get individual model predictions from PhysicsAwareForecaster
+        # NOW forecast uses the UPDATED blend_weights from execute_action
         try:
-            ***REMOVED*** CRITICAL FIX: Pass RL blend_weights to forecaster so actions actually control output
-            ***REMOVED*** Use existing forecaster's predict_30d method with RL-controlled weights
+            # CRITICAL FIX: Pass RL blend_weights to forecaster so actions actually control output
+            # Use existing forecaster's predict_30d method with RL-controlled weights
             full_forecast = self.forecaster.predict_30d(
                 forecast_start=forecast_start,
                 weather_df=weather_data,
                 historical_df=historical_data,
-                blend_weights=self.blend_weights  ***REMOVED*** ← RL control point (already updated by execute_action)
+                blend_weights=self.blend_weights  # ← RL control point (already updated by execute_action)
             )
             
-            ***REMOVED*** Extract component forecasts (if available from forecaster internals)
-            ***REMOVED*** For now: use full forecast as baseline
-            forecast_short = full_forecast[:96]   ***REMOVED*** Day 1
-            forecast_long = full_forecast[96:]    ***REMOVED*** Days 2-30
-            forecast_physics = full_forecast[:96] ***REMOVED*** Approximation
+            # Extract component forecasts (if available from forecaster internals)
+            # For now: use full forecast as baseline
+            forecast_short = full_forecast[:96]   # Day 1
+            forecast_long = full_forecast[96:]    # Days 2-30
+            forecast_physics = full_forecast[:96] # Approximation
             
         except Exception as e:
             logger.error(f"[Forecast] Forecaster failed: {e}, using fallback")
-            ***REMOVED*** Fallback: zeros
+            # Fallback: zeros
             forecast_short = np.zeros(96)
-            forecast_long = np.zeros(2784)  ***REMOVED*** 30d - 1d = 29d @ 96/day
+            forecast_long = np.zeros(2784)  # 30d - 1d = 29d @ 96/day
             forecast_physics = np.zeros(96)
             full_forecast = np.zeros(2880)
         
-        ***REMOVED*** Collect comprehensive metrics
+        # Collect comprehensive metrics
         metrics = self.collect_metrics(
             forecast_short=forecast_short,
             forecast_long=forecast_long,
@@ -391,21 +391,21 @@ class RLIntegratedForecaster:
             weather_data=weather_data
         )
         
-        ***REMOVED*** Update RL system with actual forecast metrics
+        # Update RL system with actual forecast metrics
         meta_state = self.rl_system.build_meta_state(metrics)
         
-        ***REMOVED*** Get current blend weights (already updated by execute_action before forecast)
+        # Get current blend weights (already updated by execute_action before forecast)
         blend_weights = self.blend_weights
         
-        ***REMOVED*** Apply dynamic blending to create final forecast
-        ***REMOVED*** NOTE: For full 30-day, we blend Day 1 differently than Days 2-30
-        ***REMOVED*** Day 1: blend short + physics
-        ***REMOVED*** Days 2-30: use long-head as-is (already physics-aware from training)
+        # Apply dynamic blending to create final forecast
+        # NOTE: For full 30-day, we blend Day 1 differently than Days 2-30
+        # Day 1: blend short + physics
+        # Days 2-30: use long-head as-is (already physics-aware from training)
         
         short_24h = forecast_short[:96]
         physics_24h = forecast_physics[:96]
         
-        ***REMOVED*** Day 1 blended (normalize weights for 2-component blend)
+        # Day 1 blended (normalize weights for 2-component blend)
         w_short_norm = blend_weights['short'] / (blend_weights['short'] + blend_weights['physics'])
         w_physics_norm = blend_weights['physics'] / (blend_weights['short'] + blend_weights['physics'])
         
@@ -414,13 +414,13 @@ class RLIntegratedForecaster:
             w_physics_norm * physics_24h
         )
         
-        ***REMOVED*** Days 2-30: use long-head forecast (already good from training)
+        # Days 2-30: use long-head forecast (already good from training)
         days_2_30 = forecast_long
         
-        ***REMOVED*** Concatenate
+        # Concatenate
         forecast_final = np.concatenate([day1_blended, days_2_30])
         
-        ***REMOVED*** Store for next iteration
+        # Store for next iteration
         self.metrics_history.append(metrics)
         self.action_history.append({
             'action_index': action_index,
@@ -430,19 +430,19 @@ class RLIntegratedForecaster:
         })
         self.forecast_history.append(forecast_final)
         
-        ***REMOVED*** Compute reward and update RL (online learning)
+        # Compute reward and update RL (online learning)
         reward = 0.0
         if ground_truth is not None and len(self.metrics_history) > 1:
-            metrics_prev = self.metrics_history[-1]  ***REMOVED*** Previous step
+            metrics_prev = self.metrics_history[-1]  # Previous step
             reward = self.rl_system.compute_reward(metrics_prev, metrics)
 
-            ***REMOVED*** Store transition with the computed reward so the meta-controller
-            ***REMOVED*** learns from the actual improvement signal (bugfix).
+            # Store transition with the computed reward so the meta-controller
+            # learns from the actual improvement signal (bugfix).
             try:
                 prev_state = getattr(self.rl_system, 'current_state', None)
                 next_state = self.rl_system.build_meta_state(metrics)
                 if prev_state is not None:
-                    ***REMOVED*** Use meta_controller's store_transition to record reward
+                    # Use meta_controller's store_transition to record reward
                     self.rl_system.meta_controller.store_transition(
                         prev_state, action_index, float(reward), next_state, False
                     )
@@ -451,16 +451,16 @@ class RLIntegratedForecaster:
             except Exception as e:
                 logger.error(f"[RL Update] Failed to store transition: {e}")
 
-            ***REMOVED*** Trigger system update (will sample from buffer and train)
+            # Trigger system update (will sample from buffer and train)
             self.rl_system.update(metrics, done=False)
 
             logger.info(f"[RL Update] Reward={reward:.3f}, Action={action_index}, ε={self.rl_system.meta_controller.epsilon:.3f}")
         
-        ***REMOVED*** Log to dashboard files
+        # Log to dashboard files
         self.log_metrics_to_file(metrics, action_index, reward)
         self.log_rl_state_to_file()
         
-        ***REMOVED*** Build info dict
+        # Build info dict
         info = {
             'blend_weights': blend_weights,
             'action_index': action_index,
@@ -494,8 +494,8 @@ class RLIntegratedForecaster:
             logger.info(f"[Retrain] APPROVED for {model}")
             logger.info(f"  Reason: {request['reason']}")
             logger.info(f"  Timestamp: {request['timestamp']}")
-            ***REMOVED*** TODO: Execute actual retraining here
-            ***REMOVED*** self.forecaster.retrain_model(model)
+            # TODO: Execute actual retraining here
+            # self.forecaster.retrain_model(model)
         else:
             logger.info(f"[Retrain] REJECTED for {model}")
     
@@ -534,14 +534,14 @@ class RLIntegratedForecaster:
         """
         logger.info(f"[Data Collection] Starting {num_steps}-step episode in heuristic mode")
         
-        ***REMOVED*** Force heuristic mode
+        # Force heuristic mode
         original_mode = self.rl_system.config.mode
         self.rl_system.config.mode = "heuristic"
         
         episode_records = []
         
         for step in range(num_steps):
-            ***REMOVED*** Mock weather data (in production: query real API)
+            # Mock weather data (in production: query real API)
             weather_mock = pd.DataFrame({
                 'ghi': np.random.rand(2880) * 800,
                 'dni': np.random.rand(2880) * 900,
@@ -550,13 +550,13 @@ class RLIntegratedForecaster:
             
             forecast_start = pd.Timestamp.now(tz='UTC') + pd.Timedelta(days=step)
             
-            ***REMOVED*** Generate forecast
+            # Generate forecast
             _, info = self.forecast_with_rl(
                 weather_data=weather_mock,
                 forecast_start=forecast_start
             )
             
-            ***REMOVED*** Record transition
+            # Record transition
             if len(self.metrics_history) > 1:
                 episode_records.append({
                     'step': step,
@@ -569,7 +569,7 @@ class RLIntegratedForecaster:
             if (step + 1) % 10 == 0:
                 logger.info(f"[Data Collection] Step {step+1}/{num_steps} complete")
         
-        ***REMOVED*** Restore mode
+        # Restore mode
         self.rl_system.config.mode = original_mode
         
         logger.info(f"[Data Collection] Collected {len(episode_records)} transitions")
@@ -577,10 +577,10 @@ class RLIntegratedForecaster:
     
     def log_metrics_to_file(self, metrics: Dict, action: int, reward: float):
         """Save metrics to JSONL for dashboard."""
-        ***REMOVED*** Convert any non-JSON-serializable types to strings
+        # Convert any non-JSON-serializable types to strings
         clean_metrics = {}
         for k, v in metrics.items():
-            if hasattr(v, 'isoformat'):  ***REMOVED*** Timestamp
+            if hasattr(v, 'isoformat'):  # Timestamp
                 clean_metrics[k] = v.isoformat()
             elif isinstance(v, (np.integer, np.floating)):
                 clean_metrics[k] = float(v)
@@ -606,7 +606,7 @@ class RLIntegratedForecaster:
         """Save current RL state for dashboard."""
         meta = self.rl_system.meta_controller
         
-        ***REMOVED*** Safe Q-value extraction
+        # Safe Q-value extraction
         try:
             if hasattr(meta, 'last_state') and meta.last_state is not None:
                 import torch
@@ -633,9 +633,9 @@ class RLIntegratedForecaster:
             json.dump(rl_state, f, indent=2)
 
 
-***REMOVED*** ============================================================================
-***REMOVED*** Example Usage
-***REMOVED*** ============================================================================
+# ============================================================================
+# Example Usage
+# ============================================================================
 
 if __name__ == "__main__":
     """
@@ -643,14 +643,14 @@ if __name__ == "__main__":
     """
     from pathlib import Path
     
-    ***REMOVED*** Paths (update to your actual paths)
+    # Paths (update to your actual paths)
     SHORT_CKPT = Path("experiments/tft/shorthead/best.ckpt")
     LONG_CKPT = Path("experiments/tft/longhead/best.ckpt")
     PLANT_META = Path("data/metadata/germany/plant_03.json")
     SHORT_TRAIN = Path("data/processed/short_train.parquet")
     LONG_TRAIN = Path("data/processed/long_train.parquet")
     
-    ***REMOVED*** Initialize base forecaster
+    # Initialize base forecaster
     forecaster = PhysicsAwareForecaster(
         short_ckpt=SHORT_CKPT,
         long_ckpt=LONG_CKPT,
@@ -659,14 +659,14 @@ if __name__ == "__main__":
         long_train_parquet=LONG_TRAIN
     )
     
-    ***REMOVED*** Wrap with RL integration
+    # Wrap with RL integration
     rl_forecaster = RLIntegratedForecaster(
         forecaster=forecaster,
-        rl_mode="heuristic",  ***REMOVED*** Start with heuristic baseline
+        rl_mode="heuristic",  # Start with heuristic baseline
         checkpoint_dir=Path("/home/dwijenayake/pv_forecast_30d/checkpoints/rl")
     )
     
-    ***REMOVED*** Example forecast
+    # Example forecast
     weather_df = pd.DataFrame({
         'timestamp': pd.date_range('2026-01-02', periods=2880, freq='15min'),
         'ghi': np.random.rand(2880) * 800,

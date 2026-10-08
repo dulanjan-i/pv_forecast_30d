@@ -1,4 +1,4 @@
-***REMOVED*** src/inference/phase2_inference_pipeline.py
+# src/inference/phase2_inference_pipeline.py
 from __future__ import annotations
 
 import argparse
@@ -12,13 +12,13 @@ from typing import Any, Dict, Optional
 import numpy as np
 import pandas as pd
 
-***REMOVED*** Allow running as a script: `python src/inference/phase2_inference_pipeline.py ...`
-***REMOVED*** without "ModuleNotFoundError: No module named 'src'"
+# Allow running as a script: `python src/inference/phase2_inference_pipeline.py ...`
+# without "ModuleNotFoundError: No module named 'src'"
 if __package__ is None or __package__ == "":
-    repo_root = Path(__file__).resolve().parents[2]  ***REMOVED*** .../pv_forecast_30d
+    repo_root = Path(__file__).resolve().parents[2]  # .../pv_forecast_30d
     sys.path.insert(0, str(repo_root))
 
-from src.inference.physics_aware_forecaster import PhysicsAwareForecaster  ***REMOVED*** noqa: E402
+from src.inference.physics_aware_forecaster import PhysicsAwareForecaster  # noqa: E402
 
 
 LOGGER = logging.getLogger("phase2_inference_pipeline")
@@ -43,9 +43,9 @@ def load_plant_meta(path: Path) -> Dict[str, Any]:
 
 
 def _as_utc_midnight(s: str) -> pd.Timestamp:
-    ***REMOVED*** Accept YYYY-MM-DD
+    # Accept YYYY-MM-DD
     t = pd.to_datetime(s, utc=True)
-    ***REMOVED*** Normalize to midnight UTC
+    # Normalize to midnight UTC
     return pd.Timestamp(year=t.year, month=t.month, day=t.day, tz="UTC")
 
 
@@ -57,7 +57,7 @@ def _ensure_ts_utc(df: pd.DataFrame, col: str = "timestamp_utc") -> pd.DataFrame
 
 
 def _window_15min(weather_15m: pd.DataFrame, fs: pd.Timestamp) -> pd.DataFrame:
-    ***REMOVED*** 30 days at 15-min resolution = 2880 steps (30*24*4)
+    # 30 days at 15-min resolution = 2880 steps (30*24*4)
     end = fs + pd.Timedelta(days=30) - pd.Timedelta(minutes=15)
     w = weather_15m[(weather_15m["timestamp_utc"] >= fs) & (weather_15m["timestamp_utc"] <= end)]
     return w
@@ -67,7 +67,7 @@ def _hist_window(hist: pd.DataFrame, fs: pd.Timestamp, days: int = 7) -> pd.Data
     start = fs - pd.Timedelta(days=days)
     h = hist[(hist["timestamp_utc"] >= start) & (hist["timestamp_utc"] < fs)].copy()
     if len(h) == 0:
-        ***REMOVED*** fallback: just take last 672 rows before fs (7 days * 24h * 4 = 672)
+        # fallback: just take last 672 rows before fs (7 days * 24h * 4 = 672)
         h2 = hist[hist["timestamp_utc"] < fs].tail(days * 24 * 4).copy()
         return h2
     return h
@@ -99,14 +99,14 @@ def main() -> None:
         help="Output parquet path. If empty, writes <phase-dir>/predictions_phase2_daily.parquet",
     )
 
-    ***REMOVED*** Model and metadata paths
+    # Model and metadata paths
     parser.add_argument("--plant-meta", type=str, default="V1.0_FINAL_TFT/plant_metadata/plant_03.json")
     parser.add_argument("--short-ckpt", type=str, required=True)
     parser.add_argument("--long-ckpt", type=str, required=True)
     parser.add_argument("--short-train", type=str, default="data/processed/plant_level/plant_03/15min_pca32/train.parquet")
     parser.add_argument("--long-train", type=str, default="data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
 
-    ***REMOVED*** Encoder context (optional but recommended)
+    # Encoder context (optional but recommended)
     parser.add_argument(
         "--hist-encoder",
         type=str,
@@ -114,7 +114,7 @@ def main() -> None:
         help="15-min historical context parquet that includes the same features as training (usually includes power_norm).",
     )
 
-    ***REMOVED*** Weather parquet (15-min with pvlib columns already present)
+    # Weather parquet (15-min with pvlib columns already present)
     parser.add_argument(
         "--weather-15min",
         type=str,
@@ -153,7 +153,7 @@ def main() -> None:
     if not paths.weather_15min.exists():
         raise FileNotFoundError(f"Missing weather parquet: {paths.weather_15min}")
 
-    ***REMOVED*** Load weather
+    # Load weather
     weather_15m = pd.read_parquet(paths.weather_15min)
     weather_15m = _ensure_ts_utc(weather_15m, "timestamp_utc")
     weather_15m = weather_15m.sort_values("timestamp_utc").drop_duplicates("timestamp_utc")
@@ -162,7 +162,7 @@ def main() -> None:
     min_ts = weather_15m["timestamp_utc"].min()
     LOGGER.info("Weather coverage: %s -> %s (%d rows)", min_ts, max_ts, len(weather_15m))
 
-    ***REMOVED*** Load historical encoder context if provided
+    # Load historical encoder context if provided
     hist_df = None
     if paths.hist_encoder and paths.hist_encoder.exists():
         hist_df = pd.read_parquet(paths.hist_encoder)
@@ -172,7 +172,7 @@ def main() -> None:
     else:
         LOGGER.warning("hist-encoder missing or not provided, will fallback to training parquet inside forecaster.")
 
-    ***REMOVED*** Init forecaster once
+    # Init forecaster once
     forecaster = PhysicsAwareForecaster(
         short_ckpt=paths.short_ckpt,
         long_ckpt=paths.long_ckpt,
@@ -215,7 +215,7 @@ def main() -> None:
                 fs = fs + pd.Timedelta(days=stride)
                 continue
 
-            ***REMOVED*** Flatten to rows
+            # Flatten to rows
             base = fs
             for step in range(2880):
                 ts = base + pd.Timedelta(minutes=15 * step)

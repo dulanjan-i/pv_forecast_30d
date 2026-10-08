@@ -1,14 +1,14 @@
-***REMOVED***!/bin/bash
-***REMOVED***SBATCH -J plant03_pvlib_cold
-***REMOVED***SBATCH -p gpuh100
-***REMOVED***SBATCH --gres=gpu:1
-***REMOVED***SBATCH -c 16
-***REMOVED***SBATCH --mem=64G
-***REMOVED***SBATCH --time=04:00:00
-***REMOVED***SBATCH -o /shared/%u/miracle/logs/%x_%j.out
-***REMOVED***SBATCH -e /shared/%u/miracle/logs/%x_%j.err
-***REMOVED*** Optional pin:
-***REMOVED***SBATC H --nodelist=dbfz-hpc23-gnode4
+#!/bin/bash
+#SBATCH -J plant03_pvlib_cold
+#SBATCH -p gpuh100
+#SBATCH --gres=gpu:1
+#SBATCH -c 16
+#SBATCH --mem=64G
+#SBATCH --time=04:00:00
+#SBATCH -o /shared/%u/miracle/logs/%x_%j.out
+#SBATCH -e /shared/%u/miracle/logs/%x_%j.err
+# Optional pin:
+#SBATC H --nodelist=dbfz-hpc23-gnode4
 
 set -euo pipefail
 export OMP_NUM_THREADS=1

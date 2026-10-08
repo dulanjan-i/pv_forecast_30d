@@ -1,5 +1,5 @@
-***REMOVED***!/usr/bin/env python3
-***REMOVED*** scripts/annual_aggregates_from_monthly.py
+#!/usr/bin/env python3
+# scripts/annual_aggregates_from_monthly.py
 import pandas as pd
 from pathlib import Path
 import numpy as np

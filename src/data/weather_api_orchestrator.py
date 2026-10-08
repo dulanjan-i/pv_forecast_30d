@@ -30,19 +30,19 @@ class WeatherAPIOrchestrator:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         
-        ***REMOVED*** API endpoints
+        # API endpoints
         self.open_meteo_url = "https://api.open-meteo.com/v1/forecast"
         self.noaa_gfs_url = "https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl"
         
-        ***REMOVED*** Rate limiting
+        # Rate limiting
         self.last_call = {}
         self.min_interval = {
-            'open_meteo': 1.0,  ***REMOVED*** 1 second between calls
-            'noaa': 2.0,        ***REMOVED*** 2 seconds
-            'visual_crossing': 5.0  ***REMOVED*** 5 seconds (paid, conservative)
+            'open_meteo': 1.0,  # 1 second between calls
+            'noaa': 2.0,        # 2 seconds
+            'visual_crossing': 5.0  # 5 seconds (paid, conservative)
         }
         
-        ***REMOVED*** Cost tracking
+        # Cost tracking
         self.api_calls = {'open_meteo': 0, 'noaa': 0, 'visual_crossing': 0}
         
     def _get_cache_key(self, lat: float, lon: float, start_date: str, end_date: str, source: str) -> str:
@@ -54,9 +54,9 @@ class WeatherAPIOrchestrator:
         """Retrieve cached weather data if available and fresh (< 6 hours old)."""
         cache_file = self.cache_dir / f"{cache_key}.parquet"
         if cache_file.exists():
-            ***REMOVED*** Check age
+            # Check age
             age_hours = (time.time() - cache_file.stat().st_mtime) / 3600
-            if age_hours < 6:  ***REMOVED*** Cache valid for 6 hours
+            if age_hours < 6:  # Cache valid for 6 hours
                 print(f"   ✓ Using cached data (age: {age_hours:.1f}h)")
                 return pd.read_parquet(cache_file)
         return None
@@ -133,7 +133,7 @@ class WeatherAPIOrchestrator:
             data = response.json()
             hourly = data['hourly']
             
-            ***REMOVED*** Convert to DataFrame
+            # Convert to DataFrame
             df = pd.DataFrame({
                 'timestamp_utc': pd.to_datetime(hourly['time']),
                 'temperature_2m': hourly['temperature_2m'],
@@ -221,7 +221,7 @@ class WeatherAPIOrchestrator:
             
             data = response.json()
             
-            ***REMOVED*** Parse hourly data
+            # Parse hourly data
             records = []
             for day in data['days']:
                 for hour in day['hours']:
@@ -278,20 +278,20 @@ class WeatherAPIOrchestrator:
         start_date = datetime.now().strftime('%Y-%m-%d')
         end_date = (datetime.now() + timedelta(days=days_ahead)).strftime('%Y-%m-%d')
         
-        ***REMOVED*** Try Open-Meteo first (free, best for 15 days)
+        # Try Open-Meteo first (free, best for 15 days)
         if days_ahead <= 15:
             df = self.fetch_open_meteo(lat, lon, start_date, end_date)
             if df is not None and len(df) > 0:
                 print(f"✓ SUCCESS: Open-Meteo (free API)")
                 return df
         
-        ***REMOVED*** Try NOAA GFS (free, longer range)
+        # Try NOAA GFS (free, longer range)
         df = self.fetch_noaa_gfs(lat, lon, start_date, end_date)
         if df is not None and len(df) > 0:
             print(f"✓ SUCCESS: NOAA GFS (free API)")
             return df
         
-        ***REMOVED*** Fallback to VisualCrossing (paid)
+        # Fallback to VisualCrossing (paid)
         if visual_crossing_key:
             df = self.fetch_visual_crossing(lat, lon, start_date, end_date, visual_crossing_key)
             if df is not None and len(df) > 0:
@@ -315,13 +315,13 @@ class WeatherAPIOrchestrator:
 
 
 if __name__ == "__main__":
-    ***REMOVED*** Test the orchestrator
+    # Test the orchestrator
     orchestrator = WeatherAPIOrchestrator()
     
-    ***REMOVED*** Plant 03 coordinates (Germany)
+    # Plant 03 coordinates (Germany)
     lat, lon = 51.3397, 12.3731
     
-    ***REMOVED*** Fetch 15-day forecast
+    # Fetch 15-day forecast
     weather_df = orchestrator.fetch_with_fallback(lat, lon, days_ahead=15)
     
     print(f"\n✓ Retrieved {len(weather_df)} hourly timesteps")

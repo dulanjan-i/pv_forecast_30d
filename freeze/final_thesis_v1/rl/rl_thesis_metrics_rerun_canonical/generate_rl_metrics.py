@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Generate canonical RL metrics for policy checkpoints (v1 and v2).
 
@@ -18,9 +18,9 @@ import pandas as pd
 import torch
 
 
-***REMOVED*** -----------------------
-***REMOVED*** Helpers (copied/adapted from phase1_inference)
-***REMOVED*** -----------------------
+# -----------------------
+# Helpers (copied/adapted from phase1_inference)
+# -----------------------
 def _read_parquet_must_exist(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(str(path))
@@ -81,7 +81,7 @@ def _extract_qnet_state_dict(ckpt: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         if key in ckpt and isinstance(ckpt[key], dict):
             return ckpt[key]
     if all(isinstance(v, torch.Tensor) for v in ckpt.values()):
-        return ckpt  ***REMOVED*** type: ignore
+        return ckpt  # type: ignore
     raise ValueError(f"Could not find q-network state_dict keys in checkpoint. Keys: {list(ckpt.keys())}")
 
 
@@ -106,9 +106,9 @@ def _build_qnet_from_state_dict(sd: Dict[str, torch.Tensor]) -> Tuple[QNet, int,
     return qnet, state_dim, action_dim
 
 
-***REMOVED*** -----------------------
-***REMOVED*** Core runner
-***REMOVED*** -----------------------
+# -----------------------
+# Core runner
+# -----------------------
 def inspect_train_log_maybe(checkpoint_path: Path) -> Dict[str, Any]:
     out = {}
     logp = checkpoint_path.parent / "train.log"
@@ -117,12 +117,12 @@ def inspect_train_log_maybe(checkpoint_path: Path) -> Dict[str, Any]:
     try:
         with logp.open() as fh:
             lines = fh.readlines()
-        ***REMOVED*** crude parse: look for "epoch" or "best_loss" or "reward mean"
+        # crude parse: look for "epoch" or "best_loss" or "reward mean"
         for L in lines[-500:]:
             l = L.strip()
             if "best_loss" in l or "best_val" in l or "best loss" in l:
                 out.setdefault("tail_lines", []).append(l)
-        ***REMOVED*** return size and first/last lines
+        # return size and first/last lines
         out["train_log_lines"] = len(lines)
         out["train_log_tail"] = lines[-20:]
     except Exception as e:
@@ -146,16 +146,16 @@ def run_for_variant(tag: str, policy_ckpt: Path, sarns_parquet: Path, out_dir: P
     qnet, q_state_dim, q_action_dim = _build_qnet_from_state_dict(q_sd)
     qnet.eval()
 
-    ***REMOVED*** infer state cols
+    # infer state cols
     state_cols = _infer_state_cols(sarns_1.reset_index(), q_state_dim)
 
-    ***REMOVED*** per-forecast action decisions
+    # per-forecast action decisions
     forecast_actions = []
     forecast_rewards = []
     forecasts = list(sarns_1.index)
     action_counts_forecast = {}
     action_counts_timestep = {}
-    action_to_weights = None  ***REMOVED*** not needed here, but could be derived
+    action_to_weights = None  # not needed here, but could be derived
 
     for fs in forecasts:
         st = sarns_1.loc[fs, state_cols].to_numpy(dtype=np.float32)
@@ -165,14 +165,14 @@ def run_for_variant(tag: str, policy_ckpt: Path, sarns_parquet: Path, out_dir: P
             a = int(torch.argmax(qvals, dim=1).item())
         forecast_actions.append({"forecast_start": str(fs), "action": int(a)})
         action_counts_forecast[a] = action_counts_forecast.get(a, 0) + 1
-        action_counts_timestep[a] = action_counts_timestep.get(a, 0) + 2880  ***REMOVED*** each forecast = 2880 timesteps
+        action_counts_timestep[a] = action_counts_timestep.get(a, 0) + 2880  # each forecast = 2880 timesteps
 
-        ***REMOVED*** find reward for this fs & action
+        # find reward for this fs & action
         rows = sarns[(sarns["forecast_start"] == fs) & (sarns.get("action", sarns.get("a", None)) == a)]
-        ***REMOVED*** fallback if above failed or empty:
+        # fallback if above failed or empty:
         if rows is None or len(rows) == 0:
             rows = sarns[(sarns["forecast_start"] == fs) & (sarns.get("action", sarns.get("a", None)) == 0)]
-        ***REMOVED*** pick reward column name
+        # pick reward column name
         reward_col = None
         for c in ("reward", "r", "reward_v2", "reward_v1"):
             if c in sarns.columns:
@@ -187,14 +187,14 @@ def run_for_variant(tag: str, policy_ckpt: Path, sarns_parquet: Path, out_dir: P
                 reward_val = float(rows[reward_col].mean())
         forecast_rewards.append({"forecast_start": str(fs), "action": int(a), "reward": reward_val})
 
-    ***REMOVED*** aggregate reward stats (exclude nan)
+    # aggregate reward stats (exclude nan)
     rewards_arr = np.array([r["reward"] for r in forecast_rewards], dtype=float)
     finite_mask = np.isfinite(rewards_arr)
     reward_mean = float(np.nan) if not finite_mask.any() else float(np.mean(rewards_arr[finite_mask]))
     reward_std = float(np.nan) if not finite_mask.any() else float(np.std(rewards_arr[finite_mask]))
     reward_count = int(np.sum(finite_mask))
 
-    ***REMOVED*** checkpoint metadata
+    # checkpoint metadata
     ck_meta = {}
     if isinstance(ck, dict):
         for k in ("best_loss", "steps", "config"):
@@ -204,12 +204,12 @@ def run_for_variant(tag: str, policy_ckpt: Path, sarns_parquet: Path, out_dir: P
                     json.dumps(val)
                     ck_meta[k] = val
                 except Exception:
-                    ***REMOVED*** fallback: repr
+                    # fallback: repr
                     ck_meta[k] = repr(val)[:2000]
-    ***REMOVED*** try train log
+    # try train log
     train_log_info = inspect_train_log_maybe(policy_ckpt)
 
-    ***REMOVED*** write outputs
+    # write outputs
     out_metrics = {
         "tag": tag,
         "policy_ckpt": str(policy_ckpt),
@@ -224,7 +224,7 @@ def run_for_variant(tag: str, policy_ckpt: Path, sarns_parquet: Path, out_dir: P
         "train_log_info": train_log_info,
     }
 
-    ***REMOVED*** save files
+    # save files
     out_dir.joinpath(f"metrics_{tag}.json").write_text(json.dumps(out_metrics, indent=2))
     pd.DataFrame.from_records(forecast_actions).to_csv(out_dir.joinpath(f"per_forecast_actions_{tag}.csv"), index=False)
     pd.DataFrame.from_records(forecast_rewards).to_csv(out_dir.joinpath(f"per_forecast_rewards_{tag}.csv"), index=False)
@@ -239,7 +239,7 @@ def main():
     out_dir = Path("freeze/final_thesis_v1/rl/rl_thesis_metrics_rerun_canonical")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** canonical paths (adjust if yours differ)
+    # canonical paths (adjust if yours differ)
     v1_ck = Path("freeze/final_thesis_v1/rl/ddqn_minenv_v1/ddqn_best.pt")
     v2_ck = Path("freeze/final_thesis_v1/rl/ddqn_minenv_v2/ddqn_best.pt")
     v1_sarns = Path("freeze/final_thesis_v1/phase1_2024daily_final/processed/p3_phase1_SARNS_MINENV_v1.parquet")
@@ -249,7 +249,7 @@ def main():
     results["v1"] = run_for_variant("v1", v1_ck, v1_sarns, out_dir)
     results["v2"] = run_for_variant("v2", v2_ck, v2_sarns, out_dir)
 
-    ***REMOVED*** combined table summary
+    # combined table summary
     rows = []
     for k, v in results.items():
         rows.append({

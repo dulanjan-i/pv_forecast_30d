@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Test action executors with real TFT models.
 
@@ -8,7 +8,7 @@ Verifies that fine-tuning and recalibration actually modify model parameters.
 import sys
 from pathlib import Path
 
-***REMOVED*** Add repo root to path
+# Add repo root to path
 repo_root = Path(__file__).parent.parent
 sys.path.insert(0, str(repo_root))
 
@@ -34,7 +34,7 @@ def test_fine_tune_actions():
     logger.info("TEST: Fine-Tuning Actions (Learning Rate Adjustment)")
     logger.info("="*80)
     
-    ***REMOVED*** Paths
+    # Paths
     SHORT_CKPT = Path("V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt")
     LONG_CKPT = Path("V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt")
     PLANT_META = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
@@ -42,7 +42,7 @@ def test_fine_tune_actions():
     LONG_TRAIN = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
     
     try:
-        ***REMOVED*** Initialize forecaster
+        # Initialize forecaster
         logger.info("Loading PhysicsAwareForecaster...")
         forecaster = PhysicsAwareForecaster(
             short_ckpt=SHORT_CKPT,
@@ -53,25 +53,25 @@ def test_fine_tune_actions():
             device='cuda:0' if torch.cuda.is_available() else 'cpu'
         )
         
-        ***REMOVED*** Wrap with RL
+        # Wrap with RL
         rl_forecaster = RLIntegratedForecaster(
             forecaster=forecaster,
             rl_mode="heuristic",
             checkpoint_dir=Path("checkpoints/rl")
         )
         
-        ***REMOVED*** Test Action 1: FINE_TUNE_SHORT_TFT
+        # Test Action 1: FINE_TUNE_SHORT_TFT
         logger.info("\n--- Testing Action 1: FINE_TUNE_SHORT_TFT ---")
         
-        ***REMOVED*** Get initial LR from hparams (models not attached to Trainer, so can't call optimizers())
+        # Get initial LR from hparams (models not attached to Trainer, so can't call optimizers())
         if hasattr(forecaster, 'short_model') and hasattr(forecaster.short_model, 'hparams'):
             lr_before = forecaster.short_model.hparams.get('learning_rate', 1e-3)
             logger.info(f"Initial short-TFT LR: {lr_before:.2e}")
             
-            ***REMOVED*** Add high RMSE to history to trigger LR increase
+            # Add high RMSE to history to trigger LR increase
             rl_forecaster.metrics_history.append({'short_rmse_1h': 0.12})
             
-            ***REMOVED*** Execute action
+            # Execute action
             success = rl_forecaster.execute_action(1)
             
             lr_after = forecaster.short_model.hparams.get('learning_rate', 1e-3)
@@ -85,17 +85,17 @@ def test_fine_tune_actions():
         else:
             logger.warning("⚠️  Short model hparams not accessible, skipping Action 1")
         
-        ***REMOVED*** Test Action 2: FINE_TUNE_LONG_TFT
+        # Test Action 2: FINE_TUNE_LONG_TFT
         logger.info("\n--- Testing Action 2: FINE_TUNE_LONG_TFT ---")
         
         if hasattr(forecaster, 'long_model') and hasattr(forecaster.long_model, 'hparams'):
             lr_before = forecaster.long_model.hparams.get('learning_rate', 1e-3)
             logger.info(f"Initial long-TFT LR: {lr_before:.2e}")
             
-            ***REMOVED*** Add high RMSE to trigger LR increase
+            # Add high RMSE to trigger LR increase
             rl_forecaster.metrics_history[-1]['long_rmse_30d'] = 0.15
             
-            ***REMOVED*** Execute action
+            # Execute action
             success = rl_forecaster.execute_action(2)
             
             lr_after = forecaster.long_model.hparams.get('learning_rate', 1e-3)
@@ -122,7 +122,7 @@ def test_recalibrate_pvlib():
     logger.info("TEST: PVLib Recalibration (Panel Metadata Adjustment)")
     logger.info("="*80)
     
-    ***REMOVED*** Paths
+    # Paths
     SHORT_CKPT = Path("V1.0_FINAL_TFT/shorthead_seed42/checkpoints/best.ckpt")
     LONG_CKPT = Path("V1.0_FINAL_TFT/longhead_seed43/checkpoints/best.ckpt")
     PLANT_META = Path("V1.0_FINAL_TFT/plant_metadata/plant_03.json")
@@ -130,7 +130,7 @@ def test_recalibrate_pvlib():
     LONG_TRAIN = Path("data/processed/plant_level/plant_03/hourly_longhead/train.parquet")
     
     try:
-        ***REMOVED*** Initialize forecaster
+        # Initialize forecaster
         logger.info("Loading PhysicsAwareForecaster...")
         forecaster = PhysicsAwareForecaster(
             short_ckpt=SHORT_CKPT,
@@ -138,10 +138,10 @@ def test_recalibrate_pvlib():
             plant_metadata=PLANT_META,
             short_train_parquet=SHORT_TRAIN,
             long_train_parquet=LONG_TRAIN,
-            device='cpu'  ***REMOVED*** CPU for faster loading
+            device='cpu'  # CPU for faster loading
         )
         
-        ***REMOVED*** Wrap with RL
+        # Wrap with RL
         rl_forecaster = RLIntegratedForecaster(
             forecaster=forecaster,
             rl_mode="heuristic",
@@ -150,7 +150,7 @@ def test_recalibrate_pvlib():
         
         logger.info("\n--- Testing Action 3: RECALIBRATE_PVLIB ---")
         
-        ***REMOVED*** Get initial metadata (PVLib stores tilt/azimuth as attributes, not in metadata dict)
+        # Get initial metadata (PVLib stores tilt/azimuth as attributes, not in metadata dict)
         if hasattr(forecaster, 'pvlib_predictor'):
             pvlib = forecaster.pvlib_predictor
             if hasattr(pvlib, 'tilt_deg') and hasattr(pvlib, 'azimuth_deg'):
@@ -161,10 +161,10 @@ def test_recalibrate_pvlib():
                 logger.info(f"  Tilt: {tilt_before:.1f}°")
                 logger.info(f"  Azimuth: {azimuth_before:.1f}°")
                 
-                ***REMOVED*** Add high physics residual to trigger recalibration
+                # Add high physics residual to trigger recalibration
                 rl_forecaster.metrics_history.append({'physics_residual': 0.20})
                 
-                ***REMOVED*** Execute action
+                # Execute action
                 success = rl_forecaster.execute_action(3)
                 
                 tilt_after = pvlib.tilt_deg
@@ -202,17 +202,17 @@ def test_blend_actions():
     logger.info("="*80)
     
     try:
-        ***REMOVED*** No need to load models, just test weight changes
+        # No need to load models, just test weight changes
         rl_forecaster = RLIntegratedForecaster(
             forecaster=None,
             rl_mode="heuristic",
             checkpoint_dir=Path("checkpoints/rl")
         )
         
-        ***REMOVED*** Initial weights
+        # Initial weights
         logger.info(f"Initial blend weights: {rl_forecaster.blend_weights}")
         
-        ***REMOVED*** Test Action 4: BLEND_HIGH_SHORT
+        # Test Action 4: BLEND_HIGH_SHORT
         logger.info("\n--- Testing Action 4: BLEND_HIGH_SHORT ---")
         rl_forecaster.execute_action(4)
         weights_4 = rl_forecaster.blend_weights.copy()
@@ -220,7 +220,7 @@ def test_blend_actions():
         assert weights_4['short'] == 0.7, "Short weight should be 0.7"
         logger.info("✅ Action 4: PASSED")
         
-        ***REMOVED*** Test Action 5: BLEND_HIGH_LONG
+        # Test Action 5: BLEND_HIGH_LONG
         logger.info("\n--- Testing Action 5: BLEND_HIGH_LONG ---")
         rl_forecaster.execute_action(5)
         weights_5 = rl_forecaster.blend_weights.copy()
@@ -228,7 +228,7 @@ def test_blend_actions():
         assert weights_5['long'] == 0.7, "Long weight should be 0.7"
         logger.info("✅ Action 5: PASSED")
         
-        ***REMOVED*** Test Action 6: BLEND_HIGH_PHYSICS
+        # Test Action 6: BLEND_HIGH_PHYSICS
         logger.info("\n--- Testing Action 6: BLEND_HIGH_PHYSICS ---")
         rl_forecaster.execute_action(6)
         weights_6 = rl_forecaster.blend_weights.copy()
@@ -251,16 +251,16 @@ def main():
     
     results = {}
     
-    ***REMOVED*** Test blend actions first (fast, no model loading)
+    # Test blend actions first (fast, no model loading)
     results["Blend Actions"] = test_blend_actions()
     
-    ***REMOVED*** Test fine-tuning (requires model loading)
+    # Test fine-tuning (requires model loading)
     results["Fine-Tuning Actions"] = test_fine_tune_actions()
     
-    ***REMOVED*** Test PVLib recalibration
+    # Test PVLib recalibration
     results["PVLib Recalibration"] = test_recalibrate_pvlib()
     
-    ***REMOVED*** Summary
+    # Summary
     logger.info("\n" + "="*80)
     logger.info("TEST SUMMARY")
     logger.info("="*80)

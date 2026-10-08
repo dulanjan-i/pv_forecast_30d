@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 : '
@@ -32,8 +32,8 @@ echo "==========================================================================
 test -f "$TRAIN_P"
 test -f "$VAL_P"
 
-***REMOVED*** If your venv path differs, set it here or just run inside activated env.
-***REMOVED*** source "$REPO_ROOT/.venvs/pvforecast/bin/activate"
+# If your venv path differs, set it here or just run inside activated env.
+# source "$REPO_ROOT/.venvs/pvforecast/bin/activate"
 
 python -m src.training.train_tft_v1 \
   --train_parquet "$TRAIN_P" \

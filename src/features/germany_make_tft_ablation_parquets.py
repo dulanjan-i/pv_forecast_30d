@@ -35,7 +35,7 @@ def parse_args():
 def drop_cols(df: pd.DataFrame, mode: str) -> pd.DataFrame:
     cols = list(df.columns)
 
-    lstm_cols = [c for c in cols if c.startswith("lstm_enc_")]  ***REMOVED*** catches lstm_enc_pca_ too
+    lstm_cols = [c for c in cols if c.startswith("lstm_enc_")]  # catches lstm_enc_pca_ too
     pvlib_cols = [c for c in cols if c.startswith("pvlib_")]
 
     drop = set()
@@ -50,7 +50,7 @@ def drop_cols(df: pd.DataFrame, mode: str) -> pd.DataFrame:
     elif mode == "full":
         pass
 
-    ***REMOVED*** Never drop required keys if present
+    # Never drop required keys if present
     drop -= KEYS
 
     if drop:

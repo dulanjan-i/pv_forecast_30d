@@ -62,12 +62,12 @@ def summarize_df(name: str, df: pd.DataFrame) -> dict:
     out["dup_keys"] = int(d.duplicated(KEY).sum())
     out["nan_total"] = int(d.isna().sum().sum())
 
-    ***REMOVED*** Merge artifact flags
+    # Merge artifact flags
     cols = list(d.columns)
     out["has_suffix_x"] = any(c.endswith("_x") for c in cols)
     out["has_suffix_y"] = any(c.endswith("_y") for c in cols)
 
-    ***REMOVED*** Helpful: which columns are objects (often accidental)
+    # Helpful: which columns are objects (often accidental)
     obj_cols = [c for c in cols if d[c].dtype == "object"]
     out["object_cols"] = obj_cols
 
@@ -93,12 +93,12 @@ def main() -> None:
     rep["val_only_cols"] = sorted(set(val_cols) - set(train_cols))
     rep["same_colset"] = (set(train_cols) == set(val_cols))
 
-    ***REMOVED*** Write artifacts
+    # Write artifacts
     (OUT_DIR / "regional_tft_full_cols_train.txt").write_text("\n".join(train_cols) + "\n")
     (OUT_DIR / "regional_tft_full_cols_val.txt").write_text("\n".join(val_cols) + "\n")
     (OUT_DIR / "regional_tft_full_report.json").write_text(json.dumps(rep, indent=2) + "\n")
 
-    ***REMOVED*** Console output (fast skim)
+    # Console output (fast skim)
     print("== FULL TFT INPUTS ==")
     print(f"TRAIN: {TRAIN_FULL}")
     print(f"VAL:   {VAL_FULL}\n")

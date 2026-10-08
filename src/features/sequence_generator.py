@@ -1,4 +1,4 @@
-***REMOVED*** src/features/sequence_generator.py
+# src/features/sequence_generator.py
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ class SimpleWindowDataset(Dataset):
         self.input_window = int(input_window)
         self.forecast_horizon = int(forecast_horizon)
 
-        ***REMOVED*** Sort by group + time to ensure correct ordering
+        # Sort by group + time to ensure correct ordering
         if group_col is not None:
             df = df.sort_values([group_col, time_col]).reset_index(drop=True)
         else:
@@ -57,7 +57,7 @@ class SimpleWindowDataset(Dataset):
 
         self.df = df
 
-        ***REMOVED*** Precompute valid index ranges for sliding windows
+        # Precompute valid index ranges for sliding windows
         self.indices = self._build_indices()
 
     def _build_indices(self):
@@ -101,7 +101,7 @@ class SimpleWindowDataset(Dataset):
         x = df.loc[in_start:in_end, self.feature_cols].to_numpy(dtype=np.float32)
         y = df.loc[out_start:out_end, self.target_col].to_numpy(dtype=np.float32)
 
-        ***REMOVED*** For horizon == 1, return scalar instead of length-1 array for convenience
+        # For horizon == 1, return scalar instead of length-1 array for convenience
         if self.forecast_horizon == 1:
             y = y[0]
 

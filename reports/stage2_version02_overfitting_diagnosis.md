@@ -1,4 +1,4 @@
-***REMOVED*** Stage 2 Transfer Learning - Version 02: Overfitting Diagnosis
+# Stage 2 Transfer Learning - Version 02: Overfitting Diagnosis
 
 **Date**: December 16, 2025  
 **Status**: Stratified Split SUCCESS, but Severe Overfitting Revealed  
@@ -6,7 +6,7 @@
 
 ---
 
-***REMOVED******REMOVED*** Executive Summary
+## Executive Summary
 
 Version 02 **successfully resolved** the seasonal bias problem identified in Version 01 by implementing stratified temporal splitting. However, this fix revealed the **true underlying issue**: severe overfitting with train/val ratios of 2.0-2.5 (expected: 1.0-1.3). The balanced validation sets now provide trustworthy metrics, showing that the transfer learning approach from farm2107 to Germany plants requires significant regularization improvements.
 
@@ -16,9 +16,9 @@ Version 02 **successfully resolved** the seasonal bias problem identified in Ver
 
 ---
 
-***REMOVED******REMOVED*** Version 02 Design Changes
+## Version 02 Design Changes
 
-***REMOVED******REMOVED******REMOVED*** 1. Stratified Temporal Split Implementation
+### 1. Stratified Temporal Split Implementation
 Replaced simple chronological split with season-aware stratification:
 
 ```python
@@ -28,26 +28,26 @@ def stratified_temporal_split(df, time_col, train_frac=0.70, val_frac=0.15, rand
     Each season (winter/spring/summer/fall) contributes proportionally to each split.
     """
     months = pd.to_datetime(df[time_col]).dt.month
-    seasons = classify_by_season(months)  ***REMOVED*** winter=Dec-Feb, spring=Mar-May, etc.
+    seasons = classify_by_season(months)  # winter=Dec-Feb, spring=Mar-May, etc.
     
     for season in ['winter', 'spring', 'summer', 'fall']:
         season_indices = np.where(seasons == season)[0]
-        np.random.shuffle(season_indices)  ***REMOVED*** random_seed=42 for reproducibility
-        ***REMOVED*** Split proportionally: 70% train, 15% val, 15% test
+        np.random.shuffle(season_indices)  # random_seed=42 for reproducibility
+        # Split proportionally: 70% train, 15% val, 15% test
         ...
     
-    return sorted(train_idx), sorted(val_idx), sorted(test_idx)  ***REMOVED*** Maintain temporal order
+    return sorted(train_idx), sorted(val_idx), sorted(test_idx)  # Maintain temporal order
 ```
 
 **Result**: All splits have identical seasonal distributions per plant
 - Example (plant_01): All splits have Winter=23.4%, Spring=28.8%, Summer=28.8%, Fall=19.0%
 - Example (plant_03): All splits have Winter=24.5%, Spring=25.3%, Summer=25.3%, Fall=25.0%
 
-***REMOVED******REMOVED******REMOVED*** 2. Plant Exclusion
+### 2. Plant Exclusion
 - **Excluded plant_04**: 100% zeros in Mar-Jun 2024 (data quality issue, not seasonal)
 - **Training on 5 plants**: plant_01, 02, 03, 05, 06
 
-***REMOVED******REMOVED******REMOVED*** 3. NaN Dropping
+### 3. NaN Dropping
 Added explicit NaN cleaning in preprocessing:
 - plant_01: 0.0% dropped (2 rows)
 - plant_02: 0.0% dropped (6 rows)
@@ -57,9 +57,9 @@ Added explicit NaN cleaning in preprocessing:
 
 ---
 
-***REMOVED******REMOVED*** Version 02 Results
+## Version 02 Results
 
-***REMOVED******REMOVED******REMOVED*** Final Validation Metrics
+### Final Validation Metrics
 
 | Plant    | Train RMSE | Val RMSE | Train/Val Ratio | Val vs farm2107 |
 |----------|------------|----------|-----------------|-----------------|
@@ -72,7 +72,7 @@ Added explicit NaN cleaning in preprocessing:
 **Mean Train/Val Ratio**: 2.258 (Expected: 1.0-1.3, Acceptable: <1.5)  
 **Assessment**: ❌ SEVERE OVERFITTING (0/5 plants in normal range)
 
-***REMOVED******REMOVED******REMOVED*** Power Distribution Analysis (Validation Trustworthiness)
+### Power Distribution Analysis (Validation Trustworthiness)
 
 | Plant    | std_ratio | train_zeros % | val_zeros % | Assessment |
 |----------|-----------|---------------|-------------|------------|
@@ -87,9 +87,9 @@ Added explicit NaN cleaning in preprocessing:
 
 ---
 
-***REMOVED******REMOVED*** Version 01 vs Version 02 Comparison
+## Version 01 vs Version 02 Comparison
 
-***REMOVED******REMOVED******REMOVED*** What Changed?
+### What Changed?
 
 | Metric | Version 01 (Chronological) | Version 02 (Stratified) | Improvement |
 |--------|----------------------------|-------------------------|-------------|
@@ -98,7 +98,7 @@ Added explicit NaN cleaning in preprocessing:
 | **Suspiciously good plants** | 2 plants (ratio <0.5) | 0 plants | ✅ FIXED |
 | **Train/val ratio issues** | 3/5 abnormal | 5/5 abnormal | ❌ WORSE |
 
-***REMOVED******REMOVED******REMOVED*** Train/Val Ratio Evolution
+### Train/Val Ratio Evolution
 
 | Plant    | V01 Ratio | V02 Ratio | Change  | Interpretation |
 |----------|-----------|-----------|---------|----------------|
@@ -112,20 +112,20 @@ Added explicit NaN cleaning in preprocessing:
 
 ---
 
-***REMOVED******REMOVED*** Root Cause Analysis: Why Severe Overfitting?
+## Root Cause Analysis: Why Severe Overfitting?
 
-***REMOVED******REMOVED******REMOVED*** 1. Transfer Learning Mismatch Hypothesis
+### 1. Transfer Learning Mismatch Hypothesis
 - **farm2107 baseline**: Single site, consistent environmental patterns, full-year coverage
 - **Germany plants**: 5 different sites, diverse characteristics, uneven temporal coverage
 - **Mismatch**: Pretrained weights may be TOO specific to farm2107's patterns
 - **Evidence**: All plants show similar overfitting degree (2.0-2.5), suggesting systematic issue
 
-***REMOVED******REMOVED******REMOVED*** 2. Insufficient Regularization Hypothesis
+### 2. Insufficient Regularization Hypothesis
 Current training configuration:
 ```yaml
 hidden_size: 64
 num_layers: 2
-dropout: 0.1  ***REMOVED*** ← TOO LOW for transfer learning?
+dropout: 0.1  # ← TOO LOW for transfer learning?
 lr: 1e-4
 batch_size: 512
 max_epochs: 20
@@ -135,14 +135,14 @@ early_stopping: (not implemented)
 
 **Problem**: dropout=0.1 is minimal. Transfer learning often requires higher regularization (0.3-0.5).
 
-***REMOVED******REMOVED******REMOVED*** 3. Dataset Size Reduction Hypothesis
+### 3. Dataset Size Reduction Hypothesis
 After NaN dropping:
 - plant_03: 34,945 samples (from 43,865) → 20% loss
 - plant_05: 26,385 samples (from 43,927) → 40% loss
 
 **Impact**: Smaller datasets are easier to memorize, harder to generalize from.
 
-***REMOVED******REMOVED******REMOVED*** 4. Germany Data Complexity Hypothesis
+### 4. Germany Data Complexity Hypothesis
 Power standard deviations vary significantly:
 - plant_05: 0.127 (low variability)
 - plant_03: 0.223 (high variability, 75% higher)
@@ -151,15 +151,15 @@ Power standard deviations vary significantly:
 
 ---
 
-***REMOVED******REMOVED*** Why Version 02 is Actually a Success
+## Why Version 02 is Actually a Success
 
-***REMOVED******REMOVED******REMOVED*** Scientific Success ✅
+### Scientific Success ✅
 1. **Fixed the bias**: std_ratio proves seasonal balance achieved
 2. **Trustworthy metrics**: Validation now tests generalization, not seasonal luck
 3. **Identified real problem**: Overfitting, not validation methodology
 4. **Reproducible**: Stratified split with random_seed=42
 
-***REMOVED******REMOVED******REMOVED*** Thesis Value ✅
+### Thesis Value ✅
 Complete research narrative demonstrating:
 - **Problem identification** (Version 01: seasonal bias)
 - **Root cause diagnosis** (smoking gun: split boundary analysis)
@@ -168,22 +168,22 @@ Complete research narrative demonstrating:
 - **Secondary problem discovery** (severe overfitting revealed)
 - **Critical thinking** (distinguishing measurement error from true performance)
 
-***REMOVED******REMOVED******REMOVED*** Performance Failure ❌
+### Performance Failure ❌
 - Train/val ratios 2.0-2.5 (unacceptable for deployment)
 - RMSE 2-3x worse than farm2107 baseline
 - Cannot proceed to Stage 2B (TFT ensemble) with these encoders
 
 ---
 
-***REMOVED******REMOVED*** Diagnostic Evidence
+## Diagnostic Evidence
 
-***REMOVED******REMOVED******REMOVED*** 1. Convergence Curves
+### 1. Convergence Curves
 (See notebook: `stage2_version02_validation_metrics.ipynb`, Section 5)
 - Training loss decreases smoothly to very low values (0.001-0.005 MSE)
 - Validation loss plateaus at much higher values (0.009-0.024 MSE)
 - Gap widens consistently, indicating memorization
 
-***REMOVED******REMOVED******REMOVED*** 2. Power Distribution Confirmation
+### 2. Power Distribution Confirmation
 ```
 plant_01: train_mean=0.094, val_mean=0.096, diff=1.5% ✓
 plant_02: train_mean=0.115, val_mean=0.115, diff=0.2% ✓
@@ -193,7 +193,7 @@ plant_06: train_mean=0.113, val_mean=0.116, diff=3.0% ✓
 ```
 All mean differences <3% → splits are statistically similar → overfitting is NOT due to distribution shift.
 
-***REMOVED******REMOVED******REMOVED*** 3. Comparison to Baseline
+### 3. Comparison to Baseline
 All plants perform 130-280% worse than farm2107 baseline (RMSE 0.040), suggesting:
 - Transfer learning is NOT effectively transferring knowledge, OR
 - Germany plants are fundamentally harder to predict, OR
@@ -202,9 +202,9 @@ All plants perform 130-280% worse than farm2107 baseline (RMSE 0.040), suggestin
 
 ---
 
-***REMOVED******REMOVED*** Path Forward: Version 2.1 Strategy
+## Path Forward: Version 2.1 Strategy
 
-***REMOVED******REMOVED******REMOVED*** Decision Tree
+### Decision Tree
 
 ```
 Version 2.1: Hyperparameter Tuning (FIRST ATTEMPT)
@@ -229,15 +229,15 @@ Version 2.3: Architecture Changes (IF 2.2 FAILS)
 └─ Try different architecture (Transformer, TFT)
 ```
 
-***REMOVED******REMOVED******REMOVED*** Specific Recommendations for Version 2.1
+### Specific Recommendations for Version 2.1
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Option A: Conservative Tuning (RECOMMENDED FIRST)
+#### Option A: Conservative Tuning (RECOMMENDED FIRST)
 ```yaml
-***REMOVED*** Increase regularization, reduce learning rate
-dropout: 0.3         ***REMOVED*** 0.1 → 0.3 (moderate increase)
-lr: 5e-5             ***REMOVED*** 1e-4 → 5e-5 (half learning rate)
-weight_decay: 1e-4   ***REMOVED*** Add L2 regularization
-batch_size: 512      ***REMOVED*** Keep same
+# Increase regularization, reduce learning rate
+dropout: 0.3         # 0.1 → 0.3 (moderate increase)
+lr: 5e-5             # 1e-4 → 5e-5 (half learning rate)
+weight_decay: 1e-4   # Add L2 regularization
+batch_size: 512      # Keep same
 early_stopping:
   monitor: val_loss
   patience: 5
@@ -246,13 +246,13 @@ early_stopping:
 
 **Rationale**: Gentle changes to see if overfitting is due to insufficient regularization.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Option B: Aggressive Tuning
+#### Option B: Aggressive Tuning
 ```yaml
-***REMOVED*** Strong regularization for transfer learning
-dropout: 0.5         ***REMOVED*** 0.1 → 0.5 (strong dropout)
-lr: 1e-5             ***REMOVED*** 1e-4 → 1e-5 (very slow learning)
+# Strong regularization for transfer learning
+dropout: 0.5         # 0.1 → 0.5 (strong dropout)
+lr: 1e-5             # 1e-4 → 1e-5 (very slow learning)
 weight_decay: 1e-4
-batch_size: 256      ***REMOVED*** 512 → 256 (smaller batches, more updates)
+batch_size: 256      # 512 → 256 (smaller batches, more updates)
 early_stopping:
   monitor: val_loss
   patience: 3
@@ -261,11 +261,11 @@ early_stopping:
 
 **Rationale**: If overfitting is severe, need strong regularization to prevent memorization.
 
-***REMOVED******REMOVED******REMOVED******REMOVED*** Option C: Learning Rate Schedule
+#### Option C: Learning Rate Schedule
 ```yaml
-***REMOVED*** Progressive learning rate reduction
+# Progressive learning rate reduction
 dropout: 0.3
-lr: 1e-4             ***REMOVED*** Start same
+lr: 1e-4             # Start same
 lr_scheduler:
   type: ReduceLROnPlateau
   factor: 0.5
@@ -279,7 +279,7 @@ early_stopping:
 
 **Rationale**: Allow fast initial learning, then reduce LR when validation plateaus.
 
-***REMOVED******REMOVED******REMOVED*** Additional Diagnostics to Add
+### Additional Diagnostics to Add
 
 1. **Gradient Clipping**: Prevent exploding gradients
    ```python
@@ -293,7 +293,7 @@ early_stopping:
 
 3. **Validation Frequency**: Check overfitting earlier
    ```python
-   val_check_interval: 0.25  ***REMOVED*** Validate 4x per epoch
+   val_check_interval: 0.25  # Validate 4x per epoch
    ```
 
 4. **Learning Curve Analysis**: Plot training curves every N steps
@@ -303,16 +303,16 @@ early_stopping:
 
 ---
 
-***REMOVED******REMOVED*** Blocking Issues for Stage 2B
+## Blocking Issues for Stage 2B
 
-***REMOVED******REMOVED******REMOVED*** Why We Cannot Proceed to TFT Ensemble
+### Why We Cannot Proceed to TFT Ensemble
 
 1. **Encoders are unreliable**: train/val gap of 2x means embeddings capture training noise, not generalizable patterns
 2. **TFT requires quality features**: Garbage in (overfitted embeddings) → garbage out (poor ensemble)
 3. **Computational waste**: Training TFT on bad encoders wastes GPU time
 4. **Thesis integrity**: Cannot claim "Stage 2 complete" with failed validation
 
-***REMOVED******REMOVED******REMOVED*** Success Criteria for Stage 2B Readiness
+### Success Criteria for Stage 2B Readiness
 
 - ✅ Stratified splits (already achieved)
 - ❌ Train/val ratio < 1.5 (currently 2.0-2.5)
@@ -324,9 +324,9 @@ early_stopping:
 
 ---
 
-***REMOVED******REMOVED*** Lessons Learned
+## Lessons Learned
 
-***REMOVED******REMOVED******REMOVED*** Methodological Insights
+### Methodological Insights
 
 1. **Fixing bias reveals truth**: Correcting measurement error exposes real performance
 2. **Good metrics can hide bad models**: Version 01's "good" plants were measurement artifacts
@@ -334,14 +334,14 @@ early_stopping:
 4. **Stratified splitting is critical**: For seasonal/temporal data, random splitting is insufficient
 5. **Validation trustworthiness**: Must verify split balance BEFORE trusting metrics
 
-***REMOVED******REMOVED******REMOVED*** Technical Insights
+### Technical Insights
 
 1. **std_ratio as diagnostic**: val_std / train_std is excellent proxy for split quality
 2. **Zero percentage patterns**: Extreme differences (37% vs 84%) indicate seasonal bias
 3. **Train/val ratio interpretation**: <0.5 suspicious, 1.0-1.3 normal, >2.0 severe overfitting
 4. **Temporal split challenges**: Chronological split assumes uniform distribution (often false)
 
-***REMOVED******REMOVED******REMOVED*** Research Insights
+### Research Insights
 
 1. **Failed experiments have value**: Version 01 + Version 02 tell complete story
 2. **Iterative refinement**: V01 (identify) → V02 (fix bias) → V2.1 (fix overfitting)
@@ -350,19 +350,19 @@ early_stopping:
 
 ---
 
-***REMOVED******REMOVED*** Reproducibility
+## Reproducibility
 
-***REMOVED******REMOVED******REMOVED*** Code Changes
+### Code Changes
 - **Preprocessing**: `src/preprocessing/germany_pretrain_normalize_split.py` (stratified_temporal_split)
 - **Training**: `run_stage2_transfer_learning.sh` (5 plants, no plant_04)
 - **Analysis**: `notebooks/lstm/stage2_version02_validation_metrics.ipynb`
 
-***REMOVED******REMOVED******REMOVED*** Data Artifacts
+### Data Artifacts
 - **Splits**: `data/processed/pretraining/germany/plant_XX/{train,val,test}.parquet`
 - **Encoders**: `experiments/lstm/encoders/lstm_encoder_plant_XX.pt`
 - **Logs**: `experiments/lstm/runs/germany/pretrain_plant_XX/germany_plant_XX_pretrain/version_0/metrics.csv`
 
-***REMOVED******REMOVED******REMOVED*** Configuration
+### Configuration
 ```yaml
 pretrained_weights: experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt
 hidden_size: 64
@@ -371,25 +371,25 @@ dropout: 0.1
 lr: 1e-4
 batch_size: 512
 max_epochs: 20
-random_seed: 42  ***REMOVED*** For stratified split reproducibility
+random_seed: 42  # For stratified split reproducibility
 ```
 
-***REMOVED******REMOVED******REMOVED*** Random Seeds
+### Random Seeds
 - Stratified split: `random_seed=42` (in `stratified_temporal_split()`)
 - PyTorch Lightning: (check training script for seed setting)
 
 ---
 
-***REMOVED******REMOVED*** Next Actions (Version 2.1)
+## Next Actions (Version 2.1)
 
-***REMOVED******REMOVED******REMOVED*** Immediate (Before Retraining)
+### Immediate (Before Retraining)
 1. ✅ Document Version 02 results (this report)
 2. ⏳ Create Version 2.1 todo list with hyperparameter experiments
 3. ⏳ Update training script with new hyperparameters
 4. ⏳ Implement early stopping in training loop
 5. ⏳ Add gradient clipping
 
-***REMOVED******REMOVED******REMOVED*** Short-term (Version 2.1 Execution)
+### Short-term (Version 2.1 Execution)
 1. ⏳ Experiment 1: Conservative tuning (dropout=0.3, lr=5e-5)
 2. ⏳ Experiment 2: Aggressive tuning (dropout=0.5, lr=1e-5)
 3. ⏳ Experiment 3: LR scheduler approach
@@ -397,14 +397,14 @@ random_seed: 42  ***REMOVED*** For stratified split reproducibility
 5. ⏳ If successful: Proceed to Stage 2B
 6. ⏳ If failed: Move to Version 2.2 (train from scratch)
 
-***REMOVED******REMOVED******REMOVED*** Medium-term (If Version 2.1 Fails)
+### Medium-term (If Version 2.1 Fails)
 1. ⏳ Version 2.2: Train from scratch (no transfer learning)
 2. ⏳ Version 2.3: Architecture changes (smaller model, batch norm)
 3. ⏳ Diagnostic: Train farm2107 with stratified split (baseline comparison)
 
 ---
 
-***REMOVED******REMOVED*** References
+## References
 
 - **Version 01 Report**: `reports/stage2_version01_failed_chronological_split.md`
 - **Version 02 Analysis**: `notebooks/lstm/stage2_version02_validation_metrics.ipynb`
@@ -413,9 +413,9 @@ random_seed: 42  ***REMOVED*** For stratified split reproducibility
 
 ---
 
-***REMOVED******REMOVED*** Appendices
+## Appendices
 
-***REMOVED******REMOVED******REMOVED*** Appendix A: Stratified Split Verification Output
+### Appendix A: Stratified Split Verification Output
 
 ```
 plant_01: train=43,000 val=9,213 test=9,218
@@ -429,11 +429,11 @@ plant_03: train=24,460 val=5,239 test=5,246
   Test  seasons: Winter=24.5% Spring=25.3% Summer=25.3% Fall=25.0%
 ```
 
-***REMOVED******REMOVED******REMOVED*** Appendix B: Full Metrics Table
+### Appendix B: Full Metrics Table
 
 (See `stage2_version02_validation_metrics.ipynb` for complete output)
 
-***REMOVED******REMOVED******REMOVED*** Appendix C: Convergence Curve Analysis
+### Appendix C: Convergence Curve Analysis
 
 (Plots saved in notebook output)
 

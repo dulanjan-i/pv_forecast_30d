@@ -51,29 +51,29 @@ def _merge_one(split: str, base_p: Path, weather_p: Path, pvlib_p: Path, out_p: 
             raise ValueError(f"{name}: missing key cols {missing}")
         _assert_no_dups(df, name)
 
-    ***REMOVED*** Avoid duplicated non-key columns by dropping overlaps before merge.
+    # Avoid duplicated non-key columns by dropping overlaps before merge.
     base_cols = set(base.columns) - set(KEYS)
     weather_cols = set(weather.columns) - set(KEYS)
     pvlib_cols = set(pvlib.columns) - set(KEYS)
 
-    ***REMOVED*** If base already contains some weather-like cols, prefer WEATHER table.
+    # If base already contains some weather-like cols, prefer WEATHER table.
     overlap_bw = sorted(base_cols & weather_cols)
     if overlap_bw:
         base = base.drop(columns=overlap_bw)
 
-    ***REMOVED*** If base already contains some pvlib cols, prefer PVLIB table.
+    # If base already contains some pvlib cols, prefer PVLIB table.
     overlap_bp = sorted(base_cols & pvlib_cols)
     if overlap_bp:
         base = base.drop(columns=overlap_bp)
 
-    ***REMOVED*** If weather and pvlib overlap (rare), prefer PVLIB.
+    # If weather and pvlib overlap (rare), prefer PVLIB.
     overlap_wp = sorted(weather_cols & pvlib_cols)
     if overlap_wp:
         weather = weather.drop(columns=overlap_wp)
 
     merged = base.merge(weather, on=KEYS, how="inner").merge(pvlib, on=KEYS, how="inner")
 
-    ***REMOVED*** Strict 1:1 key coverage
+    # Strict 1:1 key coverage
     if len(merged) != len(base):
         raise ValueError(
             f"{split}: merge row mismatch. base={len(base):,} merged={len(merged):,}. "

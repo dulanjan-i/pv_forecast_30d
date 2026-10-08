@@ -1,4 +1,4 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Comprehensive test of the hierarchical 30-day forecasting pipeline.
 Tests all components with synthetic data before TFT integration.
@@ -12,7 +12,7 @@ import pandas as pd
 from pathlib import Path
 import sys
 
-***REMOVED*** Add src to path
+# Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.inference.pvlib_predictor import PVLibPredictor
@@ -34,7 +34,7 @@ def test_1_pvlib_predictor():
     try:
         predictor = PVLibPredictor("data/metadata/germany/plant_03.json")
         
-        ***REMOVED*** Generate 30-day clear-sky baseline
+        # Generate 30-day clear-sky baseline
         baseline = predictor.predict_clear_sky(
             start_time="2023-11-01",
             num_steps=2880,
@@ -68,18 +68,18 @@ def test_2_upsampling(pvlib_baseline):
     print("="*70)
     
     try:
-        ***REMOVED*** Simulate long-head hourly predictions (720 hours)
+        # Simulate long-head hourly predictions (720 hours)
         np.random.seed(42)
         long_hourly = np.clip(pvlib_baseline[::4] * np.random.uniform(0.8, 1.2, 720), 0, 1)
         
-        ***REMOVED*** Upsample using PVLib shape
+        # Upsample using PVLib shape
         long_upsampled = upsample_with_pvlib_shape(long_hourly, pvlib_baseline)
         
         print(f"✓ Input shape: {long_hourly.shape} (hourly)")
         print(f"✓ Output shape: {long_upsampled.shape} (15-min)")
         assert long_upsampled.shape == (2880,), f"Expected (2880,), got {long_upsampled.shape}"
         
-        ***REMOVED*** Verify energy conservation (check first 5 hours)
+        # Verify energy conservation (check first 5 hours)
         for h in range(5):
             hour_sum = long_upsampled[h*4:(h+1)*4].sum()
             expected = long_hourly[h]
@@ -102,15 +102,15 @@ def test_3_hierarchical_blend(pvlib_baseline, long_upsampled):
     print("="*70)
     
     try:
-        ***REMOVED*** Simulate short-head for Day 0 (first 96 steps)
+        # Simulate short-head for Day 0 (first 96 steps)
         np.random.seed(43)
         short_day0 = np.clip(pvlib_baseline[:96] * np.random.uniform(0.9, 1.1, 96), 0, 1)
         
-        ***REMOVED*** Extract corresponding slices
+        # Extract corresponding slices
         long_slice = long_upsampled[:96]
         pvlib_slice = pvlib_baseline[:96]
         
-        ***REMOVED*** Test hierarchical blend
+        # Test hierarchical blend
         blended = blend_hierarchical(
             short_pred=short_day0,
             long_upsampled=long_slice,
@@ -125,18 +125,18 @@ def test_3_hierarchical_blend(pvlib_baseline, long_upsampled):
         print(f"✓ Output shape: {blended.shape}")
         assert blended.shape == (96,), f"Expected (96,), got {blended.shape}"
         
-        ***REMOVED*** Verify constraints
+        # Verify constraints
         print(f"✓ Range: [{blended.min():.3f}, {blended.max():.3f}]")
         assert blended.min() >= 0, "Negative values found"
         assert blended.max() <= 1.0, "Values > 1.0 found"
         
-        ***REMOVED*** Check night constraint
+        # Check night constraint
         night_mask = pvlib_slice < 0.01
         night_violations = (blended[night_mask] > 0.01).sum()
         print(f"✓ Night constraint: {night_violations} violations (should be 0)")
         assert night_violations == 0, f"{night_violations} night violations"
         
-        ***REMOVED*** Check capacity constraint
+        # Check capacity constraint
         max_allowed = pvlib_slice * 1.2
         capacity_violations = (blended > max_allowed).sum()
         print(f"✓ Capacity constraint: {capacity_violations} violations (should be 0)")
@@ -159,7 +159,7 @@ def test_4_rl_controller():
     try:
         controller = RLMetaController(mode="heuristic")
         
-        ***REMOVED*** Test weight evolution over 30 days
+        # Test weight evolution over 30 days
         print("\nWeight Evolution by Day:")
         print(f"{'Day':<5} {'α_short':<10} {'α_long':<10} {'α_ml':<10} {'α_pvlib':<10}")
         print("-" * 45)
@@ -170,13 +170,13 @@ def test_4_rl_controller():
             print(f"{day:<5} {weights['alpha_short']:<10.3f} {weights['alpha_long']:<10.3f} "
                   f"{weights['alpha_ml']:<10.3f} {weights['alpha_pvlib']:<10.3f}")
             
-            ***REMOVED*** Verify constraints
+            # Verify constraints
             assert abs(weights['alpha_short'] + weights['alpha_long'] - 1.0) < 1e-6, "ML weights don't sum to 1"
             assert abs(weights['alpha_ml'] + weights['alpha_pvlib'] - 1.0) < 1e-6, "Physics weights don't sum to 1"
             assert 0 <= weights['alpha_short'] <= 1, "alpha_short out of range"
             assert 0 <= weights['alpha_ml'] <= 1, "alpha_ml out of range"
         
-        ***REMOVED*** Verify trend: alpha_short decreases, alpha_long increases
+        # Verify trend: alpha_short decreases, alpha_long increases
         w0 = controller.get_blend_weights(0, 0.8)
         w29 = controller.get_blend_weights(29, 0.8)
         assert w0['alpha_short'] > w29['alpha_short'], "alpha_short should decrease with horizon"
@@ -200,32 +200,32 @@ def test_5_full_30day_pipeline(pvlib_baseline):
     try:
         np.random.seed(44)
         
-        ***REMOVED*** Simulate long-head prediction (1 call → 720 hours)
+        # Simulate long-head prediction (1 call → 720 hours)
         print("Step 1: Long-head strategic overview (1 TFT call)")
         long_hourly = np.clip(pvlib_baseline[::4] * np.random.uniform(0.85, 1.15, 720), 0, 1)
         long_upsampled = upsample_with_pvlib_shape(long_hourly, pvlib_baseline)
         print(f"  ✓ Long-head: {long_hourly.shape} → upsampled to {long_upsampled.shape}")
         
-        ***REMOVED*** Initialize RL controller
+        # Initialize RL controller
         controller = RLMetaController(mode="heuristic")
         
-        ***REMOVED*** Rolling 30-day refinement
+        # Rolling 30-day refinement
         print("\nStep 2: Rolling daily refinement (30 TFT calls)")
         forecast_30d = np.zeros(2880)
         short_calls = []
         
         for day in range(30):
-            ***REMOVED*** Simulate short-head for this day (96 steps)
+            # Simulate short-head for this day (96 steps)
             day_start_idx = day * 96
             day_end_idx = (day + 1) * 96
             pvlib_day = pvlib_baseline[day_start_idx:day_end_idx]
             short_day = np.clip(pvlib_day * np.random.uniform(0.9, 1.1, 96), 0, 1)
             short_calls.append(short_day)
             
-            ***REMOVED*** Get adaptive weights
+            # Get adaptive weights
             weights = controller.get_blend_weights(day=day, weather_confidence=0.8)
             
-            ***REMOVED*** Hierarchical blend
+            # Hierarchical blend
             long_slice = long_upsampled[day_start_idx:day_end_idx]
             blended_day = blend_hierarchical(
                 short_pred=short_day,
@@ -245,7 +245,7 @@ def test_5_full_30day_pipeline(pvlib_baseline):
         
         print(f"\n  ✓ Total TFT calls: 1 long + {len(short_calls)} short = {1 + len(short_calls)}")
         
-        ***REMOVED*** Validation
+        # Validation
         print("\nStep 3: Final validation")
         print(f"  ✓ Final shape: {forecast_30d.shape}")
         assert forecast_30d.shape == (2880,), f"Expected (2880,), got {forecast_30d.shape}"
@@ -254,13 +254,13 @@ def test_5_full_30day_pipeline(pvlib_baseline):
         assert forecast_30d.min() >= 0, "Negative values found"
         assert forecast_30d.max() <= 1.0, "Values > 1.0 found"
         
-        ***REMOVED*** Night constraint
+        # Night constraint
         night_mask = pvlib_baseline < 0.01
         night_violations = (forecast_30d[night_mask] > 0.01).sum()
         print(f"  ✓ Night violations: {night_violations} / {night_mask.sum()} night steps")
         assert night_violations == 0, f"{night_violations} night violations"
         
-        ***REMOVED*** Capacity constraint
+        # Capacity constraint
         max_allowed = pvlib_baseline * 1.2
         capacity_violations = (forecast_30d > max_allowed).sum()
         print(f"  ✓ Capacity violations: {capacity_violations} / {2880} total steps")
@@ -268,7 +268,7 @@ def test_5_full_30day_pipeline(pvlib_baseline):
         
         print("\n✅ Full 30-day hierarchical pipeline working correctly!")
         
-        ***REMOVED*** Summary
+        # Summary
         print("\n" + "="*70)
         print("PIPELINE SUMMARY")
         print("="*70)
@@ -298,22 +298,22 @@ def main():
     print("="*70)
     
     try:
-        ***REMOVED*** Test 1: PVLib baseline
+        # Test 1: PVLib baseline
         pvlib_baseline = test_1_pvlib_predictor()
         
-        ***REMOVED*** Test 2: Upsampling
+        # Test 2: Upsampling
         long_upsampled = test_2_upsampling(pvlib_baseline)
         
-        ***REMOVED*** Test 3: Hierarchical blending
+        # Test 3: Hierarchical blending
         _ = test_3_hierarchical_blend(pvlib_baseline, long_upsampled)
         
-        ***REMOVED*** Test 4: RL controller
+        # Test 4: RL controller
         test_4_rl_controller()
         
-        ***REMOVED*** Test 5: Full pipeline
+        # Test 5: Full pipeline
         _ = test_5_full_30day_pipeline(pvlib_baseline)
         
-        ***REMOVED*** Final summary
+        # Final summary
         print("\n" + "="*70)
         print("🎉 ALL TESTS PASSED!")
         print("="*70)

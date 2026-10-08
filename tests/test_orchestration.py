@@ -57,7 +57,7 @@ def test_model_instantiation():
     model = LSTMEncoder(model_cfg)
     assert model is not None
 
-    ***REMOVED*** Forward pass with dummy input
+    # Forward pass with dummy input
     dummy = torch.randn(4, model_cfg.seq_len, model_cfg.input_size)
     out = model(dummy)
     assert out.shape[0] == 4

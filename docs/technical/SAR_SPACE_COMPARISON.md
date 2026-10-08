@@ -1,18 +1,18 @@
-***REMOVED*** SAR SPACE COMPARISON: Original MiRACLE Design vs Current Implementation
+# SAR SPACE COMPARISON: Original MiRACLE Design vs Current Implementation
 
-***REMOVED******REMOVED*** ORIGINAL MiRACLE DESIGN (From Thesis)
+## ORIGINAL MiRACLE DESIGN (From Thesis)
 
-***REMOVED******REMOVED******REMOVED*** Architecture
+### Architecture
 - **Local Agents (Role 1-3):** Q-learning for local optimization
 - **Meta-Controller (Role 4):** DDQN for global coordination
 - **Philosophy:** "Policy-over-policies" hierarchical RL
 
-***REMOVED******REMOVED******REMOVED*** Original Reward Function
+### Original Reward Function
 ```
 R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−ComputeCost_t) + w₄(−RetrainFreq_t)
 ```
 
-***REMOVED******REMOVED******REMOVED*** Original State Space (Inputs to Meta-Controller)
+### Original State Space (Inputs to Meta-Controller)
 
 **Role 1 Advisory (LSTM Encoder):**
 - Rolling RMSE, MAE, bias
@@ -37,7 +37,7 @@ R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−ComputeCost_t) + w₄(−Retr
 - API agreement metrics
 - Compute budget
 
-***REMOVED******REMOVED******REMOVED*** Original Action Space (Meta-Controller Only)
+### Original Action Space (Meta-Controller Only)
 
 **A0:** Keep current configuration (maintain)  
 **A1:** Switch to ensemble-style weather API route  
@@ -48,21 +48,21 @@ R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−ComputeCost_t) + w₄(−Retr
 **A6:** Trigger full horizon reforecast  
 **A7:** Request hard retrain (human approval required)  
 
-***REMOVED******REMOVED******REMOVED*** Original Local Agent Actions (Rule-Based)
+### Original Local Agent Actions (Rule-Based)
 - Agents provide **advisory signals** (state features)
 - No direct action selection by local agents
 - Meta-controller decides all actions
 
 ---
 
-***REMOVED******REMOVED*** CURRENT IMPLEMENTATION (What I Coded - WRONG)
+## CURRENT IMPLEMENTATION (What I Coded - WRONG)
 
-***REMOVED******REMOVED******REMOVED*** Architecture Problem
+### Architecture Problem
 - **3 Local Agents:** Each with DDQN (Short-TFT, Long-TFT, PVLib)
 - **1 Meta-Agent:** DDQN for blending weights only
 - **Issue:** 4 separate learning agents = overfitting risk
 
-***REMOVED******REMOVED******REMOVED*** Current State Space
+### Current State Space
 
 **Local Agent 1 (Short-TFT): 15 dims**
 1. short_rmse_1h, short_rmse_24h
@@ -102,7 +102,7 @@ R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−ComputeCost_t) + w₄(−Retr
 10. short_confidence, long_confidence
 11. forecast_age_hours, ghi
 
-***REMOVED******REMOVED******REMOVED*** Current Action Space
+### Current Action Space
 
 **Local Agents (5 actions each - WRONG, should be rule-based):**
 - A0: MAINTAIN (no changes)
@@ -115,7 +115,7 @@ R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−ComputeCost_t) + w₄(−Retr
 - 27 discrete weight combinations: [0.1, 0.5, 0.9]³
 - Only controls blend weights, not system actions
 
-***REMOVED******REMOVED******REMOVED*** Current Reward Function
+### Current Reward Function
 ```
 R = w₁(−RMSE) + w₂(−Mismatch) + w₃(−Drift) + w₄(−Cost) + Bonus
 w₁=1.0 (accuracy), w₂=0.3 (consistency), w₃=0.2 (stability), w₄=0.1 (efficiency)
@@ -129,14 +129,14 @@ w₁=1.0 (accuracy), w₂=0.3 (consistency), w₃=0.2 (stability), w₄=0.1 (eff
 
 ---
 
-***REMOVED******REMOVED*** PROPOSED REFACTOR (Back to Original Philosophy)
+## PROPOSED REFACTOR (Back to Original Philosophy)
 
-***REMOVED******REMOVED******REMOVED*** Architecture (CORRECTED)
+### Architecture (CORRECTED)
 - **3 Rule-Based Advisors:** Short-TFT, Long-TFT, PVLib (no learning)
 - **1 DDQN Meta-Controller:** Global coordination and action selection
 - **Weather Router:** Rule-based (as decided by user)
 
-***REMOVED******REMOVED******REMOVED*** Proposed State Space (Meta-Controller Only)
+### Proposed State Space (Meta-Controller Only)
 
 **Total: ~35 dimensions** (aggregated from advisors)
 
@@ -172,7 +172,7 @@ w₁=1.0 (accuracy), w₂=0.3 (consistency), w₃=0.2 (stability), w₄=0.1 (eff
 5. hour_of_day, season
 6. total_retrain_count_7d
 
-***REMOVED******REMOVED******REMOVED*** Proposed Action Space (Meta-Controller DDQN)
+### Proposed Action Space (Meta-Controller DDQN)
 
 **8 discrete actions** (inspired by original A0-A7):
 
@@ -218,7 +218,7 @@ w₁=1.0 (accuracy), w₂=0.3 (consistency), w₃=0.2 (stability), w₄=0.1 (eff
 - ~~A4: Fine-tune LSTM~~ → LSTM removed in ablations
 - ~~A6: Trigger reforecast~~ → Implicit in every step
 
-***REMOVED******REMOVED******REMOVED*** Proposed Reward Function (Aligned with Original)
+### Proposed Reward Function (Aligned with Original)
 
 ```
 R_t = w₁(−RMSE_t) + w₂(−Drift_t) + w₃(−Cost_t) + w₄(−RetrainFreq_t)
@@ -241,12 +241,12 @@ Penalize distribution shift and model disagreement
 **w₃ = 0.2: Computational Cost**
 ```
 action_costs = {
-    A0: 0,      ***REMOVED*** maintain (free)
-    A1: 0.1,    ***REMOVED*** fine_tune_short
-    A2: 0.15,   ***REMOVED*** fine_tune_long
-    A3: 0.05,   ***REMOVED*** recalibrate_pvlib
-    A4-A6: 0,   ***REMOVED*** blend weight changes (free)
-    A7: 1.0     ***REMOVED*** suggest_retrain (expensive)
+    A0: 0,      # maintain (free)
+    A1: 0.1,    # fine_tune_short
+    A2: 0.15,   # fine_tune_long
+    A3: 0.05,   # recalibrate_pvlib
+    A4-A6: 0,   # blend weight changes (free)
+    A7: 1.0     # suggest_retrain (expensive)
 }
 r_cost = −action_costs[action_t]
 ```
@@ -262,7 +262,7 @@ Penalize excessive retraining requests
 +0.1 if api_agreement > 0.9 (high weather consensus)
 ```
 
-***REMOVED******REMOVED******REMOVED*** Proposed Rule-Based Advisors (No Learning)
+### Proposed Rule-Based Advisors (No Learning)
 
 **Short-TFT Advisor:**
 ```python
@@ -296,8 +296,8 @@ def get_advisory_state():
     """Returns 10-dim state vector"""
     return np.array([
         compute_rmse(horizon=24),
-        compute_rmse(horizon=168),  ***REMOVED*** 7d
-        compute_rmse(horizon=720),  ***REMOVED*** 30d
+        compute_rmse(horizon=168),  # 7d
+        compute_rmse(horizon=720),  # 30d
         compute_confidence(),
         compute_drift(),
         get_forecast_horizon(),
@@ -309,7 +309,7 @@ def get_advisory_state():
 
 def should_alert_meta_controller():
     """Rule-based alert"""
-    if (rmse_30d - rmse_24h) > 0.05:  ***REMOVED*** Degradation over horizon
+    if (rmse_30d - rmse_24h) > 0.05:  # Degradation over horizon
         return "horizon_degradation"
     if api_agreement < 0.6:
         return "weather_api_disagreement"
@@ -333,7 +333,7 @@ def get_advisory_state():
 
 def should_alert_meta_controller():
     """Rule-based alert for calibration drift"""
-    if physics_residual > 0.20 and last_calibration > 168:  ***REMOVED*** 1 week
+    if physics_residual > 0.20 and last_calibration > 168:  # 1 week
         return "calibration_drift"
     if physics_residual > 0.30:
         return "severe_physics_mismatch"
@@ -342,7 +342,7 @@ def should_alert_meta_controller():
 
 ---
 
-***REMOVED******REMOVED*** KEY DIFFERENCES SUMMARY
+## KEY DIFFERENCES SUMMARY
 
 | Component | Original Design | Current (WRONG) | Proposed (FIXED) |
 |-----------|----------------|-----------------|------------------|
@@ -359,7 +359,7 @@ def should_alert_meta_controller():
 
 ---
 
-***REMOVED******REMOVED*** AGENTS WITHOUT JOBS IN V1.0
+## AGENTS WITHOUT JOBS IN V1.0
 
 **1. LSTM Encoder Agent (Role 1 in original):**
 - **Original Job:** Fine-tune LSTM encoder, manage temporal embeddings
@@ -377,27 +377,27 @@ def should_alert_meta_controller():
 
 ---
 
-***REMOVED******REMOVED*** REFACTOR PLAN
+## REFACTOR PLAN
 
-***REMOVED******REMOVED******REMOVED*** Step 1: Simplify LocalAgent (Rule-Based Only)
+### Step 1: Simplify LocalAgent (Rule-Based Only)
 - Remove: `policy_net`, `target_net`, `optimizer`, `replay_buffer`
 - Keep: `_heuristic_action()`, `get_advisory_state()`
 - Add: `should_alert_meta_controller()` for critical conditions
 
-***REMOVED******REMOVED******REMOVED*** Step 2: Expand MetaAgent Actions
+### Step 2: Expand MetaAgent Actions
 - Change from 27 weight combos → 8 system actions (A0-A7)
 - Update `action_dim = 8`
 - Map actions to system behaviors (fine-tune, recalibrate, blend, retrain)
 
-***REMOVED******REMOVED******REMOVED*** Step 3: Consolidate State Space
+### Step 3: Consolidate State Space
 - Merge local states into single 35-dim meta state
 - Advisors build state vectors, meta-controller aggregates
 
-***REMOVED******REMOVED******REMOVED*** Step 4: Update Reward Function
+### Step 4: Update Reward Function
 - Align with original: `R_t = w₁(−RMSE) + w₂(−Drift) + w₃(−Cost) + w₄(−RetrainFreq)`
 - Adjust weights: w₁=1.0, w₂=0.5, w₃=0.2, w₄=0.3
 
-***REMOVED******REMOVED******REMOVED*** Step 5: Update Tests
+### Step 5: Update Tests
 - Test single DDQN meta-controller
 - Test rule-based advisors
 - Test action execution (fine-tune, recalibrate, blend, retrain)
@@ -406,7 +406,7 @@ def should_alert_meta_controller():
 
 ---
 
-***REMOVED******REMOVED*** NEXT STEPS
+## NEXT STEPS
 
 1. **User Approval:** Confirm proposed refactor matches original vision
 2. **Refactor Code:** Implement 1 DDQN + 3 rule-based advisors

@@ -51,7 +51,7 @@ SPLITS = {
     },
 }
 
-PVLIB_POWER_COL = "pvlib_dc_kw"  ***REMOVED*** adjust if you renamed
+PVLIB_POWER_COL = "pvlib_dc_kw"  # adjust if you renamed
 
 
 def must_exist(p: Path) -> None:
@@ -80,12 +80,12 @@ def basic_df_checks(name: str, df: pd.DataFrame) -> dict:
 def merge_and_check(split: str, base: pd.DataFrame, w: pd.DataFrame, p: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     report = {}
 
-    ***REMOVED*** Ensure key dtypes consistent
+    # Ensure key dtypes consistent
     for d in (base, w, p):
         d[TIME_COL] = pd.to_datetime(d[TIME_COL], utc=True)
         d[PLANT_COL] = d[PLANT_COL].astype(str)
 
-    ***REMOVED*** Check collisions before merge
+    # Check collisions before merge
     base_cols = set(base.columns)
     w_cols = set(w.columns) - set(KEY)
     p_cols = set(p.columns) - set(KEY)
@@ -98,14 +98,14 @@ def merge_and_check(split: str, base: pd.DataFrame, w: pd.DataFrame, p: pd.DataF
     report["overlap_base_pvlib"] = overlap_bp
     report["overlap_weather_pvlib"] = overlap_wp
 
-    ***REMOVED*** Merge (suffixes should never be used if overlaps are empty)
+    # Merge (suffixes should never be used if overlaps are empty)
     m = base.merge(w, on=KEY, how="inner", validate="one_to_one")
     m = m.merge(p, on=KEY, how="inner", validate="one_to_one")
 
     report["merged_rows"] = int(len(m))
     report["merged_cols"] = int(m.shape[1])
 
-    ***REMOVED*** Completeness checks
+    # Completeness checks
     base_keys = base[KEY].copy()
     w_keys = w[KEY].copy()
     p_keys = p[KEY].copy()
@@ -121,7 +121,7 @@ def merge_and_check(split: str, base: pd.DataFrame, w: pd.DataFrame, p: pd.DataF
     report["merged_dup_keys"] = int(m.duplicated(KEY).sum())
     report["merged_nan_total"] = int(m.isna().sum().sum())
 
-    ***REMOVED*** PVLib sanity
+    # PVLib sanity
     if PVLIB_POWER_COL in m.columns:
         x = m[PVLIB_POWER_COL].astype(float).to_numpy()
         report["pvlib_min"] = float(np.nanmin(x))
@@ -142,7 +142,7 @@ def pvlib_corr_per_plant(m: pd.DataFrame) -> pd.DataFrame:
         a = g["power_norm"].astype(float).to_numpy()
         b = g[PVLIB_POWER_COL].astype(float).to_numpy()
 
-        ***REMOVED*** normalize pvlib per plant to 0..1 for correlation sanity
+        # normalize pvlib per plant to 0..1 for correlation sanity
         bmax = np.nanmax(b) if len(b) else np.nan
         bn = b / bmax if np.isfinite(bmax) and bmax > 0 else np.zeros_like(b)
 
@@ -174,7 +174,7 @@ def main() -> None:
         merged, mrep = merge_and_check(split, base, w, p)
         rep["merge"] = mrep
 
-        ***REMOVED*** Hard assertions that should be true
+        # Hard assertions that should be true
         assert rep["base"]["dup_keys"] == 0
         assert rep["weather"]["dup_keys"] == 0
         assert rep["pvlib"]["dup_keys"] == 0

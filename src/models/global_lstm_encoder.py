@@ -31,16 +31,16 @@ Output: (batch_size, 1) - predicted power_norm at t+1
 TRANSFER LEARNING MECHANICS
 ----------------------------
 Farm2107 LSTM weights shape:
-    weight_ih_l0: (hidden_size*4, 15)  ***REMOVED*** Input-to-hidden for 4 gates (i,f,g,o)
-    weight_hh_l0: (hidden_size*4, hidden_size)  ***REMOVED*** Hidden-to-hidden (unchanged)
+    weight_ih_l0: (hidden_size*4, 15)  # Input-to-hidden for 4 gates (i,f,g,o)
+    weight_hh_l0: (hidden_size*4, hidden_size)  # Hidden-to-hidden (unchanged)
 
 Global LSTM weights shape:
-    weight_ih_l0: (hidden_size*4, 20)  ***REMOVED*** Expanded to 20 input features
-    weight_hh_l0: (hidden_size*4, hidden_size)  ***REMOVED*** Same (no change needed)
+    weight_ih_l0: (hidden_size*4, 20)  # Expanded to 20 input features
+    weight_hh_l0: (hidden_size*4, hidden_size)  # Same (no change needed)
 
 Zero-Padding Strategy:
-    new_weight[:, 0:15] = farm2107_weight  ***REMOVED*** Copy first 15 columns
-    new_weight[:, 15:20] = 0.0              ***REMOVED*** Initialize plant_id weights to zero
+    new_weight[:, 0:15] = farm2107_weight  # Copy first 15 columns
+    new_weight[:, 15:20] = 0.0              # Initialize plant_id weights to zero
 
 Why zeros? 
 - Conservative approach: model starts with no plant-specific bias
@@ -52,17 +52,17 @@ USAGE EXAMPLE
 ```python
 from src.models.global_lstm_encoder import GlobalLSTMEncoder, transfer_from_farm2107
 
-***REMOVED*** Option 1: Transfer learning (recommended)
+# Option 1: Transfer learning (recommended)
 model = GlobalLSTMEncoder(input_size=20, hidden_size=64, num_layers=2)
 model = transfer_from_farm2107(
     model, 
     farm2107_ckpt_path="experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"
 )
 
-***REMOVED*** Option 2: Train from scratch
+# Option 2: Train from scratch
 model = GlobalLSTMEncoder(input_size=20, hidden_size=64, num_layers=2)
 
-***REMOVED*** Training with PyTorch Lightning
+# Training with PyTorch Lightning
 trainer = pl.Trainer(max_epochs=20, gpus=2)
 trainer.fit(model, train_dataloader, val_dataloader)
 ```
@@ -93,11 +93,11 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
-***REMOVED*** Add repo root to path for imports
+# Add repo root to path for imports
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-***REMOVED*** Import base LSTM encoder (Version 02 implementation)
+# Import base LSTM encoder (Version 02 implementation)
 from src.models.lstm_encoder import LSTMEncoder, LSTMEncoderConfig
 
 
@@ -138,10 +138,10 @@ class GlobalLSTMEncoder(LSTMEncoder):
     --------
     >>> config = LSTMEncoderConfig(input_size=20, hidden_size=64, num_layers=2)
     >>> model = GlobalLSTMEncoder(config)
-    >>> x = torch.randn(32, 24, 20)  ***REMOVED*** (batch, seq_len, features)
+    >>> x = torch.randn(32, 24, 20)  # (batch, seq_len, features)
     >>> output = model(x)
-    >>> output['next_pred'].shape  ***REMOVED*** (32,) - predicted power_norm
-    >>> output['embedding'].shape  ***REMOVED*** (32, 64) - learned representation
+    >>> output['next_pred'].shape  # (32,) - predicted power_norm
+    >>> output['embedding'].shape  # (32, 64) - learned representation
     """
     
     def __init__(self, config: LSTMEncoderConfig):
@@ -150,14 +150,14 @@ class GlobalLSTMEncoder(LSTMEncoder):
         
         Validates that input_size=20 (15 original + 5 plant IDs).
         """
-        ***REMOVED*** Validate input size for global model
+        # Validate input size for global model
         if config.input_size != 20:
             raise ValueError(
                 f"GlobalLSTMEncoder expects input_size=20 (15 features + 5 plant IDs), "
                 f"got {config.input_size}. Check GLOBAL_LSTM_INPUT_FEATURES in schema.py"
             )
         
-        ***REMOVED*** Initialize parent class (LSTMEncoder)
+        # Initialize parent class (LSTMEncoder)
         super().__init__(config)
         
         print(f"[INFO] GlobalLSTMEncoder initialized:")
@@ -212,12 +212,12 @@ def transfer_from_farm2107(
     - Alternative: Random init for columns 15-20 (use if zeros underperform)
     
     Weight Shapes After Transfer:
-        lstm.weight_ih_l0: (256, 20)  ***REMOVED*** 64*4 gates, 20 inputs
-        lstm.weight_hh_l0: (256, 64)  ***REMOVED*** Unchanged (hidden→hidden)
-        lstm.bias_ih_l0: (256,)       ***REMOVED*** Unchanged (input biases)
-        lstm.bias_hh_l0: (256,)       ***REMOVED*** Unchanged (hidden biases)
-        fc.weight: (1, 64)            ***REMOVED*** Unchanged (prediction head)
-        fc.bias: (1,)                 ***REMOVED*** Unchanged
+        lstm.weight_ih_l0: (256, 20)  # 64*4 gates, 20 inputs
+        lstm.weight_hh_l0: (256, 64)  # Unchanged (hidden→hidden)
+        lstm.bias_ih_l0: (256,)       # Unchanged (input biases)
+        lstm.bias_hh_l0: (256,)       # Unchanged (hidden biases)
+        fc.weight: (1, 64)            # Unchanged (prediction head)
+        fc.bias: (1,)                 # Unchanged
     
     Examples
     --------
@@ -226,11 +226,11 @@ def transfer_from_farm2107(
     ...     model,
     ...     farm2107_ckpt_path="experiments/lstm/encoders/lstm_encoder_farm2107_CANONICAL.pt"
     ... )
-    >>> ***REMOVED*** Now model has Farm2107 knowledge + trainable plant_id weights
+    >>> # Now model has Farm2107 knowledge + trainable plant_id weights
     """
     ckpt_path = Path(farm2107_ckpt_path)
     
-    ***REMOVED*** Validate checkpoint exists
+    # Validate checkpoint exists
     if not ckpt_path.exists():
         raise FileNotFoundError(
             f"Farm2107 checkpoint not found: {ckpt_path}\n"
@@ -242,26 +242,26 @@ def transfer_from_farm2107(
     print(f"{'='*80}")
     print(f"Loading Farm2107 checkpoint: {ckpt_path}")
     
-    ***REMOVED*** Load Farm2107 checkpoint
+    # Load Farm2107 checkpoint
     checkpoint = torch.load(ckpt_path, map_location=device)
     
-    ***REMOVED*** Extract Farm2107 LSTM weights
-    ***REMOVED*** Expected keys: 'lstm.weight_ih_l0', 'lstm.weight_hh_l0', 'lstm.bias_ih_l0', 'lstm.bias_hh_l0'
-    farm2107_state_dict = checkpoint  ***REMOVED*** Assumes checkpoint is state_dict
+    # Extract Farm2107 LSTM weights
+    # Expected keys: 'lstm.weight_ih_l0', 'lstm.weight_hh_l0', 'lstm.bias_ih_l0', 'lstm.bias_hh_l0'
+    farm2107_state_dict = checkpoint  # Assumes checkpoint is state_dict
     
-    ***REMOVED*** Get input-to-hidden weight (this needs expansion)
+    # Get input-to-hidden weight (this needs expansion)
     if 'lstm.weight_ih_l0' not in farm2107_state_dict:
         raise ValueError(
             f"Checkpoint missing 'lstm.weight_ih_l0'. "
             f"Available keys: {list(farm2107_state_dict.keys())}"
         )
     
-    farm_weight_ih = farm2107_state_dict['lstm.weight_ih_l0']  ***REMOVED*** Shape: (hidden*4, 15)
+    farm_weight_ih = farm2107_state_dict['lstm.weight_ih_l0']  # Shape: (hidden*4, 15)
     
     print(f"\nFarm2107 LSTM weights:")
     print(f"  Input-to-hidden shape: {farm_weight_ih.shape} (hidden*4, 15 features)")
     
-    ***REMOVED*** Validate shape
+    # Validate shape
     hidden_size = global_model.cfg.hidden_size
     expected_shape = (hidden_size * 4, 15)
     if farm_weight_ih.shape != expected_shape:
@@ -270,30 +270,30 @@ def transfer_from_farm2107(
             f"Expected {expected_shape}, got {farm_weight_ih.shape}"
         )
     
-    ***REMOVED*** Zero-pad: Expand from 15 → 20 columns
+    # Zero-pad: Expand from 15 → 20 columns
     print(f"\nZero-padding input weights: 15 → 20 features")
     expanded_weight_ih = torch.zeros(hidden_size * 4, 20, device=device)
     
-    ***REMOVED*** Copy first 15 columns (Farm2107 knowledge)
+    # Copy first 15 columns (Farm2107 knowledge)
     expanded_weight_ih[:, :15] = farm_weight_ih
     
-    ***REMOVED*** Last 5 columns (plant_id) remain zero (model learns them)
-    ***REMOVED*** Alternative: Small random init
-    ***REMOVED*** expanded_weight_ih[:, 15:] = torch.randn(hidden_size * 4, 5) * 0.01
+    # Last 5 columns (plant_id) remain zero (model learns them)
+    # Alternative: Small random init
+    # expanded_weight_ih[:, 15:] = torch.randn(hidden_size * 4, 5) * 0.01
     
     print(f"  Columns 0-14: Copied from Farm2107 (weather + power features)")
     print(f"  Columns 15-19: Initialized to ZERO (plant_id one-hot)")
     
-    ***REMOVED*** Build new state dict for Global Model
+    # Build new state dict for Global Model
     global_state_dict = global_model.state_dict()
     
-    ***REMOVED*** Transfer LSTM weights (layer 0)
+    # Transfer LSTM weights (layer 0)
     global_state_dict['lstm.weight_ih_l0'] = expanded_weight_ih
-    global_state_dict['lstm.weight_hh_l0'] = farm2107_state_dict['lstm.weight_hh_l0']  ***REMOVED*** Hidden-to-hidden (unchanged)
-    global_state_dict['lstm.bias_ih_l0'] = farm2107_state_dict['lstm.bias_ih_l0']      ***REMOVED*** Input biases
-    global_state_dict['lstm.bias_hh_l0'] = farm2107_state_dict['lstm.bias_hh_l0']      ***REMOVED*** Hidden biases
+    global_state_dict['lstm.weight_hh_l0'] = farm2107_state_dict['lstm.weight_hh_l0']  # Hidden-to-hidden (unchanged)
+    global_state_dict['lstm.bias_ih_l0'] = farm2107_state_dict['lstm.bias_ih_l0']      # Input biases
+    global_state_dict['lstm.bias_hh_l0'] = farm2107_state_dict['lstm.bias_hh_l0']      # Hidden biases
     
-    ***REMOVED*** Transfer LSTM layer 1 (if exists)
+    # Transfer LSTM layer 1 (if exists)
     if 'lstm.weight_ih_l1' in farm2107_state_dict:
         print(f"  Transferring layer 1 weights (hidden-to-hidden, no expansion needed)")
         global_state_dict['lstm.weight_ih_l1'] = farm2107_state_dict['lstm.weight_ih_l1']
@@ -301,19 +301,19 @@ def transfer_from_farm2107(
         global_state_dict['lstm.bias_ih_l1'] = farm2107_state_dict['lstm.bias_ih_l1']
         global_state_dict['lstm.bias_hh_l1'] = farm2107_state_dict['lstm.bias_hh_l1']
     
-    ***REMOVED*** Transfer prediction head (final FC layer)
+    # Transfer prediction head (final FC layer)
     if 'fc.weight' in farm2107_state_dict:
         print(f"  Transferring prediction head (FC layer)")
         global_state_dict['fc.weight'] = farm2107_state_dict['fc.weight']
         global_state_dict['fc.bias'] = farm2107_state_dict['fc.bias']
     
-    ***REMOVED*** Load transferred weights into Global Model
+    # Load transferred weights into Global Model
     global_model.load_state_dict(global_state_dict)
     
     print(f"\n✅ Transfer learning complete!")
     print(f"{'='*80}\n")
     
-    ***REMOVED*** Verify: Check that plant_id weights are zero
+    # Verify: Check that plant_id weights are zero
     current_weight_ih = global_model.lstm.weight_ih_l0
     plant_id_weights = current_weight_ih[:, 15:20]
     
@@ -365,16 +365,16 @@ def load_global_encoder_for_inference(
     return model
 
 
-***REMOVED*** Example usage (for testing)
+# Example usage (for testing)
 if __name__ == "__main__":
     print("Testing GlobalLSTMEncoder...")
     
-    ***REMOVED*** Test 1: Create model
+    # Test 1: Create model
     config = LSTMEncoderConfig(input_size=20, hidden_size=64, num_layers=2)
     model = GlobalLSTMEncoder(config)
     print(f"\n✅ Model created: {model}")
     
-    ***REMOVED*** Test 2: Forward pass
+    # Test 2: Forward pass
     batch_size, seq_len, n_features = 32, 24, 20
     x = torch.randn(batch_size, seq_len, n_features)
     output = model(x)
@@ -384,7 +384,7 @@ if __name__ == "__main__":
     print(f"  Output 'next_pred' shape: {output['next_pred'].shape}")
     print(f"  Output 'embedding' shape: {output['embedding'].shape}")
     
-    ***REMOVED*** Test 3: Zero-padding (simulation, no real checkpoint)
+    # Test 3: Zero-padding (simulation, no real checkpoint)
     print(f"\n✅ Zero-padding test (simulated):")
     print("  Would expand Farm2107 weights from (256, 15) → (256, 20)")
     print("  Columns 0-14: Farm2107 knowledge")

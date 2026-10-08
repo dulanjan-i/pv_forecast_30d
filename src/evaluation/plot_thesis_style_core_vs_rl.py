@@ -1,11 +1,11 @@
-***REMOVED***!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Thesis-style plots: Ground Truth vs MiRACLE v1.0 Core vs RL policy.
 
 Style contract (matches your thesis colors):
-- Ground truth: light grey (***REMOVED***888888), lw=1.5, alpha=0.7
-- MiRACLE v1.0 Core: bold green (***REMOVED***00AA00), lw=2.5, alpha=1.0
-- RL comparison: light blue (***REMOVED***6BA3D8), lw=1.8, alpha=0.9
+- Ground truth: light grey (#888888), lw=1.5, alpha=0.7
+- MiRACLE v1.0 Core: bold green (#00AA00), lw=2.5, alpha=1.0
+- RL comparison: light blue (#6BA3D8), lw=1.8, alpha=0.9
 
 Outputs:
 - facets_case_winter_week_core_vs_rl.png
@@ -26,9 +26,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-COL_TRUTH = "***REMOVED***888888"
-COL_CORE = "***REMOVED***00AA00"
-COL_COMP = "***REMOVED***6BA3D8"
+COL_TRUTH = "#888888"
+COL_CORE = "#00AA00"
+COL_COMP = "#6BA3D8"
 
 LW_TRUTH = 1.5
 LW_CORE = 2.5
@@ -40,7 +40,7 @@ ALPHA_COMP = 0.9
 
 
 def _to_utc_dt(s: pd.Series) -> pd.Series:
-    ***REMOVED*** Accept tz-aware or naive strings. Force UTC tz-aware.
+    # Accept tz-aware or naive strings. Force UTC tz-aware.
     ts = pd.to_datetime(s, errors="coerce", utc=True)
     return ts
 
@@ -62,21 +62,21 @@ def load_truth(path: Path) -> pd.DataFrame:
 
 def load_preds(path: Path) -> pd.DataFrame:
     df = pd.read_parquet(path)
-    ***REMOVED*** expected from your phase1 pipelines
+    # expected from your phase1 pipelines
     _require_cols(df, ["timestamp_utc", "forecast_start", "predicted_power_norm"], path.name)
 
     df = df.copy()
     df["timestamp_utc"] = _to_utc_dt(df["timestamp_utc"])
     df["forecast_start"] = _to_utc_dt(df["forecast_start"])
 
-    ***REMOVED*** hours_ahead may be missing in some variants, derive it if possible
+    # hours_ahead may be missing in some variants, derive it if possible
     if "hours_ahead" not in df.columns:
         if "step_ahead" in df.columns:
-            ***REMOVED*** infer resolution from step spacing if possible, fallback: assume 15-min
-            ***REMOVED*** step_ahead usually counts 15-min steps in your pipeline
+            # infer resolution from step spacing if possible, fallback: assume 15-min
+            # step_ahead usually counts 15-min steps in your pipeline
             df["hours_ahead"] = df["step_ahead"].astype(float) * 0.25
         else:
-            ***REMOVED*** last resort: compute from timestamps
+            # last resort: compute from timestamps
             df["hours_ahead"] = (df["timestamp_utc"] - df["forecast_start"]).dt.total_seconds() / 3600.0
 
     df = df.dropna(subset=["timestamp_utc", "forecast_start", "predicted_power_norm", "hours_ahead"])
@@ -89,7 +89,7 @@ def stitch_operator_view(preds: pd.DataFrame) -> pd.DataFrame:
     For each timestamp, take the smallest hours_ahead prediction.
     That corresponds to the most recent available forecast for that timestamp.
     """
-    ***REMOVED*** Assure sorting so idxmin works correctly
+    # Assure sorting so idxmin works correctly
     preds = preds.sort_values(["timestamp_utc", "hours_ahead"])
     idx = preds.groupby("timestamp_utc", sort=False)["hours_ahead"].idxmin()
     stitched = preds.loc[idx, ["timestamp_utc", "predicted_power_norm"]].sort_values("timestamp_utc")
@@ -166,7 +166,7 @@ def plot_leadtime_rmse_0_24h(outpath: Path, truth: pd.DataFrame, core_preds: pd.
     def lead_rmse(preds: pd.DataFrame, label: str) -> pd.DataFrame:
         df = preds.merge(truth, on="timestamp_utc", how="inner")
         df = df[(df["hours_ahead"] >= 0.0) & (df["hours_ahead"] <= 24.0)].copy()
-        ***REMOVED*** bucket to integer hours (operator-ish)
+        # bucket to integer hours (operator-ish)
         df["h"] = np.floor(df["hours_ahead"]).astype(int)
         rows = []
         for h, g in df.groupby("h"):
@@ -221,7 +221,7 @@ def main() -> None:
     ap.add_argument("--rl", required=True, type=Path)
     ap.add_argument("--outdir", required=True, type=Path)
 
-    ***REMOVED*** fixed thesis windows (match your earlier plots)
+    # fixed thesis windows (match your earlier plots)
     ap.add_argument("--winter-start", default="2024-01-10", type=str)
     ap.add_argument("--winter-end", default="2024-01-17", type=str)
     ap.add_argument("--summer-start", default="2024-07-01", type=str)
@@ -240,7 +240,7 @@ def main() -> None:
     rl_join = join_on_time(truth, rl_stitched, "rl")
     joined = core_join.merge(rl_join[["timestamp_utc", "rl"]], on="timestamp_utc", how="inner")
 
-    ***REMOVED*** weekly windows
+    # weekly windows
     w0 = pd.to_datetime(args.winter_start, utc=True)
     w1 = pd.to_datetime(args.winter_end, utc=True)
     s0 = pd.to_datetime(args.summer_start, utc=True)
@@ -255,7 +255,7 @@ def main() -> None:
     outdir = args.outdir
     outdir.mkdir(parents=True, exist_ok=True)
 
-    ***REMOVED*** Week plots
+    # Week plots
     plot_week(
         outdir / "facets_case_winter_week_core_vs_rl.png",
         "Case Study: Winter Week (Core vs RL)",
@@ -271,16 +271,16 @@ def main() -> None:
         summer[["timestamp_utc", "rl"]],
     )
 
-    ***REMOVED*** Monthly RMSE
+    # Monthly RMSE
     plot_monthly_rmse(outdir / "monthly_rmse_core_vs_rl.png", joined)
 
-    ***REMOVED*** Lead-time curve
+    # Lead-time curve
     plot_leadtime_rmse_0_24h(outdir / "facets_leadtime_rmse_curve_0_24h_core_vs_rl.png", truth, core_preds, rl_preds)
 
-    ***REMOVED*** Tail histogram
+    # Tail histogram
     plot_tail_abs_error_hist(outdir / "tails_abs_error_hist_core_vs_rl.png", joined)
 
-    ***REMOVED*** quick sanity stats
+    # quick sanity stats
     y = joined["power_norm"].to_numpy()
     core = joined["core"].to_numpy()
     rl = joined["rl"].to_numpy()
