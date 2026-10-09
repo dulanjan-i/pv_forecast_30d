@@ -77,15 +77,30 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-,format=short
 
+      # Pull requests: build only the amd64 image and load it into the local daemon, so the smoke
+      # test below can run it (nothing is pushed on PRs, so it does not exist in the registry).
+      - name: Build image for PR smoke test (amd64, not pushed)
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: miracle-pr-smoke:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       # Builds linux/amd64 (cloud servers) + linux/arm64 (Apple Silicon Macs)
       # in a single multi-platform manifest — docker pull works on any machine
       - name: Build and push Docker image
+        if: github.event_name != 'pull_request'
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -95,7 +110,11 @@ jobs:
       # Explicitly use amd64 variant — runner is AMD64 and can't run arm64 natively
       - name: Smoke test
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            IMAGE="miracle-pr-smoke:test"
+          else
+            IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-$(git rev-parse --short HEAD)"
+          fi
           docker run --rm --platform linux/amd64 "$IMAGE" python -c "
           from src.inference.physics_aware_forecaster import PhysicsAwareForecaster
           from src.rl.rl_meta_controller import RLMetaControllerSystem

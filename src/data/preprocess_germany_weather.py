@@ -32,7 +32,9 @@ OUTPUT
     - same weather variables as input, resampled to 15 minutes
 
 WHAT THIS SCRIPT DOES
-- Converts Open-Meteo timestamps from Europe/Berlin local time to UTC.
+- Uses UTC timestamps from the fetcher (`timestamp_utc`); legacy CSVs with naive local `date`
+  labels are repaired exactly (see src/data/time_utils.py) instead of re-localised, which used to
+  shift summer weather by 1 hour.
 - Sets a regular 1 hour index on weather data and resamples to a 15 minute grid.
 - Uses a HYBRID interpolation strategy that matches the Farm2107 pipeline:
 
@@ -74,10 +76,15 @@ WHAT THIS SCRIPT DOES NOT DO
   feature engineering but are not processed here.
 """
 
+import sys
 from pathlib import Path
 from typing import List
 
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.data.time_utils import repair_legacy_naive_local  # noqa: E402
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -113,24 +120,21 @@ def preprocess_plant_weather(plant_id: str) -> Path:
 
     df = pd.read_csv(hourly_path)
 
-    if "date" not in df.columns:
-        raise ValueError(f"{plant_id}: expected 'date' column in hourly weather parquet")
-
-    # 1. Convert naive local time to UTC
+    # 1. Build true UTC timestamps
     #
-    # Open-Meteo archive returns timestamps in local Europe/Berlin time,
-    # without timezone info, already adjusted for DST.
-    # We localize to Europe/Berlin then convert to UTC to match PV data.
+    # Current fetcher output carries `timestamp_utc` (uniform UTC from the API epoch): use it as is.
+    # Legacy CSVs only carry naive `date` labels that were generated with a uniform 1 h step from the
+    # first local midnight. Re-localising those labels as Europe/Berlin shifts summer weather by 1 h,
+    # so we reconstruct UTC from the first label plus the uniform step instead.
     df = df.copy()
-    df["date"] = pd.to_datetime(df["date"])
+    if "timestamp_utc" in df.columns:
+        df["timestamp_utc"] = pd.to_datetime(df["timestamp_utc"], utc=True)
+    elif "date" in df.columns:
+        df["timestamp_utc"] = pd.Series(repair_legacy_naive_local(df["date"], TIMEZONE_LOCAL), index=df.index)
+    else:
+        raise ValueError(f"{plant_id}: expected 'timestamp_utc' (or legacy 'date') column in hourly weather")
 
-    df["timestamp_utc"] = (
-        df["date"]
-        .dt.tz_localize(TIMEZONE_LOCAL, ambiguous="NaT", nonexistent="shift_forward")
-        .dt.tz_convert(TIMEZONE_UTC)
-    )
-
-    # Drop any NaT timestamps from DST ambiguity before setting index
+    df = df.drop(columns=[c for c in ("date",) if c in df.columns])
     df = df.dropna(subset=["timestamp_utc"])
 
     # 2. Enforce a regular 1 hour index before resampling
