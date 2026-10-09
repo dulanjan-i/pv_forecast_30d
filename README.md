@@ -6,6 +6,8 @@
 [![Docker Build](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/docker-build.yml/badge.svg)](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/docker-build.yml)
 [![CI — pytest](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/ci.yml/badge.svg)](https://github.com/dulanjan-i/pv_forecast_30d/actions/workflows/ci.yml)
 
+> **Which version?** Thesis results (MiRACLE v1.0) correspond to tag [`v1.0.0`](https://github.com/dulanjan-i/pv_forecast_30d/tree/v1.0.0). `main` contains later pipeline hardening (v1.1); see [CHANGELOG.md](CHANGELOG.md).
+
 This repository contains the advanced **dual-head Temporal Fusion Transformer (TFT)** engine developed for my Master's thesis. It is made available for academic research, peer review, and technical evaluation.
 
 ![MiRACLE Architecture](architecture%20diagrams/core_architecture.html)
